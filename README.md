@@ -10,7 +10,8 @@ Jedna appka pre všetky Štullers appky: jedno prihlásenie, jeden dizajn (font 
 | Handrbolka Studio, Atelier Studio | v hube ako pôvodné appky (`public/apps/<id>/`), neskôr spoločné Studio s témami |
 | Stullers Studio | pripravujeme (spoločné Studio) |
 | Stullers Social | v hube ako pôvodná appka (`public/apps/social/`) |
-| Učiteľ, Hudy Packaging | pripravujeme |
+| Hudy Packaging | v hube (`public/apps/hudy/`), CMYK šablóna .ai sa nahrá raz tlačidlom Šablóna (nie je v repozitári) |
+| Učiteľ | pripravujeme |
 
 ## Ako to funguje
 - `src/App.tsx` – prihlásenie (rodinné profily s PIN, alebo e-mail), úvodná obrazovka s dlaždicami, otváranie modulov na `#/<id>`.
