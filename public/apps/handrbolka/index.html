@@ -168,6 +168,13 @@ input[type=range]{width:100%;accent-color:var(--green)}
   .menu .pop button small{font-size:13px;text-align:right}
   .menu .pop .check{font-size:15px}
 }
+/* desktop: vľavo nástroje a vpravo náhľad sa posúvajú každý zvlášť (podľa toho, kde je myš), stránka stojí */
+@media (min-width:861px){
+  body:has(#editView:not([hidden])){height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+  body:has(#editView:not([hidden])) .top{flex:none}
+  .work:not([hidden]){flex:1;min-height:0;height:auto}
+  .work>.panel,.work>.stage{overflow-y:auto;overscroll-behavior:contain;min-height:0}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
