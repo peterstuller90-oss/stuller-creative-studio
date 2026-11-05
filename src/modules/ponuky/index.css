@@ -307,3 +307,24 @@ h1, h2, h3, h4, p { margin: 0; font-weight: 500; }
 .contract-sign p { font-size: 13.5px; }
 .sign-line { border-top: 1px solid var(--ink); margin-top: 56px; padding-top: 4px; font-size: 13px; color: var(--muted); }
 @media (max-width: 600px) { .contract-sign { grid-template-columns: 1fr; } }
+
+/* ───────── iPhone fit for the wider Barlow Medium (hub) ───────── */
+/* Content never shows under the floating tab bar. */
+@media (max-width: 1099px) {
+  .app::after { content: ''; position: fixed; left: 0; right: 0; bottom: 0; z-index: 39; pointer-events: none;
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 22px); background: linear-gradient(to bottom, transparent, var(--bg) 35%); }
+  .content { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 48px); }
+}
+@media (max-width: 520px) {
+  .field input, .field select, .field textarea { font-size: 16px; padding: 10px 11px; }
+  .field > span { font-size: 13px; }
+  /* Two-column forms stack, so every value is readable. */
+  .card .grid2 { grid-template-columns: 1fr; }
+  /* Label + small number + delete rows: the number takes less room, the name more. */
+  .row[style*="nowrap"] { flex-wrap: wrap !important; }
+  .row[style*="nowrap"] > .field.grow { flex: 1 1 100%; }
+  .row > .field[style*="width"] { width: 96px !important; flex: none; }
+  .row { gap: 8px; }
+  .stats { gap: 8px; }
+  .tab { font-size: 13px; }
+}

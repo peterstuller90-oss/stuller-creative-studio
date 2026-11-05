@@ -410,3 +410,9 @@ html { font-synthesis: none; }
 .hero-xp { font-size: 24px; color: var(--accent); white-space: nowrap; }
 .hero-compact .level-row { font-size: 14px; }
 .hero-who .streak strong { font-size: 14px; }
+
+/* Hub: content never shows under the floating tab bar. */
+.app::after { content: ''; position: fixed; left: 0; right: 0; bottom: 0; z-index: 39; pointer-events: none;
+  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 22px); background-color: var(--bg); animation: bg-drift 90s ease-in-out infinite;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 35%); mask-image: linear-gradient(to bottom, transparent, #000 35%); }
+@media (prefers-reduced-motion: reduce) { .app::after { animation: none; } }
