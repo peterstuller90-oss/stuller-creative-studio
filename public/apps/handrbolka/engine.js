@@ -39,11 +39,9 @@ const HB = (() => {
   const P = new Map();
   const path = d => { let p = P.get(d); if (!p) { p = new Path2D(d); p.__d = d; P.set(d, p); } return p; };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const ease = {
-    out: t => 1 - Math.pow(1 - t, 3),
-    inOut: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
-    back: t => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
-  };
+  // After Effects "Easy Ease": cubic-bezier(.33,0,.67,1), smooth start and smooth stop, no bounce
+  function easyEase(p){if(p<=0)return 0;if(p>=1)return 1;const x1=.33,x2=.67;let t=p;for(let i=0;i<8;i++){const u=1-t,x=3*u*u*t*x1+3*u*t*t*x2+t*t*t-p,dx=3*u*u*x1+6*u*t*(x2-x1)+3*t*t*(1-x2);if(Math.abs(dx)<1e-6)break;t=Math.min(1,Math.max(0,t-x/dx))}const u=1-t;return 3*u*t*t+t*t*t}
+  const ease = { out: easyEase, inOut: easyEase, back: easyEase };
   function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 100000) / 100000; }; }
   const font = (w, px) => `${w} ${px}px ${FONT}, "Trebuchet MS", sans-serif`;
   function wrap(ctx, text, maxW) {
@@ -372,7 +370,14 @@ const HB = (() => {
   function render(ctx, fmtKey, st, opt = {}) {
     const fmt = FORMATS[fmtKey];
     const W = fmt.W, H = fmt.H;
-    const t = opt.t; const A = t != null ? makeAnim(st, t, opt.dur || st.anim.dur) : null;
+    let t = opt.t;
+    // Stop motion: every 0.2 s a new arrangement (like pressing "Nová variácia"), the last second holds the real design.
+    if (t != null && st.anim.style === 'stopmotion') {
+      const dur = opt.dur || st.anim.dur, hold = Math.min(1.2, dur * .3);
+      if (t < dur - hold) { const step = Math.floor(t / .2); st = { ...st, doodles: { ...st.doodles, seed: (st.doodles.seed * 31 + (step + 1) * 7919) % 9973 || 1 } }; }
+      t = null;
+    }
+    const A = t != null ? makeAnim(st, t, opt.dur || st.anim.dur) : null;
     const bleed = opt.bleed || 0;
     const reelBlocks = fmt.anim ? reelContent(st) : null;
     if (fmt.anim) st = { ...st, logo: { ...st.logo, mode: st.logo.mode === 'skryte' ? 'skryte' : 'hlavne', sub: st.logo.sub }, layout: 'stred', align: 'center' };

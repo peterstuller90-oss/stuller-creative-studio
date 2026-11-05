@@ -30,7 +30,7 @@ const fromTemplate = k => { const s = BASE(); TEMPLATES[k].make(s); return s; };
 const LAYOUTS = { stred: ['Na stred', 'ako plagát'], hore: ['Odhora', 'viac textu'], 'foto-hore': ['Fotka hore', 'potom text'], 'foto-dole': ['Fotka dole', 'najprv text'] };
 const LOGO_MODES = { hlavne: ['Veľké', 'dominanta'], male: ['Malé hore', ''], dole: ['Malé dole', ''], skryte: ['Bez loga', ''] };
 const FRAMES = { psik: ['Psík', 'okrový'], hrad: ['Hrad', 'koralový'], ceruzka: ['Ceruzka', 'okrová'], none: ['Bez rámika', 'zaoblená'] };
-const ANIMS = { kreslenie: ['Kreslenie', 'kúsok po kúsku'], vyrastanie: ['Vyrastanie', 's odrazom'], prelnutie: ['Pokojné', 'jemné prelnutie'] };
+const ANIMS = { kreslenie: ['Kreslenie', 'kúsok po kúsku'], vyrastanie: ['Vyrastanie', 'plynulé zväčšenie'], prelnutie: ['Pokojné', 'jemné prelnutie'], stopmotion: ['Stop motion', 'preblikávanie'] };
 const TYPES = { nadpis: 'Nadpis', podnadpis: 'Podnadpis', sekcia: 'Nadpis s vlnovkou', info: 'Dátum / miesto', odrazky: 'Odrážky', citat: 'Citát', text: 'Malý text' };
 
 let st = fromTemplate('obal');
