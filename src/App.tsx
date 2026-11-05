@@ -5,6 +5,7 @@ import { APPS, type Audience, type HubApp } from './apps'
 import { FAMILY } from './modules/home/lib/family'
 import { Login } from './modules/home/screens/Login'
 import { EmailLogin } from './EmailLogin'
+import { FaceIdSetup } from './FaceIdSetup'
 
 // Each module keeps its own styles, scoped under .mod-<id> (see vite.config.ts).
 const MODULES: Record<string, React.LazyExoticComponent<() => React.JSX.Element>> = {
@@ -83,6 +84,7 @@ function Launcher({ apps, session }: { apps: HubApp[]; session: Session }) {
         <h1>Creative Studio</h1>
         <p>Ahoj, {name}! Čo dnes otvoríme?</p>
       </header>
+      <FaceIdSetup email={session.user.email ?? ''} />
       <div className="hub-grid">
         {apps.map((a) => {
           const soon = !a.module && !a.url

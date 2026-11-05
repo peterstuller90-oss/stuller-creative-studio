@@ -45,3 +45,15 @@ button, input { font: inherit; color: inherit; }
 .hub-module-body { position: relative; flex: 1; }
 .hub-input { width: 100%; padding: 14px 16px; border-radius: 18px; border: var(--hub-border); background: #fff; font-size: 20px; }
 @media print { .hub-bar { display: none; } }
+
+.hub-faceid { background: var(--hub-card); border: var(--hub-border); border-radius: 28px; box-shadow: var(--hub-shadow); padding: 14px; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+.hub-faceid strong { display: block; font-size: 22px; text-transform: uppercase; }
+.hub-faceid small { display: block; color: var(--hub-muted); font-size: 16px; }
+.hub-faceid .hub-error { color: var(--hub-coral); }
+.hub-faceid-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; }
+.hub-btn { flex: 1; background: var(--hub-ink); color: #fff; border: none; border-radius: 999px; padding: 12px 18px; font-size: 20px; text-transform: uppercase; cursor: pointer; }
+.hub-btn:disabled { opacity: 0.6; }
+.hub-link { background: none; border: none; color: var(--hub-muted); text-decoration: underline; cursor: pointer; }
+
+/* One font everywhere: Barlow Condensed Medium (500), also in every module, button, input and heading. */
+*, *::before, *::after { font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, sans-serif !important; font-weight: 500 !important; }

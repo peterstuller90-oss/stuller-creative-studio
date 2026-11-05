@@ -19,14 +19,13 @@ const asset = (p: string) => fetch(`${import.meta.env.BASE_URL}${p}`).then((r) =
 async function setup(title: string) {
   const doc = await PDFDocument.create()
   doc.registerFontkit(fontkit)
-  const [medium, regular, logoBytes] = await Promise.all([
-    asset('pdf-fonts/BarlowCondensed-Medium.ttf'), asset('pdf-fonts/BarlowCondensed-Regular.ttf'), asset('logo.png'),
-  ])
+  // Barlow Condensed Medium everywhere, also in PDFs.
+  const [medium, logoBytes] = await Promise.all([asset('pdf-fonts/BarlowCondensed-Medium.ttf'), asset('logo.png')])
   // Not subset: form fields need every glyph the client may type (č, ľ, ž…).
   // Ligatures off: "fi" and the Dutch "IJ" would otherwise drop letters (Offi ce, POUŽIJ ETE).
   const features = { liga: false, dlig: false, clig: false }
   const bold = await doc.embedFont(medium, { subset: false, features })
-  const body = await doc.embedFont(regular, { subset: false, features })
+  const body = bold
   const logo = await doc.embedPng(logoBytes)
   doc.setTitle(title)
   doc.setAuthor('Štullers Creative')

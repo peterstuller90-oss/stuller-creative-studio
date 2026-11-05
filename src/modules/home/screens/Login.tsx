@@ -15,6 +15,36 @@ export function Login({ supabase, label, extra }: { supabase: SupabaseClient; la
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [faceId, setFaceId] = useState<LoginOptions | null>(null)
+  // Face ID instead of PIN: for every profile set up on this device, get the login ready before the tap,
+  // so tapping the profile card opens Face ID straight away (iPhone allows it only right after a tap).
+  const [ready, setReady] = useState<Record<string, LoginOptions>>({})
+  useEffect(() => {
+    if (!passkeysSupported()) return
+    const prepare = () => {
+      for (const m of FAMILY) {
+        if (savedPasskey(m.email)) loginOptions(supabase, m.email).then((o) => setReady((r) => ({ ...r, [m.email]: o }))).catch(() => {})
+      }
+    }
+    prepare()
+    const timer = setInterval(prepare, 4 * 60_000) // challenges expire after 5 minutes
+    return () => clearInterval(timer)
+  }, [supabase])
+
+  async function pick(m: Member) {
+    play('tap')
+    const prepared = ready[m.email]
+    if (!prepared) return setMember(m)
+    setBusy(true)
+    try {
+      await login(supabase, prepared)
+      play('correct')
+    } catch (e) {
+      setMember(m) // cancelled or failed: fall back to PIN
+      if (!isCancel(e)) setError(e instanceof Error ? e.message : 'Nepodarilo sa to.')
+    }
+    setReady((r) => { const { [m.email]: _, ...rest } = r; return rest })
+    setBusy(false)
+  }
 
   // If this device has Face ID set up for the chosen profile, get the login challenge ready before the tap.
   const hasFaceId = !!member && passkeysSupported() && !!savedPasskey(member.email)
@@ -63,9 +93,10 @@ export function Login({ supabase, label, extra }: { supabase: SupabaseClient; la
           <p className="muted">Kto si?</p>
           <div className="profile-grid">
             {FAMILY.map((m) => (
-              <button key={m.name} className="card profile-card" onClick={() => { play('tap'); setMember(m) }}>
+              <button key={m.name} className="card profile-card" disabled={busy} onClick={() => pick(m)}>
                 <Avatar name={m.name} size={84} />
                 <strong>{m.name}</strong>
+                {ready[m.email] && <span className="muted">🙂 {biometricName()}</span>}
               </button>
             ))}
           </div>
