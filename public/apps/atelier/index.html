@@ -105,6 +105,8 @@ input[type=range]{width:100%;accent-color:var(--mag)}
 .rng output{font-size:14px;color:var(--muted);min-width:1.5em;text-align:right}
 .lh .acts{display:flex;gap:2px;align-items:center}
 .socset{border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.vars{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.vars button{border:1px solid var(--line);border-radius:10px;padding:4px;background:var(--bg);cursor:pointer;line-height:0}.vars canvas{width:100%;height:auto;border-radius:6px}
+.brief textarea{width:100%;margin-top:6px}
 .socset summary{font-weight:600;cursor:pointer;color:var(--muted)}
 .socset label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted);margin-top:10px}
 .socset input{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;color:var(--ink);background:var(--bg);width:100%}
@@ -182,6 +184,12 @@ ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;ga
       <button role="tab" aria-selected="false" data-tab="fotka">Fotka</button>
     </div>
     <div class="pane" data-pane="texty">
+      <details class="socset brief" id="briefBox"><summary>Návrh zo zadania (AI)</summary>
+        <p class="hint" style="margin-top:8px">Napíš vlastnými slovami, čo potrebuješ. Claude pripraví texty, rozloženie a farby, potom si všetko môžeš upraviť.</p>
+        <textarea id="brief" rows="3" placeholder="Napr. Story na výstavu prác detí v Perle, 30. januára o 17:00, pridaj Instagram"></textarea>
+        <button class="btn primary" id="briefBtn" style="margin-top:8px">Pripraviť návrh</button>
+        <p class="hint" id="briefNote" hidden style="margin-top:8px"></p>
+      </details>
       <div id="blocks" class="pane" style="padding:0"></div>
       <div class="field" id="posWrap"><span class="lh">Poloha textov</span>
         <label class="rng" id="posAWrap"><span id="posALbl">Horné texty</span><input type="range" id="posA" min="-1" max="1" step="0.01"><small><span>↑ hore</span><span>dole ↓</span></small></label>
@@ -199,15 +207,18 @@ ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;ga
           <label>Facebook odkaz<input type="url" id="fbUrl" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://www.facebook.com/…"></label>
         </details>
       </div>
-      <div class="add"><button data-add="title">+ Nadpis</button><button data-add="sub">+ Podnadpis</button><button data-add="info">+ Dátum / miesto</button><button data-add="small">+ Malý text</button></div>
+      <div class="add"><button data-add="title">+ Nadpis</button><button data-add="sub">+ Podnadpis</button><button data-add="info">+ Dátum / miesto</button><button data-add="small">+ Malý text</button><button data-add="citat">+ Citát</button><button data-add="odrazky">+ Odrážky</button></div>
     </div>
     <div class="pane" data-pane="vzhlad" hidden>
+      <h3>Variácie</h3><p class="hint">Ťukni na variáciu, ktorá sa ti páči. Texty ostanú tvoje.</p>
+      <div class="vars" id="vars"></div><button class="link" id="varsMore" style="align-self:flex-start">Ďalšie variácie</button>
       <h3>Rozloženie</h3><div class="opts" id="layouts"></div>
       <h3>Pozadie</h3><div class="opts" id="bgs"></div>
       <div class="sw" id="bgColors" hidden></div>
       <label class="toggle">Zobraziť logo<input type="checkbox" id="logoOn"></label>
       <p class="hint" id="logoColH" style="margin:2px 0 -2px">Farba loga</p>
       <div class="sw" id="logoCols" role="group" aria-label="Farba loga"></div>
+      <label class="rng" id="logoSWrap"><span>Veľkosť loga</span><input type="range" id="logoS" min="0.6" max="1.6" step="0.02"><small><span>menšie</span><span>väčšie</span></small></label>
       <h3>Ozdoby</h3>
       <label class="rng"><span>Množstvo</span><input type="range" id="decoN" min="0" max="12" step="1"><output id="decoNv"></output></label>
       <label class="rng"><span>Veľkosť</span><input type="range" id="decoS" min="0.6" max="2" step="0.05"></label>
@@ -2780,9 +2791,13 @@ function buildItems(ctx,fk,S,W,H,k){
       const L=ft.lines.map(l=>{const m=ctx.measureText(l);return{t:l,asc:m.actualBoundingBoxAscent,desc:m.actualBoundingBoxDescent,w:m.width}});
       const gap=fs*.06;const h=L.reduce((a,l)=>a+l.asc+l.desc,0)+gap*(L.length-1);
       T.push({kind:'title',b,fs,L,gap,h,id:b.id})}
-    else{const base={sub:46,info:84,small:34}[b.type]*u*S.textScale*k;const wt={sub:700,info:800,small:700}[b.type];const font=`${wt} ${base}px ${FONT}`;
-      let ls=textLines(ctx,txt,font,maxW);let fs=base,fnt=font;const wid=Math.max(...ls.map(l=>ctx.measureText(l).width));
-      if(wid>maxW){fs=base*maxW/wid;fnt=`${wt} ${fs}px ${FONT}`;ls=textLines(ctx,txt,fnt,maxW)}
+    else{const base=({sub:46,info:84,small:34,citat:60,odrazky:42}[b.type]||46)*u*S.textScale*k;const wt=({sub:700,info:800,small:700,citat:800,odrazky:700}[b.type]||700);const font=`${wt} ${base}px ${FONT}`;
+      // citát dostane úvodzovky, odrážky bodku na začiatku každej položky
+      const wrapT=(t,f)=>{if(b.type==='citat'){let q=t.trim();if(!/^[„“"]/.test(q))q='„'+q;if(!/[“”"]$/.test(q))q+='“';return textLines(ctx,q,f,maxW)}
+        if(b.type==='odrazky'){const out=[];t.split('\n').map(x=>x.replace(/^[-•·\s]+/,'').trim()).filter(Boolean).forEach(x=>textLines(ctx,x,f,maxW-ctx.measureText('• ').width).forEach((l,j)=>out.push((j?'   ':'• ')+l)));return out}
+        return textLines(ctx,t,f,maxW)};
+      let ls=wrapT(txt,font);let fs=base,fnt=font;const wid=Math.max(...ls.map(l=>ctx.measureText(l).width));
+      if(wid>maxW){fs=base*maxW/wid;fnt=`${wt} ${fs}px ${FONT}`;ls=wrapT(txt,fnt)}
       const lh=fs*1.2;T.push({kind:'text',type:b.type,b,fs,font:fnt,L:ls,lh,h:lh*ls.length-fs*.2,id:b.id})}}
   let soc=null;const ents=[];
   if(!intro){if(S.socIg&&(!S.socQr||S.igUrl))ents.push({k:'ig',name:S.igName||'',url:S.igUrl});if(S.socFb&&(!S.socQr||S.fbUrl))ents.push({k:'fb',name:S.fbName||'',url:S.fbUrl})}
@@ -2944,7 +2959,7 @@ function render(ctx,fk,S,o){
 function renderFrame(ctx,fk,S,o){render(ctx,fk,S,o)}
 /* ---------- UI ---------- */
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const ULAYOUTS=[['klasika','Klasika'],['hore','Hore'],['stred','Na stred']];
+const ULAYOUTS=[['klasika','Klasika'],['hore','Hore'],['stred','Na stred'],['obratene','Logo dole']];
 const UBGS=[['pas','Sivá s pásom'],['konfety','Konfety'],['farba','Farebná']];
 const FSHORT={post:['IG','post'],postvid:['IG','video'],story:['IGS','story'],reel:['IGS','video'],a4:['A4','plagát'],a3:['A3','plagát']};
 let current='story',playing=false,playT=0,playStart=0,raf=0;
@@ -2962,9 +2977,9 @@ function drawOpts(){
   $$('#bgs canvas').forEach(c=>{const st=Object.assign({},S,{bg:c.dataset.k,over:{}});const w=c.parentElement.clientWidth-14;drawTo(c,fk,w,w*1.25,null,st)});
 }
 let sched=0;function scheduleAll(){cancelAnimationFrame(sched);sched=requestAnimationFrame(()=>{drawMain();if(!$('[data-pane=vzhlad]').hidden)drawOpts();drawBrand()})}
-function changed(){save();scheduleAll()}
+function changed(){save();scheduleAll();renderVarsSoon()}
 
-const TYPEN={title:'Nadpis',sub:'Podnadpis',info:'Dátum / miesto',small:'Malý text'};
+const TYPEN={title:'Nadpis',sub:'Podnadpis',info:'Dátum / miesto',small:'Malý text',citat:'Citát',odrazky:'Odrážky'};
 function buildBlocks(){const box=$('#blocks');box.innerHTML='';
   S.blocks.forEach((b,i)=>{const d=document.createElement('div');d.className='field';d.dataset.i=i;
     d.innerHTML=`<div class="lh"><label for="bt${b.id}">${TYPEN[b.type]}</label><span class="acts"><button class="grip" title="Potiahni hore alebo dole" aria-label="Zmeniť poradie: potiahni, alebo šípky hore a dole">≡</button><button class="x del" aria-label="Zmazať ${TYPEN[b.type]}">Zmazať</button></span></div><textarea id="bt${b.id}" rows="1"></textarea>`;
@@ -2987,6 +3002,7 @@ function syncUI(){
   $('#posA').value=S.posA;$('#posB').value=S.posB;
   $('#decoN').value=S.deco;$('#decoNv').textContent=S.deco;$('#decoS').value=S.decoSize;$('#decoA').value=S.decoAlpha;
   $$('#decoCols>[data-k]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.k===S.decoCol)));
+  $('#logoS').value=S.logoSize||1;$('#logoSWrap').hidden=!S.logo;
   $$('#anims [data-an]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.an===S.anim)));
   const hp=!!S.photo;$('#photoModeWrap').hidden=!hp;$$('#photoModeWrap [data-pm]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pm===S.photoMode)));
   $('#bandWrap').hidden=!hp||S.photoMode==='cele';$('#veilWrap').hidden=!hp||(S.photoMode!=='cele'&&effLayout(current,S)!=='stred');$('#bandS').value=S.bandScale;$('#veil').value=S.photoVeil;
@@ -3028,8 +3044,44 @@ function initUI(){
   $('#playBtn').onclick=play;$('#main').onclick=()=>{if(FORMATS[current].anim)playing?stop():play()};
   DragSort($('#blocks'),(order,moved)=>{S.blocks=order.map(i=>S.blocks[i]);buildBlocks();changed();if(moved!=null){const g=$('#blocks').children[order.indexOf(moved)];if(g)g.querySelector('.grip').focus()}});
   initPreviewDrag();
+  try{$('#brief').value=localStorage.getItem('atelier-brief')||''}catch(e){}
+  $('#briefBtn').onclick=runBrief;
+  $('#logoS').oninput=e=>{S.logoSize=+e.target.value;changed()};
+  $('#varsMore').onclick=()=>{VARSEED++;renderVars()};
+  $$('[data-tab]').forEach(t=>t.addEventListener('click',()=>setTimeout(renderVars,30)));
   let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(scheduleAll,120)});
 }
+/* variácie: rovnaké texty, iný vzhľad */
+let VARSEED=1,vt=0;
+function variantStates(){const out=[];for(let i=0;i<6;i++){const v=JSON.parse(JSON.stringify(Object.assign({},S,{photo:null})));v.photo=S.photo;
+  const r=(VARSEED*7919+i*104729)%1e9;v.seed=r;if(i%3===1)v.layout=ULAYOUTS[(VARSEED+i)%ULAYOUTS.length][0];if(i>=3)v.bg=UBGS[(VARSEED+i)%UBGS.length][0];
+  if(v.bg==='farba')v.bgColor=['lav','teal','rose','mag'][(VARSEED+i)%4];if(i===2||i===5)v.decoCol=['mix','lav','teal','orange'][(VARSEED+i)%4];v.over={};out.push(v)}return out}
+function renderVars(){const box=$('#vars');if(!box||box.closest('.pane[hidden]'))return;box.innerHTML='';const fk=FORMATS[current].anim?(FORMATS[current].H>1500?'story':'post'):current;const f=FORMATS[fk];
+  variantStates().forEach((v,i)=>{const b=document.createElement('button');b.setAttribute('aria-label','Použiť variáciu '+(i+1));const c=document.createElement('canvas');const w=180,h=Math.round(w*f.H/f.W);c.width=w;c.height=h;b.appendChild(c);box.appendChild(b);
+    renderFrame(c.getContext('2d'),fk,v,{W:w,H:h,t:null});
+    b.onclick=()=>{const keep=S.blocks;S=Object.assign(v,{blocks:keep});syncUI();changed();toast('Variácia použitá')}})}
+function renderVarsSoon(){clearTimeout(vt);vt=setTimeout(renderVars,350)}
+/* návrh zo zadania cez Claude (Supabase funkcia atelier-navrh) */
+async function runBrief(){const z=$('#brief').value.trim();if(z.length<8){toast('Napíš do zadania aspoň jednu vetu.');$('#brief').focus();return}
+  if(!await HubLeave.guard())return;
+  const btn=$('#briefBtn');btn.disabled=true;btn.textContent='Claude pripravuje návrh…';$('#briefNote').hidden=true;
+  try{const r=await fetch(SB_URL+'/functions/v1/atelier-navrh',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+(hubToken()||SB_KEY),'Content-Type':'application/json'},
+      body:JSON.stringify({zadanie:z,dnes:new Date().toISOString().slice(0,10),aktualny:{blocks:S.blocks.map(b=>({type:b.type,text:b.text}))}})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.navrh){const e=j.error||('HTTP '+r.status);throw new Error(e==='zly_kod'?'Nie si prihlásený v Studiu.':e==='chyba_kluc'?'AI ešte nemá nastavený kľúč v Supabase.':e)}
+    const n=j.navrh;stop();
+    S.blocks=(n.blocks||[]).filter(b=>TYPEN[b.type]&&String(b.text||'').trim()).map(b=>({id:UID++,type:b.type,text:b.text}));
+    if(!S.blocks.length)S.blocks=mkBlocks([['title','Návrh']]);
+    if(ULAYOUTS.some(l=>l[0]===n.layout))S.layout=n.layout;if(UBGS.some(l=>l[0]===n.bg))S.bg=n.bg;
+    ['bgColor','textColor','decoCol'].forEach(k=>{if(typeof n[k]==='string')S[k]=n[k]});
+    if(typeof n.logo==='boolean')S.logo=n.logo;if(Number.isFinite(n.deco))S.deco=Math.max(0,Math.min(12,Math.round(n.deco)));if(Number.isFinite(n.decoSize))S.decoSize=Math.max(.6,Math.min(2,n.decoSize));
+    ['socIg','socFb','socQr'].forEach(k=>{if(typeof n[k]==='boolean')S[k]=n[k]});S.over={};S.posA=0;S.posB=0;
+    if(FKEYS.includes(n.format)){current=n.format;S.master=n.format}
+    setCur(null);syncUI();changed();drawMain();
+    $('#briefNote').textContent=(n.poznamka?n.poznamka+' ':'')+'Čokoľvek nižšie môžeš zmeniť.';$('#briefNote').hidden=false;
+    try{localStorage.setItem('atelier-brief',z)}catch(e){}}
+  catch(e){toast('Návrh sa nepodaril: '+(e.message||e),4500)}
+  finally{btn.disabled=false;btn.textContent='Pripraviť návrh'}}
 /* texty sa dajú v náhľade chytiť a presunúť vyššie / nižšie (preradia sa, takže ostanú v okrajoch) */
 function initPreviewDrag(){const cv=$('#main');let drag=null;
   const lay=()=>{const f=FORMATS[current];const c=document.createElement('canvas').getContext('2d');return computeLayout(c,current,S,f.W,f.H)};
