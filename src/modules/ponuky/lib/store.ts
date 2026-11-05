@@ -22,6 +22,7 @@ const withDefaults = (s: Partial<Settings> | null | undefined): Settings => ({
   ...DEFAULT_SETTINGS, ...s,
   company: { ...DEFAULT_SETTINGS.company, ...s?.company },
   tax: { ...DEFAULT_SETTINGS.tax, ...s?.tax },
+  license: { ...DEFAULT_SETTINGS.license, ...s?.license },
 })
 
 export const DEFAULT_CONTRACT_INFO: ContractInfo = {
@@ -39,6 +40,7 @@ export const normalizeQuote = (q: Quote): Quote => ({
   orgType: q.orgType ?? '',
   orgPct: q.orgPct ?? 0,
   brief: q.brief ?? [],
+  license: q.license ?? null,
   contract: { ...DEFAULT_CONTRACT_INFO, ...q.contract },
 })
 
