@@ -46,7 +46,7 @@ button, input { font: inherit; color: inherit; }
 .hub-input { width: 100%; padding: 14px 16px; border-radius: 18px; border: var(--hub-border); background: #fff; font-size: 20px; }
 @media print { .hub-bar { display: none; } }
 
-.hub-faceid { background: var(--hub-card); border: var(--hub-border); border-radius: 28px; box-shadow: var(--hub-shadow); padding: 14px; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+.hub-faceid { background: var(--hub-card); border: var(--hub-border); border-radius: 28px; box-shadow: var(--hub-shadow); padding: 14px; display: grid; grid-template-columns: 1fr; gap: 12px; }
 .hub-faceid strong { display: block; font-size: 22px; text-transform: uppercase; }
 .hub-faceid small { display: block; color: var(--hub-muted); font-size: 16px; }
 .hub-faceid .hub-error { color: var(--hub-coral); }
@@ -57,3 +57,10 @@ button, input { font: inherit; color: inherit; }
 
 /* One font everywhere: Barlow Condensed Medium (500), also in every module, button, input and heading. */
 *, *::before, *::after { font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, sans-serif !important; font-weight: 500 !important; }
+
+/* Start screen: simple text buttons, no icons. */
+.hub-list { display: flex; flex-direction: column; gap: 12px; }
+.hub-item { display: flex; align-items: center; justify-content: space-between; background: var(--hub-card); border: var(--hub-border); border-radius: 999px; box-shadow: var(--hub-shadow); padding: 16px 24px; color: inherit; text-decoration: none; font-size: 24px; text-transform: uppercase; letter-spacing: 0.02em; }
+.hub-item:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--hub-ink); }
+.hub-item small { font-size: 15px; color: var(--hub-muted); }
+.hub-item.soon { opacity: 0.5; box-shadow: none; }

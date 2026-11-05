@@ -37,7 +37,6 @@ export function FaceIdSetup({ email }: { email: string }) {
 
   return (
     <section className="hub-faceid">
-      <span className="hub-emoji" style={{ background: '#ffd3ee' }}>🙂</span>
       <div>
         <strong>Prihlasuj sa cez {name}</strong>
         <small>Bez PINu, stačí sa pozrieť na telefón.</small>

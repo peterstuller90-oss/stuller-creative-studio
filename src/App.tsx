@@ -61,7 +61,7 @@ export default function App() {
       <div className="hub-module">
         <header className="hub-bar no-print">
           <a href="#/" className="hub-back">‹ Studio</a>
-          <span className="hub-bar-title">{app.emoji} {app.name}</span>
+          <span className="hub-bar-title">{app.name}</span>
         </header>
         <div className={`mod-${app.id} hub-module-body`}>
           <Suspense fallback={<main className="hub-center"><div className="hub-spinner" /></main>}>
@@ -85,25 +85,16 @@ function Launcher({ apps, session }: { apps: HubApp[]; session: Session }) {
         <p>Ahoj, {name}! Čo dnes otvoríme?</p>
       </header>
       <FaceIdSetup email={session.user.email ?? ''} />
-      <div className="hub-grid">
+      <nav className="hub-list">
         {apps.map((a) => {
           const soon = !a.module && !a.url
-          const inner = (
-            <>
-              <span className="hub-emoji" style={{ background: a.color }}>{a.emoji}</span>
-              <strong>{a.name}</strong>
-              <small>{a.description}</small>
-              {a.url && <em className="hub-tag">zatiaľ samostatne ↗</em>}
-              {soon && <em className="hub-tag">čoskoro</em>}
-            </>
-          )
-          if (soon) return <div key={a.id} className="hub-tile soon">{inner}</div>
+          if (soon) return <span key={a.id} className="hub-item soon">{a.name}<small>čoskoro</small></span>
           return (
-            <a key={a.id} className="hub-tile" href={a.module ? `#/${a.id}` : a.url}
-              target={a.url ? '_blank' : undefined} rel={a.url ? 'noopener' : undefined}>{inner}</a>
+            <a key={a.id} className="hub-item" href={a.module ? `#/${a.id}` : a.url}
+              target={a.url ? '_blank' : undefined} rel={a.url ? 'noopener' : undefined}>{a.name}</a>
           )
         })}
-      </div>
+      </nav>
       <button className="hub-logout" onClick={() => supabase.auth.signOut()}>Odhlásiť sa</button>
     </main>
   )
