@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AddServiceSheet } from '../components/AddServiceSheet'
+import { LicenseCard } from '../components/LicenseCard'
 import { PriceSummary } from '../components/PriceSummary'
 import { ask, Icon, NumInput, toast } from '../components/ui'
 import type { IconName } from '../components/icons'
 import { fmtNum, lineTotal, money } from '../lib/calc'
+import { applyLicense } from '../lib/license'
 import { STATUSES, UNITS, type Client, type ContractInfo, type Line, type PriceItem, type Quote, type Settings } from '../lib/types'
 
 interface Props {
@@ -30,7 +32,9 @@ function Section({ icon, title, children, aside }: { icon: IconName; title: stri
 }
 
 export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave, onBack, onContract, onPreview, onDuplicate, onDelete }: Props) {
-  const [q, setQ] = useState(quote)
+  const [q, setRaw] = useState(() => applyLicense(quote, settings.license))
+  // Every change goes through applyLicense, so the license line and contract text stay in sync.
+  const setQ = useCallback((fn: (x: Quote) => Quote) => setRaw((x) => applyLicense(fn(x), settings.license)), [settings.license])
   const [adding, setAdding] = useState(false)
   const [open, setOpen] = useState<string | null>(null)
   const [saved, setSaved] = useState(true)
@@ -98,6 +102,7 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
         <Section icon="brief" title="Zadanie od klienta" aside={<button className="link-btn" onClick={() => setBriefOpen(!briefOpen)}>{briefOpen ? 'Skryť' : 'Zobraziť všetko'}</button>}>
           <div className="card pad">
             {q.intro && <p className="brief-text">{q.intro}</p>}
+            {!q.intro && !briefOpen && <p className="hint" style={{ margin: 0 }}>Celý text zadania uvidíš po kliknutí na „Zobraziť všetko“.</p>}
             {briefOpen && (
               <dl className="brief-list">
                 {q.brief.map((a, i) => <div key={i}><dt>{a.label}</dt><dd>{a.value}</dd></div>)}
@@ -177,6 +182,10 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
             <button className="btn-secondary" style={{ width: '100%' }} onClick={() => setAdding(true)}><Icon name="plus" size={20} /> Pridať službu</button>
           </div>
         </div>
+      </Section>
+
+      <Section icon="contract" title="Licencia">
+        <LicenseCard quote={q} settings={settings} update={setQ} />
       </Section>
 
       <Section icon="coins" title="Úprava ceny">

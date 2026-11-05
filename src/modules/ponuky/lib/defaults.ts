@@ -1,5 +1,5 @@
 import { DEFAULT_CONTRACT } from './contractTemplate'
-import type { Category, PriceItem, Settings } from './types'
+import type { Category, LicenseSettings, PriceItem, Settings } from './types'
 
 // Starting price list. Every price is a placeholder (marked "over cenu" in the app) until Peter edits it.
 type Seed = [Category, string, string, number, string?]
@@ -43,6 +43,37 @@ export const DEFAULT_PRICES: PriceItem[] = SEED.map(([category, name, unit, pric
   id: `seed-${i + 1}`, category, name, unit, price, note: note ?? '', sort: i, active: true, placeholder: true,
 }))
 
+// License calculator. Every number is Claude's starting guess; Peter edits them in Nastavenia.
+export const DEFAULT_LICENSE: LicenseSettings = {
+  basePct: 50,
+  uses: [
+    { label: 'Oblečenie a textil', coef: 1, keywords: 'trič, mikin, oblečen, textil, taš, tašk, čiapk, čiapok, šiltov, ponož, šatk, bufk, merch' },
+    { label: 'Doplnky do domácnosti a interiéru', coef: 1, keywords: 'vankúš, deka, deky, hrnč, šálk, šálok, interiér, doplnk, doplnok, tapet, záves, obrus, uterák, dekorác' },
+    { label: 'Obal produktu', coef: 1.5, keywords: 'obal, packaging, krabic, etiket, label' },
+    { label: 'Tlačoviny a nálepky', coef: 0.7, keywords: 'nálep, sticker, plagát, poster, leták, pohľadnic, kalendár, knih, katalóg, brožúr' },
+    { label: 'Reklama, billboard', coef: 2, keywords: 'billboard, bigboard, citylight, reklam, inzer, kampaň' },
+    { label: 'Marketing, web a sociálne siete', coef: 0.5, keywords: 'marketing, prezentáci, web, sociáln, instagram, facebook, online, e-shop, eshop' },
+  ],
+  quantity: [
+    { label: 'do 500 ks', upTo: 500, coef: 1 },
+    { label: 'do 5 000 ks', upTo: 5000, coef: 1.5 },
+    { label: 'nad 5 000 ks', upTo: 0, coef: 2 },
+  ],
+  duration: [
+    { label: '1 rok', years: 1, coef: 1 },
+    { label: '3 roky', years: 3, coef: 1.5 },
+    { label: '5 rokov', years: 5, coef: 2 },
+    { label: 'na dobu trvania majetkových práv autora', years: 0, coef: 3 },
+  ],
+  territory: [
+    { label: 'Slovenská republika', coef: 1, keywords: 'slovensk, SR, SK' },
+    { label: 'Slovensko a Česko', coef: 1.3, keywords: 'česk, čech, CZ, ČR' },
+    { label: 'Európska únia', coef: 1.7, keywords: 'EÚ, EU, európ, europ' },
+    { label: 'celý svet', coef: 2.5, keywords: 'svet, celosvet, world, global, medzinárod, worldwide' },
+  ],
+  exclusiveCoef: 2,
+}
+
 export const DEFAULT_SETTINGS: Settings = {
   company: {
     name: 'Štullers Creative',
@@ -67,6 +98,7 @@ export const DEFAULT_SETTINGS: Settings = {
     { label: 'Festival / kultúrna inštitúcia', pct: -10 },
   ],
   contractTemplate: DEFAULT_CONTRACT,
+  license: DEFAULT_LICENSE,
   vatPayer: false,
   vatRate: 23,
   validityDays: 30,

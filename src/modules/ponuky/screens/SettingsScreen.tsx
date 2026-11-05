@@ -3,7 +3,8 @@ import { ask, Icon, NumInput, toast } from '../components/ui'
 import type { IconName } from '../components/icons'
 import { fmtNum, levies, money } from '../lib/calc'
 import { CONTRACT_PLACEHOLDERS, DEFAULT_CONTRACT } from '../lib/contractTemplate'
-import type { Author, Company, Settings, TaxSettings } from '../lib/types'
+import { DEFAULT_LICENSE } from '../lib/defaults'
+import type { Author, Company, LicenseSettings, Settings, TaxSettings } from '../lib/types'
 
 function Head({ icon, title }: { icon: IconName; title: string }) {
   return <div className="sec-head"><Icon name={icon} /><h2>{title}</h2></div>
@@ -20,6 +21,14 @@ export function SettingsScreen({ settings, onSave, demo, onLogout }: { settings:
       <input value={s.company[k]} onChange={(e) => setS((x) => ({ ...x, company: { ...x.company, [k]: e.target.value } }))} />
     </label>
   )
+  const setLic = (patch: Partial<LicenseSettings>) => setS((x) => ({ ...x, license: { ...x.license, ...patch } }))
+  /** Edit one row of a license list (uses, quantity…). */
+  const licRow = <K extends 'uses' | 'quantity' | 'duration' | 'territory'>(key: K, i: number, patch: Partial<LicenseSettings[K][number]>) =>
+    setLic({ [key]: (s.license[key] as LicenseSettings[K][number][]).map((x, j) => (j === i ? { ...x, ...patch } : x)) } as Partial<LicenseSettings>)
+  const licDel = (key: 'uses' | 'quantity' | 'duration' | 'territory', i: number) =>
+    setLic({ [key]: (s.license[key] as unknown[]).filter((_, j) => j !== i) } as Partial<LicenseSettings>)
+  const del = (onClick: () => void) => <button className="icon-btn danger" style={{ alignSelf: 'flex-end', marginBottom: 4 }} aria-label="Odstrániť" onClick={onClick}><Icon name="trash" size={18} /></button>
+  const L = s.license
   const save = () => onSave(s).then(() => toast('Nastavenia uložené')).catch((e) => toast('Neuložené: ' + e.message))
   const ex = levies(1000, s.tax)
   const t = s.tax
@@ -98,6 +107,65 @@ export function SettingsScreen({ settings, onSave, demo, onLogout }: { settings:
           </div>
         ))}
         <button className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => set({ complexity: [...s.complexity, { label: 'Nový', coef: 1 }] })}>+ Pridať stupeň ({fmtNum(s.complexity.length + 1)}.)</button>
+      </div>
+
+      <Head icon="contract" title="Licencia – výpočet" />
+      <div className="card pad stack">
+        <p className="hint">Cena licencie = cena diela × podiel licencie × násobok za použitie (pri viacerých sa sčítajú) × náklad × doba × územie × výhradnosť. „Slová v zadaní“ appka hľadá v texte od klienta (stačí začiatok slova, oddeľ čiarkou). Čísla sú zatiaľ odhad, uprav ich podľa seba.</p>
+        <div className="grid2">
+          <label className="field"><span>Podiel licencie z ceny diela (%)</span><NumInput value={L.basePct} onChange={(n) => setLic({ basePct: n })} /></label>
+          <label className="field"><span>Násobok za výhradnú licenciu</span><NumInput value={L.exclusiveCoef} onChange={(n) => setLic({ exclusiveCoef: n || 1 })} /></label>
+        </div>
+
+        <p className="section-title">Na čo dielo použije</p>
+        {L.uses.map((u, i) => (
+          <div key={i} className="stack" style={{ gap: 6, paddingBottom: 8, borderBottom: '1px solid var(--line)' }}>
+            <div className="row" style={{ flexWrap: 'nowrap' }}>
+              <label className="field grow"><span>Použitie</span><input value={u.label} onChange={(e) => licRow('uses', i, { label: e.target.value })} /></label>
+              <label className="field" style={{ width: 100 }}><span>Násobok</span><NumInput value={u.coef} onChange={(n) => licRow('uses', i, { coef: n })} /></label>
+              {del(() => licDel('uses', i))}
+            </div>
+            <label className="field"><span>Slová v zadaní</span><input value={u.keywords} onChange={(e) => licRow('uses', i, { keywords: e.target.value })} /></label>
+          </div>
+        ))}
+        <button className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setLic({ uses: [...L.uses, { label: 'Nové použitie', coef: 1, keywords: '' }] })}>+ Pridať použitie</button>
+
+        <p className="section-title">Náklad (počet kusov)</p>
+        {L.quantity.map((x, i) => (
+          <div key={i} className="row" style={{ flexWrap: 'nowrap' }}>
+            <label className="field grow"><span>Názov</span><input value={x.label} onChange={(e) => licRow('quantity', i, { label: e.target.value })} /></label>
+            <label className="field" style={{ width: 110 }}><span>Do ks (0 = bez limitu)</span><NumInput value={x.upTo} onChange={(n) => licRow('quantity', i, { upTo: n })} /></label>
+            <label className="field" style={{ width: 100 }}><span>Násobok</span><NumInput value={x.coef} onChange={(n) => licRow('quantity', i, { coef: n })} /></label>
+            {del(() => licDel('quantity', i))}
+          </div>
+        ))}
+        <button className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setLic({ quantity: [...L.quantity, { label: 'Nové pásmo', upTo: 0, coef: 1 }] })}>+ Pridať pásmo</button>
+
+        <p className="section-title">Doba</p>
+        {L.duration.map((x, i) => (
+          <div key={i} className="row" style={{ flexWrap: 'nowrap' }}>
+            <label className="field grow"><span>Názov (ide do zmluvy)</span><input value={x.label} onChange={(e) => licRow('duration', i, { label: e.target.value })} /></label>
+            <label className="field" style={{ width: 110 }}><span>Rokov (0 = celá doba)</span><NumInput value={x.years} onChange={(n) => licRow('duration', i, { years: n })} /></label>
+            <label className="field" style={{ width: 100 }}><span>Násobok</span><NumInput value={x.coef} onChange={(n) => licRow('duration', i, { coef: n })} /></label>
+            {del(() => licDel('duration', i))}
+          </div>
+        ))}
+        <button className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setLic({ duration: [...L.duration, { label: 'Nová doba', years: 2, coef: 1 }] })}>+ Pridať dobu</button>
+
+        <p className="section-title">Územie</p>
+        {L.territory.map((x, i) => (
+          <div key={i} className="stack" style={{ gap: 6, paddingBottom: 8, borderBottom: '1px solid var(--line)' }}>
+            <div className="row" style={{ flexWrap: 'nowrap' }}>
+              <label className="field grow"><span>Územie (ide do zmluvy)</span><input value={x.label} onChange={(e) => licRow('territory', i, { label: e.target.value })} /></label>
+              <label className="field" style={{ width: 100 }}><span>Násobok</span><NumInput value={x.coef} onChange={(n) => licRow('territory', i, { coef: n })} /></label>
+              {del(() => licDel('territory', i))}
+            </div>
+            <label className="field"><span>Slová v zadaní</span><input value={x.keywords} onChange={(e) => licRow('territory', i, { keywords: e.target.value })} /></label>
+          </div>
+        ))}
+        <button className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setLic({ territory: [...L.territory, { label: 'Nové územie', coef: 1, keywords: '' }] })}>+ Pridať územie</button>
+        <button className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={async () => { if (await ask('Vrátiť pôvodné čísla licencie? Tvoje úpravy sa stratia.')) setLic(DEFAULT_LICENSE) }}>Vrátiť pôvodné čísla</button>
+        <p className="hint">Výpočet je orientačný pomocník, nie právna rada.</p>
       </div>
 
       <Head icon="quotes" title="Značka a kontakt" />

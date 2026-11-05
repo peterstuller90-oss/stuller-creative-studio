@@ -8,6 +8,7 @@ import { ARTIFACT, AskHost, Icon, Logo, Toast, toast } from './components/ui'
 import { addDays, nextNumber, today, token, uid } from './lib/calc'
 import { saveFile } from './lib/download'
 import { briefToQuote } from './lib/importBrief'
+import { applyLicense, readBrief } from './lib/license'
 import { DEFAULT_CONTRACT_INFO, store, supabase, type Data } from './lib/store'
 import type { Quote } from './lib/types'
 import { Login } from './screens/Login'
@@ -96,7 +97,7 @@ function Workspace() {
     const s = data!.settings
     const now = new Date().toISOString()
     const copy = !!from?.id
-    const q: Quote = {
+    const draft: Quote = {
       id: uid(),
       number: nextNumber(data!.quotes.map((x) => x.number), s.numberPrefix),
       status: 'koncept',
@@ -114,9 +115,11 @@ function Workspace() {
       note: from?.note ?? '',
       brief: from?.brief ?? [],
       contract: { ...DEFAULT_CONTRACT_INFO, ...from?.contract },
+      license: from?.license ?? null,
       acceptedAt: null, acceptedName: '',
       createdAt: now, updatedAt: now,
     }
+    const q = applyLicense(draft, s.license)
     saveQuote(q).catch((e) => toast('Neuložené: ' + e.message))
     if (warn.length) setWarnings((w) => ({ ...w, [q.id]: warn }))
     go(`/ponuka/${q.id}`)
@@ -125,10 +128,11 @@ function Workspace() {
   async function importBrief(file: File) {
     setBusy('import')
     try {
+      if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) { await importFreeBrief(file); return }
       const { readBriefPdf } = await import('./lib/pdf')
       const { values, ours } = await readBriefPdf(await file.arrayBuffer())
       if (!ours && !Object.keys(values).some((k) => k.startsWith('k_') || k.startsWith('p_'))) {
-        toast('Toto PDF nie je naše zadanie. Pošli klientovi formulár z tlačidla „Zadanie pre klienta“.')
+        await importFreeBrief(file)
         return
       }
       const r = briefToQuote(values, data!.prices, data!.settings) as ReturnType<typeof briefToQuote> & { contractPlace: string }
@@ -138,6 +142,32 @@ function Workspace() {
     } catch (e) {
       toast('PDF sa nepodarilo prečítať: ' + (e instanceof Error ? e.message : ''))
     } finally { setBusy('') }
+  }
+
+  /** Any other PDF or text from the client: read the text and look for license wishes (no AI). */
+  async function importFreeBrief(file: File) {
+    const { fileText } = await import('./lib/pdfText')
+    const text = await fileText(file)
+    if (!text) { toast('V PDF nie je text (možno je to sken). Otvor novú ponuku a text vlož v časti Licencia.'); return }
+    const s = data!.settings
+    const r = readBrief(text, s.license)
+    const lines: Quote['lines'] = []
+    const illu = data!.prices.filter((p) => p.active && p.category === 'ilustracia')
+    const item = illu.find((p) => /temat/i.test(p.name)) ?? illu[0]
+    if (r.wantsIllustration && item) lines.push({ id: uid(), name: item.name, description: item.note, qty: 1, unit: item.unit, unitPrice: item.price, coef: 1, coefLabel: '' })
+    const warn = [
+      'Zadanie nie je náš formulár, appka v ňom hľadala slová. Skontroluj položky a licenciu.',
+      ...(lines.length ? [] : ['Nenašiel som, akú službu klient chce, pridaj položku ručne.']),
+      ...r.missing.map((m) => `Chýba v zadaní: ${m}`),
+    ]
+    newQuote({
+      title: file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' '),
+      lines,
+      brief: [{ label: 'Zadanie (text)', value: text }],
+      license: { ...r.license, base: null },
+      contract: { ...DEFAULT_CONTRACT_INFO, ...(r.exclusive === null ? {} : { exclusive: r.exclusive }) },
+    }, warn)
+    toast('Zadanie načítané')
   }
 
   async function blankBrief() {

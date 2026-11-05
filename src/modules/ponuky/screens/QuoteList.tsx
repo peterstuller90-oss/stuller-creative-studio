@@ -36,14 +36,14 @@ export function QuoteList({ quotes, settings, onOpen, onNew, onImport, onBlankBr
         <button className="action card" onClick={() => fileRef.current?.click()} disabled={!!busy}>
           <Icon name="import" size={30} />
           <strong>Načítať zadanie</strong>
-          <small>{busy === 'import' ? 'Čítam PDF…' : 'vyplnené PDF od klienta'}</small>
+          <small>{busy === 'import' ? 'Čítam PDF…' : 'PDF alebo text od klienta'}</small>
         </button>
         <button className="action card" onClick={onBlankBrief} disabled={!!busy}>
           <Icon name="brief" size={30} />
           <strong>Zadanie pre klienta</strong>
           <small>{busy === 'brief' ? 'Pripravujem…' : 'prázdne PDF na poslanie'}</small>
         </button>
-        <input ref={fileRef} type="file" accept="application/pdf,.pdf" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onImport(f); e.target.value = '' }} />
+        <input ref={fileRef} type="file" accept="application/pdf,.pdf,text/plain,.txt" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onImport(f); e.target.value = '' }} />
       </div>
 
       <div className="stats">

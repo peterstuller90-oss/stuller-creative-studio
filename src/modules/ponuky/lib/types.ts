@@ -60,6 +60,35 @@ export interface TaxSettings {
   pricesAreNet: boolean
 }
 
+/** One choice in the license calculator, e.g. "Billboard / reklama" ×2. keywords: comma separated, used to read briefs. */
+export interface LicenseUse { label: string; coef: number; keywords: string }
+/** upTo: number of pieces, 0 = no limit. */
+export interface LicenseQty { label: string; upTo: number; coef: number }
+/** years: 0 = for the whole term of the author's economic rights. */
+export interface LicenseTime { label: string; years: number; coef: number }
+export interface LicenseArea { label: string; coef: number; keywords: string }
+
+export interface LicenseSettings {
+  /** License fee = basePct % of the price of the work × all coefficients. */
+  basePct: number
+  uses: LicenseUse[]
+  quantity: LicenseQty[]
+  duration: LicenseTime[]
+  territory: LicenseArea[]
+  exclusiveCoef: number
+}
+
+/** What the client wants to do with the work, saved on the quote. */
+export interface LicenseInfo {
+  uses: string[]
+  /** Pieces produced, 0 = not stated. */
+  pieces: number
+  duration: string
+  territory: string
+  /** Price of the work the license is computed from; null = sum of the other lines. */
+  base: number | null
+}
+
 export interface Settings {
   company: Company
   authors: Author[]
@@ -75,6 +104,7 @@ export interface Settings {
   intro: string
   terms: string
   contractTemplate: string
+  license: LicenseSettings
 }
 
 export interface Client {
@@ -98,6 +128,8 @@ export interface Line {
   /** Multiplier, e.g. mural complexity. 1 when unused. */
   coef: number
   coefLabel: string
+  /** 'licencia' marks the line the license calculator keeps up to date. */
+  kind?: 'licencia'
 }
 
 export type Status = 'koncept' | 'odoslana' | 'prijata' | 'zamietnuta'
@@ -139,6 +171,7 @@ export interface Quote {
   note: string
   brief: BriefAnswer[]
   contract: ContractInfo
+  license: LicenseInfo | null
   acceptedAt: string | null
   acceptedName: string
   createdAt: string
