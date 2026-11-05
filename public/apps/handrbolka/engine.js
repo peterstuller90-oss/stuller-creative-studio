@@ -216,7 +216,7 @@ const HB = (() => {
       const maxH = availH * .6; if (h > maxH) { h = maxH; w = h / ar; }
       return { type: 'obrazok', img: im, w, tw: w, h, gap: 44 * u * k };
     };
-    let items, total, k = 1, grown = false, freeB = [];
+    let items, total, k = 1, grown = false, freeB = [], padT = 0, padB = 0;
     for (let iter = 0; iter < 14; iter++) {
       items = []; total = 0; freeB = [];
       const add = it => { items.push(it); };
@@ -231,7 +231,8 @@ const HB = (() => {
         lw *= k;
         let subH = 0, subSize = 0;
         if (st.logo.sub && st.logo.subText) { subSize = lw * .085; subH = subSize * 1.25; }
-        add({ type: 'logo', h: lh + subH + (subH ? lw * .01 : 0), w: lw, lh, subSize, gap: (big ? 46 : 40) * u * k, big });
+        const clear = lh * (big ? .38 : .5);
+        add({ type: 'logo', h: lh + subH + (subH ? lw * .01 : 0), w: lw, lh, subSize, gap: Math.max((big ? 46 : 40) * u * k, clear), clear, big });
       };
       if (lm !== 'dole') logoItem();
       const photoFirst = photoInFlow && st.layout === 'foto-hore';
@@ -260,8 +261,9 @@ const HB = (() => {
           const lines = []; const bl = String(b.text).split('\n').map(s => s.replace(/^[-•·\s]+/, '')).filter(Boolean);
           const indent = size * 1.1;
           bl.forEach(t => wrap(ctx, t, maxW - indent).forEach((l, j) => lines.push({ t: l, first: j === 0 })));
-          const tw = Math.max(...lines.map(l => ctx.measureText(l.t).width)) + indent;
-          add({ type: b.type, lines, size, weight, h: lines.length * size * B.lh, tw, indent, gap: B.gap * 60 * u * k, lh: B.lh });
+          let tw = Math.max(...lines.map(l => ctx.measureText(l.t).width)) + indent;
+          if (tw > maxW) { const f = maxW / tw; size *= f; ctx.font = font(weight, size); lines.length = 0; const ind = size * 1.1; bl.forEach(t => wrap(ctx, t, maxW - ind).forEach((l, j) => lines.push({ t: l, first: j === 0 }))); tw = Math.min(maxW, Math.max(...lines.map(l => ctx.measureText(l.t).width)) + ind); }
+          add({ type: b.type, lines, size, weight, h: lines.length * size * B.lh, tw, indent: size * 1.1, gap: B.gap * 60 * u * k, lh: B.lh });
           return;
         }
         let lines = wrap(ctx, text, maxW);
@@ -270,7 +272,8 @@ const HB = (() => {
           for (let j = 0; j < 8; j++) { const mid = (lo + hi) / 2; if (wrap(ctx, text, mid).length > lines.length) lo = mid; else hi = mid; }
           lines = wrap(ctx, text, hi + 1);
         }
-        const tw = Math.max(...lines.map(l => ctx.measureText(l).width));
+        let tw = Math.max(...lines.map(l => ctx.measureText(l).width));
+        if (tw > maxW) { size *= maxW / tw; ctx.font = font(weight, size); lines = wrap(ctx, text, maxW); tw = Math.max(...lines.map(l => ctx.measureText(l).width)); }
         let h = lines.length * size * B.lh;
         let extra = 0;
         if (b.type === 'sekcia' && st.underline) extra = size * .55 + (ASSETS.underline.h / ASSETS.underline.w) * Math.min(cw * .78, Math.max(tw * 1.5, cw * .55));
@@ -280,6 +283,10 @@ const HB = (() => {
       if (photoInFlow && !photoFirst) photoItem();
       if (lm === 'dole') logoItem();
       items.forEach((it, i) => { total += it.h + (i < items.length - 1 ? it.gap : 0); });
+      const f0 = items[0], fl = items[items.length - 1];
+      padT = f0 && f0.type === 'logo' ? Math.max(0, f0.clear - availTop) : 0;
+      padB = fl && fl.type === 'logo' ? Math.max(0, fl.clear - (H - availBot)) : 0;
+      total += padT + padB;
       if (total <= availH) {
         // veľa voľného miesta (story, plagát) -> texty trochu zväčši
         if (!grown && total < availH * .6) { grown = true; k *= Math.min(1.3, Math.sqrt(availH * .6 / total)); continue; }
@@ -290,9 +297,13 @@ const HB = (() => {
     // zvislé umiestnenie
     let y;
     const lay = st.layout;
+    total -= padT + padB;
+    const availTop0 = availTop, availH0 = availH;
+    { const availTop = availTop0 + padT, availH = availH0 - padT - padB, availBot = availTop + availH;
     if (lay === 'hore' || lay === 'foto-hore') y = availTop + Math.min(H * .02, (availH - total) * .15);
     else if (lay === 'foto-dole') y = availBot - total;
     else y = availTop + (availH - total) * (fmt.print && st.logo.mode === 'hlavne' ? .42 : .5);
+    y = Math.max(y, availTop - Math.max(0, (total - availH) / 2)); }
     const rects = [];
     items.forEach(it => {
       it.y = y;
@@ -306,7 +317,8 @@ const HB = (() => {
       const it = elemItem(b, 1); if (!it) return;
       it.bi = i; it.free = true;
       it.x = clamp((+b.fx || .5) * W - it.w / 2, 0, W - it.w);
-      it.y = clamp((+b.fy || .5) * H - it.h / 2, 0, H - it.h);
+      const sT = fmt.safeTop || 0, sB = fmt.safeBot || 0;
+      it.y = clamp((+b.fy || .5) * H - it.h / 2, Math.min(sT, H - sB - it.h), Math.max(sT, H - sB - it.h));
       items.push(it);
       rects.push({ x: it.x - W * .02, y: it.y - H * .008, w: it.w + W * .04, h: it.h + H * .016, type: it.type });
     });

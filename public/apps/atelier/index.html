@@ -2772,12 +2772,14 @@ function buildItems(ctx,fk,S,W,H,k){
   const logo=(S.logo||intro)?{kind:'logo',w:logoW,h:logoW*LB.h/LB.w}:null;
   const T=[];
   if(!intro)for(const b of S.blocks){const txt=(b.type==='title'&&S.upper)?b.text.toLocaleUpperCase('sk'):b.text;if(!txt.trim())continue;
-    if(b.type==='title'){const ft=fitTitle(ctx,txt,maxW*S.titleScale,W*.26*k);const fs=ft.fs*Math.min(1,k);ctx.font=`900 ${fs}px ${FONT}`;
+    if(b.type==='title'){const ft=fitTitle(ctx,txt,maxW*Math.min(1,S.titleScale),W*.26*k*Math.max(1,S.titleScale));const fs=ft.fs*Math.min(1,k);ctx.font=`900 ${fs}px ${FONT}`;
       const L=ft.lines.map(l=>{const m=ctx.measureText(l);return{t:l,asc:m.actualBoundingBoxAscent,desc:m.actualBoundingBoxDescent,w:m.width}});
       const gap=fs*.06;const h=L.reduce((a,l)=>a+l.asc+l.desc,0)+gap*(L.length-1);
       T.push({kind:'title',b,fs,L,gap,h,id:b.id})}
     else{const base={sub:46,info:84,small:34}[b.type]*u*S.textScale*k;const wt={sub:700,info:800,small:700}[b.type];const font=`${wt} ${base}px ${FONT}`;
-      const ls=textLines(ctx,txt,font,maxW);const lh=base*1.2;T.push({kind:'text',type:b.type,b,fs:base,font,L:ls,lh,h:lh*ls.length-base*.2,id:b.id})}}
+      let ls=textLines(ctx,txt,font,maxW);let fs=base,fnt=font;const wid=Math.max(...ls.map(l=>ctx.measureText(l).width));
+      if(wid>maxW){fs=base*maxW/wid;fnt=`${wt} ${fs}px ${FONT}`;ls=textLines(ctx,txt,fnt,maxW)}
+      const lh=fs*1.2;T.push({kind:'text',type:b.type,b,fs,font:fnt,L:ls,lh,h:lh*ls.length-fs*.2,id:b.id})}}
   let soc=null;const ents=[];
   if(!intro){if(S.socIg&&(!S.socQr||S.igUrl))ents.push({k:'ig',name:S.igName||'',url:S.igUrl});if(S.socFb&&(!S.socQr||S.fbUrl))ents.push({k:'fb',name:S.fbName||'',url:S.fbUrl})}
   if(ents.length){const fs=34*u*k*S.textScale;
@@ -2803,17 +2805,20 @@ function drawSocial(ctx,it,x0,y0,col){ctx.save();ctx.translate(x0,y0);ctx.scale(
   ctx.restore()}
 function gapBetween(a,b,u,k){if(!a||!b)return 0;
   if(a.kind==='social'||b.kind==='social')return 40*u*k;
-  if(a.kind==='logo')return 58*u*k;
+  if(a.kind==='logo')return Math.max(58*u*k,a.h*.5);
   if(a.kind==='title'&&b.kind==='title')return 10*u*k;
   if(a.kind==='title')return 34*u*k;
-  if(b.kind==='logo')return 58*u*k;
+  if(b.kind==='logo')return Math.max(58*u*k,b.h*.5);
   if(a.type===b.type)return 18*u*k;
   if(b.kind==='title')return 30*u*k;
   return 30*u*k}
 function stackH(list,u,k){let h=0;list.forEach((it,i)=>{h+=it.h;if(i)h+=gapBetween(list[i-1],it,u,k)});return h}
 function computeLayout(ctx,fk,S,W,H){
   const f=FORMATS[fk];let lay=effLayout(fk,S);if(f.anim&&S.anim==='logo')lay='stred';
-  const top0=H*f.mt,bot0=H*(1-f.mb),avail=bot0-top0;
+  const sT=f.safe?f.safe[0]*H/f.H:0,sB=f.safe?f.safe[1]*H/f.H:0;
+  const lgH=S.logo?W*.34*S.logoSize*LB.h/LB.w:0;
+  const logoTop=lay!=='dole'&&lay!=='obratene'&&S.logo,logoBot=lay==='obratene'&&S.logo;
+  const top0=Math.max(H*f.mt,sT+H*.012,logoTop?lgH*.6:0),bot0=H-Math.max(H*f.mb,sB+H*.012,logoBot?lgH*.6:0),avail=bot0-top0;
   let k=1,res;
   for(let it=0;it<4;it++){
     const B=buildItems(ctx,fk,S,W,H,k);const{logo,T,u,soc}=B;const SO=soc?[soc]:[];
@@ -2837,7 +2842,7 @@ function computeLayout(ctx,fk,S,W,H){
   else if(lay==='hore'){yA=top0;free=[yA+hA+50*u,H*.955]}
   else{yA=top0;yB=bot0-hB;free=[yA+hA+50*u,yB-50*u];if(!A.length)free[0]=H*.045;if(!Bt.length)free[1]=H*.955}
   // posun textov hore/dole (posA horná skupina, posB dolná); -1 = najvyššie, 1 = najnižšie
-  const gapM=(S.photo&&lay!=='stred'?H*.14:H*.03);const lo=H*.02,hi=H*.98;
+  const gapM=(S.photo&&lay!=='stred'?H*.14:H*.03);const lo=Math.max(H*.04,sT+H*.012,A[0]&&A[0].kind==='logo'?A[0].h*.5:0),hi=H-Math.max(H*.04,sB+H*.012,Bt.length&&Bt[Bt.length-1].kind==='logo'?Bt[Bt.length-1].h*.5:0);
   if(A.length&&S.posA){const bTop=Bt.length?yB:hi+gapM;const up=Math.max(0,yA-lo),dn=Math.max(0,bTop-gapM-(yA+hA));yA+=S.posA<0?S.posA*up:S.posA*dn}
   if(Bt.length&&S.posB){const aBot=A.length?yA+hA:lo-gapM;const up=Math.max(0,yB-gapM-aBot),dn=Math.max(0,hi-(yB+hB));yB+=S.posB<0?S.posB*up:S.posB*dn}
   if(lay==='dole')free=[H*.045,yB-50*u];
