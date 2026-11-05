@@ -145,6 +145,25 @@ input[type=range]{width:100%;accent-color:var(--mag)}
 .type2{font-family:var(--disp);font-weight:700;font-size:19px;color:var(--orange)}
 .type3{font-family:var(--ui);font-size:17px}
 ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:#4a3f57}
+/* desktop (rovnaký princíp ako Handrbolka): hore lišta, vľavo nástroje (posúvajú sa samé), vpravo veľký náhľad a formáty, stránka stojí */
+@media (min-width:900px){
+  body:has(#editView:not([hidden])){height:100dvh;overflow:hidden}
+  .app:has(#editView:not([hidden])){max-width:none;height:100dvh;padding-bottom:0;background:var(--paper)}
+  #editView:not([hidden]){display:grid;height:100dvh;grid-template-columns:400px minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);
+    grid-template-areas:"top top" "tools fmts" "tools stage"}
+  #editView>.top{grid-area:top;background:var(--bg);border-bottom:1px solid var(--line);padding-right:330px;min-height:62px}
+  #editView>.wrap:not(.top):not(.formats){grid-area:tools;overflow-y:auto;overscroll-behavior:contain;min-height:0;background:var(--bg);border-right:1px solid var(--line);padding-top:16px;padding-bottom:40px}
+  #editView>.formats{grid-area:fmts;padding:16px 24px 0;grid-template-columns:repeat(6,minmax(0,110px));justify-content:center}
+  #editView>.preview{grid-area:stage;position:relative;top:auto;box-shadow:none;min-height:0;overflow:hidden;padding:20px 24px}
+  #editView .tabs{top:-16px;box-shadow:0 0 0 10px var(--bg)}
+  /* hlavné akcie hore vpravo v lište */
+  .app:has(#editView:not([hidden]))~.bar{left:auto;right:0;top:0;bottom:auto;background:transparent;border:0;backdrop-filter:none;padding:10px 16px;width:320px}
+  .app:has(#editView:not([hidden]))~.bar .in{grid-template-columns:1fr 1fr}
+  .app:has(#editView:not([hidden]))~.bar .btn{padding:10px 12px;font-size:15px}
+  .sheet{align-items:center}
+  .sheet .card{border-radius:20px;max-width:480px}
+  .toast{bottom:24px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -2925,7 +2944,7 @@ function toast(msg,ms=2600){const t=$('#toast');t.textContent=msg;t.hidden=false
 function sizeFor(fk,maxW,maxH){const f=FORMATS[fk];const s=Math.min(maxW/f.W,maxH/f.H);return[Math.round(f.W*s),Math.round(f.H*s)]}
 function drawTo(canvas,fk,cssW,cssH,t,st){const d=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(cssW*d);canvas.height=Math.round(cssH*d);canvas.style.width=cssW+'px';canvas.style.aspectRatio=cssW+'/'+cssH;
   renderFrame(canvas.getContext('2d'),fk,st||S,{W:canvas.width,H:canvas.height,t:t==null?null:t})}
-function drawMain(){const box=$('#canvasbox');const maxW=Math.max(200,box.clientWidth-32);const maxH=Math.max(200,Math.min(window.innerHeight*(window.innerWidth<700?.40:.58),760));
+function drawMain(){const box=$('#canvasbox');const maxW=Math.max(200,box.clientWidth-32);const desk=window.matchMedia&&matchMedia('(min-width:900px)').matches;const maxH=desk?Math.max(200,box.clientHeight-40):Math.max(200,Math.min(window.innerHeight*(window.innerWidth<700?.36:.58),760));
   const[w,h]=sizeFor(current,maxW,maxH);drawTo($('#main'),current,w,h,FORMATS[current].anim&&playing?playT:null);
   $('#playBtn').hidden=!FORMATS[current].anim||playing;document.documentElement.style.setProperty('--pvh',box.offsetHeight+'px')}
 function drawOpts(){
