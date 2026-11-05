@@ -63,7 +63,7 @@ export default function App() {
           <a href="#/" className="hub-back">‹ Studio</a>
           <span className="hub-bar-title">{app.name}</span>
         </header>
-        <iframe className="hub-frame" src={`${import.meta.env.BASE_URL}${app.frame}`} title={app.name} allow="clipboard-write; fullscreen" />
+        <iframe className="hub-frame" src={`${import.meta.env.BASE_URL}${app.frame}?v=${__BUILD__}`} title={app.name} allow="clipboard-write; fullscreen" />
       </div>
     )
   }

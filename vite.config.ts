@@ -27,6 +27,9 @@ const scopeModules: PostcssPlugin = {
 export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
   plugins: [react()],
+  // Build stamp: the studios inside the hub are loaded with ?v=<stamp>, so a new version shows up right away
+  // instead of the browser keeping the old one for minutes.
+  define: { __BUILD__: JSON.stringify(String(Date.now())) },
   css: { postcss: { plugins: [scopeModules] } },
   server: { host: true, port: 5173 },
   preview: { host: true, port: 5173 },
