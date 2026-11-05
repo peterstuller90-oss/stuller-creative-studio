@@ -43,7 +43,7 @@ export function FaceIdSetup({ email }: { email: string }) {
         {error && <small className="hub-error">{error}</small>}
       </div>
       <div className="hub-faceid-actions">
-        <button className="hub-btn" onClick={enable} disabled={busy}>{busy ? 'Chvíľku…' : `Zapnúť ${name}`}</button>
+        <button className="hub-btn" onClick={enable} disabled={busy}>{busy ? 'Chvíľku…' : 'Zapnúť'}</button>
         <button className="hub-link" onClick={() => { setLater(true); try { sessionStorage.setItem('faceid-later', '1') } catch { /* ignore */ } }}>Neskôr</button>
       </div>
     </section>

@@ -18,7 +18,7 @@
   --border: 2px solid var(--ink);
   --shadow: 0 4px 0 var(--ink);
   --tabbar-h: 72px;
-  font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 18px;
   color: var(--text);
   background: var(--bg);
@@ -27,7 +27,7 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); overflow-x: hidden; }
-html body { font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 18px; font-weight: 500; color: var(--text); }
+html body { font-family: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 18px; font-weight: 500; color: var(--text); }
 html { font-synthesis: none; }
 button, input, select, textarea { font: inherit; font-weight: 500; color: inherit; }
 button { cursor: pointer; }

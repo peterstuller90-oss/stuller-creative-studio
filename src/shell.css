@@ -1,4 +1,4 @@
-/* Stullers Creative Studio: shared look (Štullers palette, Barlow Condensed Medium everywhere). */
+/* Stullers Creative Studio: shared look (Štullers palette, Barlow Medium everywhere). */
 :root {
   --hub-mint: #acffd3;
   --hub-ink: #5b4b7a;
@@ -7,7 +7,7 @@
   --hub-card: #ffffff;
   --hub-border: 2px solid var(--hub-ink);
   --hub-shadow: 0 4px 0 var(--hub-ink);
-  font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 500;
   font-size: 18px;
   color: var(--hub-ink);
@@ -16,7 +16,7 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--hub-mint); overflow-x: hidden; }
-html body { font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 500; }
+html body { font-family: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 500; }
 button, input { font: inherit; color: inherit; }
 
 .hub-center { min-height: 100dvh; display: grid; place-items: center; }
@@ -55,8 +55,8 @@ button, input { font: inherit; color: inherit; }
 .hub-btn:disabled { opacity: 0.6; }
 .hub-link { background: none; border: none; color: var(--hub-muted); text-decoration: underline; cursor: pointer; }
 
-/* One font everywhere: Barlow Condensed Medium (500), also in every module, button, input and heading. */
-*, *::before, *::after { font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, sans-serif !important; font-weight: 500 !important; }
+/* One font everywhere: Barlow Medium (500), also in every module, button, input and heading. */
+*, *::before, *::after { font-family: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif !important; font-weight: 500 !important; }
 
 /* Start screen: simple text buttons, no icons. */
 .hub-list { display: flex; flex-direction: column; gap: 12px; }

@@ -18,7 +18,7 @@
   --border: 2px solid var(--ink);
   --shadow: 0 4px 0 var(--ink);
   --tabbar-h: 72px;
-  font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 18px;
   color: var(--text);
   background: var(--bg);
@@ -29,7 +29,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); overflow-x: hidden; }
 /* Set on body too, so a host page's own body font (e.g. the Claude artifact viewer) can't override it. */
-html body { font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 18px; font-weight: 500; color: var(--text); }
+html body { font-family: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 18px; font-weight: 500; color: var(--text); }
 body { animation: bg-drift 90s ease-in-out infinite; }
 @keyframes bg-drift { 0%, 100% { background-color: #acffd3; } 25% { background-color: #ffd3ee; } 50% { background-color: #f3d3d4; } 75% { background-color: #a1f3ff; } }
 @media (prefers-reduced-motion: reduce) { body { animation: none; } }
@@ -332,7 +332,7 @@ code { background: var(--bg); padding: 1px 6px; border-radius: 6px; font-size: 1
   .confetti { display: none; }
 }
 
-/* Peter's choice: Barlow Condensed Medium everywhere; hierarchy comes from size and uppercase. */
+/* Peter's choice: Barlow Medium everywhere; hierarchy comes from size and uppercase. */
 button, input { font-weight: 500; }
 h1, h2, h3, h4, strong, b, .page-title, .xp-big, .celebrate-title, .stat strong, .podium-block { font-weight: 500; }
 html { font-synthesis: none; }

@@ -1,6 +1,6 @@
 # Stullers Creative Studio
 
-Jedna appka pre všetky Štullers appky: jedno prihlásenie, jeden dizajn (font Barlow Condensed Medium, Štullers farby), jeden Supabase projekt („stullers home“).
+Jedna appka pre všetky Štullers appky: jedno prihlásenie, jeden dizajn (font Barlow Medium, Štullers farby), jeden Supabase projekt („stullers home“).
 
 ## Čo je vnútri
 | Časť | Stav |
