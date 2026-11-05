@@ -309,6 +309,7 @@ ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;ga
 
 
 <script src="../hub-leave.js"></script>
+<script src="../drag-sort.js"></script>
 <script src="libs/jspdf.umd.min.js"></script>
 <script src="libs/jszip.min.js"></script>
 <script src="libs/mp4-muxer.js"></script>
@@ -2965,12 +2966,11 @@ function changed(){save();scheduleAll()}
 
 const TYPEN={title:'Nadpis',sub:'Podnadpis',info:'Dátum / miesto',small:'Malý text'};
 function buildBlocks(){const box=$('#blocks');box.innerHTML='';
-  S.blocks.forEach((b,i)=>{const d=document.createElement('div');d.className='field';
-    d.innerHTML=`<div class="lh"><label for="bt${b.id}">${TYPEN[b.type]}</label><span class="acts"><button class="x mv" data-d="-1" aria-label="Posunúť vyššie" ${i?'':'disabled'}>↑</button><button class="x mv" data-d="1" aria-label="Posunúť nižšie" ${i<S.blocks.length-1?'':'disabled'}>↓</button><button class="x del" aria-label="Zmazať ${TYPEN[b.type]}">Zmazať</button></span></div><textarea id="bt${b.id}" rows="1"></textarea>`;
+  S.blocks.forEach((b,i)=>{const d=document.createElement('div');d.className='field';d.dataset.i=i;
+    d.innerHTML=`<div class="lh"><label for="bt${b.id}">${TYPEN[b.type]}</label><span class="acts"><button class="grip" title="Potiahni hore alebo dole" aria-label="Zmeniť poradie: potiahni, alebo šípky hore a dole">≡</button><button class="x del" aria-label="Zmazať ${TYPEN[b.type]}">Zmazať</button></span></div><textarea id="bt${b.id}" rows="1"></textarea>`;
     const ta=d.querySelector('textarea');ta.value=b.text;const fit=()=>{ta.rows=Math.max(1,ta.value.split('\n').length)};fit();
     ta.oninput=()=>{b.text=ta.value;fit();changed()};
     d.querySelector('.del').onclick=()=>{S.blocks.splice(i,1);buildBlocks();changed()};
-    d.querySelectorAll('.mv').forEach(m=>m.onclick=()=>{const j=i+ +m.dataset.d;if(j<0||j>=S.blocks.length)return;[S.blocks[i],S.blocks[j]]=[S.blocks[j],S.blocks[i]];buildBlocks();changed()});
     box.appendChild(d)})}
 function optCards(sel,list,key){const el=$(sel);el.innerHTML='';for(const[k,n]of list){const b=document.createElement('button');b.innerHTML=`<canvas data-k="${k}"></canvas>${n}`;b.dataset.k=k;b.onclick=()=>{S[key]=k;S.over={};syncUI();changed()};el.appendChild(b)}}
 function buildFormats(){const el=$('#formats');el.innerHTML='';for(const fk of FKEYS){const b=document.createElement('button');b.innerHTML=`${FSHORT[fk][0]}<small>${FSHORT[fk][1]}</small>`;b.setAttribute('aria-pressed',String(fk===current));
@@ -3026,8 +3026,28 @@ function initUI(){
   $('#expMain').onclick=()=>{$('#sheet').hidden=true;doExport(current)};
   $('#expAll').onclick=()=>{$('#sheet').hidden=true;exportAll()};
   $('#playBtn').onclick=play;$('#main').onclick=()=>{if(FORMATS[current].anim)playing?stop():play()};
+  DragSort($('#blocks'),(order,moved)=>{S.blocks=order.map(i=>S.blocks[i]);buildBlocks();changed();if(moved!=null){const g=$('#blocks').children[order.indexOf(moved)];if(g)g.querySelector('.grip').focus()}});
+  initPreviewDrag();
   let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(scheduleAll,120)});
 }
+/* texty sa dajú v náhľade chytiť a presunúť vyššie / nižšie (preradia sa, takže ostanú v okrajoch) */
+function initPreviewDrag(){const cv=$('#main');let drag=null;
+  const lay=()=>{const f=FORMATS[current];const c=document.createElement('canvas').getContext('2d');return computeLayout(c,current,S,f.W,f.H)};
+  const fy=e=>{const r=cv.getBoundingClientRect();return(e.clientY-r.top)/r.height*FORMATS[current].H};
+  const textItems=L=>L.items.filter(it=>it.b&&(it.kind==='title'||it.kind==='text'));
+  const hit=e=>{if(FORMATS[current].anim)return null;const y=fy(e);return textItems(lay()).find(it=>y>=it.y-12&&y<=it.y+it.h+12)||null};
+  cv.addEventListener('touchstart',e=>{if(e.touches.length===1&&hit(e.touches[0]))e.preventDefault()},{passive:false});
+  cv.addEventListener('pointerdown',e=>{const it=hit(e);if(!it)return;e.preventDefault();cv.setPointerCapture(e.pointerId);drag={b:it.b,moved:false};cv.style.cursor='grabbing'});
+  cv.addEventListener('pointermove',e=>{
+    if(!drag){cv.style.cursor=hit(e)?'grab':'';return}
+    const L=lay(),y=fy(e),from=S.blocks.indexOf(drag.b);
+    // texts move within their group (top / bottom), the layout decides which group a text type belongs to
+    const grp=L.A.some(it=>it.b===drag.b)?L.A:L.Bt;const flow=textItems({items:grp});
+    const k=flow.filter(it=>it.b!==drag.b&&it.y+it.h/2<y).length;
+    const order=DragSort.reflow(S.blocks.length,flow.map(it=>S.blocks.indexOf(it.b)),from,k);
+    if(order.some((v,i)=>v!==i)){S.blocks=order.map(i=>S.blocks[i]);drag.moved=true;drawMain()}});
+  const end=()=>{if(!drag)return;const m=drag.moved;drag=null;cv.style.cursor='';if(m){buildBlocks();changed()}};
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end)}
 function loadPhoto(file){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const max=2400;const s=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.photo=c.toDataURL('image/jpeg',.88);S.photoHi='f'+Date.now();hiPut(S.photoHi,file);try{localStorage.setItem('hb-studio-photo',S.photo)}catch(e){}syncUI();changed();toast('Fotka vložená')};im.src=fr.result};fr.readAsDataURL(file)}
 function view(v){$('#editView').hidden=v!=='edit';$('#manView').hidden=v!=='man';$('#bar').hidden=v!=='edit';window.scrollTo(0,0);if(v==='man')drawManual();else scheduleAll()}
 function play(){playing=true;$('#playBtn').hidden=true;playStart=performance.now();

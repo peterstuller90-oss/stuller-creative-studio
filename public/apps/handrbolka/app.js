@@ -192,8 +192,20 @@ function selectFormat(k) {
   sizeMain(); renderMain(); renderVarsDebounced();
 }
 
-/* QR kódy a obrázky sa dajú potiahnuť priamo v náhľade */
-let drag = null;
+/* poradie blokov: ťahanie za ≡ v zozname */
+DragSort($('blocks'), (order, moved) => {
+  st.blocks = order.map(i => st.blocks[i]); buildBlocks(); renderAll();
+  if (moved != null) { const g = $('blocks').children[order.indexOf(moved)]; if (g) g.querySelector('.grip').focus(); }
+});
+/* QR kódy a obrázky sa dajú potiahnuť priamo v náhľade, texty sa ťahaním preradia (ostávajú v okrajoch) */
+let drag = null, tdrag = null;
+function fmtPt(pt) { const r = mainC.getBoundingClientRect(), fmt = F[cur]; return { x: (pt.clientX - r.left) / r.width * fmt.W, y: (pt.clientY - r.top) / r.height * fmt.H }; }
+const flowItems = () => mainL.items.filter(it => it.bi != null && !it.free).sort((a, b) => a.y - b.y);
+function hitText(pt) {
+  if (!mainL || F[cur].anim) return null;
+  const { y } = fmtPt(pt);
+  return mainL.items.find(it => it.bi != null && !it.free && it.type !== 'qr' && it.type !== 'obrazok' && y >= it.y - 10 && y <= it.y + it.h + 10) || null;
+}
 function hitElem(pt) {
   if (!mainL || F[cur].anim) return null;
   const r = mainC.getBoundingClientRect(), fmt = F[cur];
@@ -202,22 +214,31 @@ function hitElem(pt) {
   for (let j = its.length - 1; j >= 0; j--) { const it = its[j]; if (x >= it.x && x <= it.x + it.w && y >= it.y && y <= it.y + it.h) return { it, x, y }; }
   return null;
 }
-mainC.addEventListener('touchstart', e => { if (e.touches.length === 1 && hitElem(e.touches[0])) e.preventDefault(); }, { passive: false });
+mainC.addEventListener('touchstart', e => { if (e.touches.length === 1 && (hitElem(e.touches[0]) || hitText(e.touches[0]))) e.preventDefault(); }, { passive: false });
 mainC.addEventListener('pointerdown', e => {
-  const h = hitElem(e); if (!h) return;
+  const h = hitElem(e);
+  if (!h) { const t = hitText(e); if (!t) return; e.preventDefault(); mainC.setPointerCapture(e.pointerId); tdrag = { b: st.blocks[t.bi], seen: mainL, moved: false }; mainC.style.cursor = 'grabbing'; return; }
   const b = st.blocks[h.it.bi]; if (!b) return;
   e.preventDefault(); mainC.setPointerCapture(e.pointerId);
   drag = { b, ox: h.x - (h.it.x + h.it.w / 2), oy: h.y - (h.it.y + h.it.h / 2), moved: false };
   mainC.style.cursor = 'grabbing';
 });
 mainC.addEventListener('pointermove', e => {
-  if (!drag) { mainC.style.cursor = hitElem(e) ? 'grab' : ''; return; }
+  if (tdrag) {
+    if (mainL === tdrag.seen && tdrag.moved) return; // wait for the preview to redraw after the last move
+    const from = st.blocks.indexOf(tdrag.b), { y } = fmtPt(e), flow = flowItems();
+    const k = flow.filter(it => it.bi !== from && it.y + it.h / 2 < y).length;
+    const order = DragSort.reflow(st.blocks.length, flow.map(it => it.bi), from, k);
+    if (order.some((v, i) => v !== i)) { st.blocks = order.map(i => st.blocks[i]); tdrag.moved = true; tdrag.seen = mainL; renderAll(false); }
+    return;
+  }
+  if (!drag) { mainC.style.cursor = hitElem(e) || hitText(e) ? 'grab' : ''; return; }
   const r = mainC.getBoundingClientRect();
   const fx = (e.clientX - r.left) / r.width - drag.ox / F[cur].W, fy = (e.clientY - r.top) / r.height - drag.oy / F[cur].H;
   drag.b.free = true; drag.b.fx = Math.max(0, Math.min(1, fx)); drag.b.fy = Math.max(0, Math.min(1, fy)); drag.moved = true;
   renderAll(false);
 });
-const endDrag = () => { if (!drag) return; const m = drag.moved; drag = null; mainC.style.cursor = ''; if (m) { buildBlocks(); renderVarsDebounced(); } };
+const endDrag = () => { if (tdrag) { const m = tdrag.moved; tdrag = null; mainC.style.cursor = ''; if (m) { buildBlocks(); renderAll(); } return; } if (!drag) return; const m = drag.moved; drag = null; mainC.style.cursor = ''; if (m) { buildBlocks(); renderVarsDebounced(); } };
 mainC.addEventListener('pointerup', endDrag); mainC.addEventListener('pointercancel', endDrag);
 
 /* mobil: rýchly prepínač formátu a veľkosti v pripnutom náhľade */
@@ -255,10 +276,9 @@ $('scrub').oninput = e => { stopPlay(); scrubT = +e.target.value; $('tOut').text
 /* ---------- panel: obsah ---------- */
 const ELEMS = { qr: 'QR kód', obrazok: 'Obrázok' };
 function moveIcons(i) {
-  const up = mkIco('↑', 'Posunúť vyššie', () => { if (i > 0) { [st.blocks[i - 1], st.blocks[i]] = [st.blocks[i], st.blocks[i - 1]]; buildBlocks(); renderAll(); } });
-  const dn = mkIco('↓', 'Posunúť nižšie', () => { if (i < st.blocks.length - 1) { [st.blocks[i + 1], st.blocks[i]] = [st.blocks[i], st.blocks[i + 1]]; buildBlocks(); renderAll(); } });
+  const grip = document.createElement('button'); grip.className = 'grip'; grip.textContent = '≡'; grip.title = 'Potiahni hore alebo dole'; grip.setAttribute('aria-label', 'Zmeniť poradie: potiahni, alebo šípky hore a dole');
   const del = mkIco('×', 'Odstrániť', () => { st.blocks.splice(i, 1); buildBlocks(); renderAll(); });
-  return [up, dn, del];
+  return [grip, del];
 }
 function sizeSlider(b, i, def) {
   const l = document.createElement('label'); l.className = 'f'; l.textContent = 'Veľkosť';
@@ -269,7 +289,7 @@ function sizeSlider(b, i, def) {
 function buildBlocks() {
   const box = $('blocks'); box.innerHTML = '';
   st.blocks.forEach((b, i) => {
-    const el = document.createElement('div'); el.className = 'block';
+    const el = document.createElement('div'); el.className = 'block'; el.dataset.i = i;
     const bh = document.createElement('div'); bh.className = 'bh'; const sp = document.createElement('span'); sp.className = 'sp';
     if (ELEMS[b.type]) {
       el.classList.add('elem');
@@ -805,6 +825,6 @@ async function start() {
   brand();
   syncSave(); syncUI(); buildMuts(); selectFormat('post'); renderMuts(); renderVars();
 }
-window.HBApp = { build, fullCanvas, pdfNote, get pdfReport() { return lastPdfReport; } }; // pre testy
+window.HBApp = { build, fullCanvas, pdfNote, get pdfReport() { return lastPdfReport; }, get layout() { return mainL; }, get canvas() { return mainC; } }; // pre testy
 start();
 })();

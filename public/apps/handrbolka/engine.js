@@ -261,7 +261,7 @@ const HB = (() => {
           bl.forEach(t => wrap(ctx, t, maxW - indent).forEach((l, j) => lines.push({ t: l, first: j === 0 })));
           let tw = Math.max(...lines.map(l => ctx.measureText(l.t).width)) + indent;
           if (tw > maxW) { const f = maxW / tw; size *= f; ctx.font = font(weight, size); lines.length = 0; const ind = size * 1.1; bl.forEach(t => wrap(ctx, t, maxW - ind).forEach((l, j) => lines.push({ t: l, first: j === 0 }))); tw = Math.min(maxW, Math.max(...lines.map(l => ctx.measureText(l.t).width)) + ind); }
-          add({ type: b.type, lines, size, weight, h: lines.length * size * B.lh, tw, indent: size * 1.1, gap: B.gap * 60 * u * k, lh: B.lh });
+          add({ type: b.type, bi: i, lines, size, weight, h: lines.length * size * B.lh, tw, indent: size * 1.1, gap: B.gap * 60 * u * k, lh: B.lh });
           return;
         }
         let lines = wrap(ctx, text, maxW);
@@ -276,7 +276,7 @@ const HB = (() => {
         let extra = 0;
         if (b.type === 'sekcia' && st.underline) extra = size * .55 + (ASSETS.underline.h / ASSETS.underline.w) * Math.min(cw * .78, Math.max(tw * 1.5, cw * .55));
         if (b.type === 'info') h += size * .7;
-        add({ type: b.type, lines, size, weight, h: h + extra, th: h, tw, gap: B.gap * 60 * u * k, lh: B.lh });
+        add({ type: b.type, bi: i, lines, size, weight, h: h + extra, th: h, tw, gap: B.gap * 60 * u * k, lh: B.lh });
       });
       if (photoInFlow && !photoFirst) photoItem();
       if (lm === 'dole') logoItem();
