@@ -11,7 +11,7 @@ const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPAB
 
 // Passkeys are bound to the site, so only the app's own addresses may use them.
 const ORIGINS = ['https://peterstuller90-oss.github.io', 'http://localhost:5173']
-const RP_NAME = 'Stullers Home'
+const RP_NAME = 'Stullers Creative Studio'
 
 const cors = (origin: string) => ({
   'Access-Control-Allow-Origin': origin,
@@ -51,13 +51,13 @@ async function handle(req: Request, origin: string) {
   switch (body.action) {
     case 'register-options': {
       const user = await currentUser(req)
-      const { data: existing } = await supabase.from('passkeys').select('id, transports').eq('user_id', user.id)
       const options = await generateRegistrationOptions({
         rpName: RP_NAME, rpID,
         userName: user.email!, userDisplayName: user.user_metadata?.name ?? user.email!,
         userID: new TextEncoder().encode(user.id),
         attestationType: 'none',
-        excludeCredentials: (existing ?? []).map((c) => ({ id: c.id, transports: c.transports ?? undefined })),
+        // No excludeCredentials: a phone that already has a passkey (e.g. from the old Home app, or an
+        // installed app with its own storage) simply replaces it, instead of iPhone refusing silently.
         authenticatorSelection: { residentKey: 'preferred', userVerification: 'required', authenticatorAttachment: 'platform' },
       })
       const challengeId = await newChallenge({ kind: 'register', challenge: options.challenge, user_id: user.id })

@@ -47,8 +47,9 @@ export async function unregister(supabase: SupabaseClient, email: string) {
   remember(email, null)
 }
 
-export async function login(supabase: SupabaseClient, prepared: LoginOptions) {
+export async function login(supabase: SupabaseClient, prepared: LoginOptions, email?: string) {
   const response = await startAuthentication({ optionsJSON: prepared.options })
+  if (email) remember(email, response.id)
   const { tokenHash } = await call<{ tokenHash: string }>(supabase, { action: 'login-verify', challengeId: prepared.challengeId, response })
   const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'email' })
   if (error) throw new Error('Prihlásenie sa nepodarilo, zadaj PIN.')

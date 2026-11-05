@@ -18,11 +18,14 @@ export function Login({ supabase, label, extra }: { supabase: SupabaseClient; la
   // Face ID instead of PIN: for every profile set up on this device, get the login ready before the tap,
   // so tapping the profile card opens Face ID straight away (iPhone allows it only right after a tap).
   const [ready, setReady] = useState<Record<string, LoginOptions>>({})
+  const [known, setKnown] = useState<string[]>([]) // profiles with Face ID, as the server says
   useEffect(() => {
     if (!passkeysSupported()) return
     const prepare = () => {
       for (const m of FAMILY) {
-        if (savedPasskey(m.email)) loginOptions(supabase, m.email).then((o) => setReady((r) => ({ ...r, [m.email]: o }))).catch(() => {})
+        // Ask the server for every profile: this phone's storage may not know (an app added to the home
+        // screen keeps its own storage), the server answers with an error when the profile has no Face ID.
+        loginOptions(supabase, m.email).then((o) => { setReady((r) => ({ ...r, [m.email]: o })); setKnown((k) => (k.includes(m.email) ? k : [...k, m.email])) }).catch(() => {})
       }
     }
     prepare()
@@ -36,7 +39,7 @@ export function Login({ supabase, label, extra }: { supabase: SupabaseClient; la
     if (!prepared) return setMember(m)
     setBusy(true)
     try {
-      await login(supabase, prepared)
+      await login(supabase, prepared, m.email)
       play('correct')
     } catch (e) {
       setMember(m) // cancelled or failed: fall back to PIN
@@ -47,7 +50,7 @@ export function Login({ supabase, label, extra }: { supabase: SupabaseClient; la
   }
 
   // If this device has Face ID set up for the chosen profile, get the login challenge ready before the tap.
-  const hasFaceId = !!member && passkeysSupported() && !!savedPasskey(member.email)
+  const hasFaceId = !!member && passkeysSupported() && (known.includes(member.email) || !!savedPasskey(member.email))
   useEffect(() => {
     if (member && hasFaceId && !faceId) loginOptions(supabase, member.email).then(setFaceId).catch(() => {})
   }, [supabase, member, hasFaceId, faceId])
@@ -57,7 +60,7 @@ export function Login({ supabase, label, extra }: { supabase: SupabaseClient; la
     setBusy(true)
     setError('')
     try {
-      await login(supabase, faceId ?? await loginOptions(supabase, member.email))
+      await login(supabase, faceId ?? await loginOptions(supabase, member.email), member.email)
       play('correct')
     } catch (e) {
       if (!isCancel(e)) setError(e instanceof Error ? e.message : 'Nepodarilo sa to.')

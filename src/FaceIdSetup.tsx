@@ -14,6 +14,7 @@ export function FaceIdSetup({ email }: { email: string }) {
   const [error, setError] = useState('')
   const [later, setLater] = useState(() => { try { return sessionStorage.getItem('faceid-later') === '1' } catch { return false } })
   const show = family && passkeysSupported() && !on && !later
+  const name = biometricName()
 
   // Ready before the tap, because iPhone opens Face ID only straight from a tap.
   useEffect(() => {
@@ -21,7 +22,6 @@ export function FaceIdSetup({ email }: { email: string }) {
   }, [show, prepared])
 
   if (!show) return null
-  const name = biometricName()
 
   async function enable() {
     setBusy(true); setError('')
@@ -29,7 +29,7 @@ export function FaceIdSetup({ email }: { email: string }) {
       await register(supabase, email, prepared ?? await registrationOptions(supabase))
       setOn(true)
     } catch (e) {
-      if (!isCancel(e)) setError(e instanceof Error ? e.message : 'Nepodarilo sa to.')
+      setError(isCancel(e) ? `${name} sa nespustilo alebo bolo zrušené. Skús ešte raz.` : e instanceof Error ? e.message : 'Nepodarilo sa to.')
     }
     setPrepared(null)
     setBusy(false)
