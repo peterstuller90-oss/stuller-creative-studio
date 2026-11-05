@@ -1,0 +1,359 @@
+<!doctype html><html lang="sk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><link rel="stylesheet" href="../../hub-ui-font.css">
+</head><body>
+<title>Handrbolka Štúdio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: lišta hore, vľavo panel (Obsah / Vzhľad / Animácia), vpravo veľký náhľad, pod ním mutácie formátov a variácie.
+   Farby z podkladov Handrbolky: šalvia, lesná zelená, okrová, koralová. */
+:root{
+  --bg:#F4F7F5; --surface:#FFFFFF; --sunk:#E6EEEA; --line:#D3E0DA; --ink:#1F3B2E; --muted:#5E7369;
+  --green:#2F684E; --green-h:#24533E; --salvia:#BFD7D0; --ochre:#F8B233; --coral:#EB5F5F; --on-green:#FFFFFF;
+  --ui:'GoldplayAlt','Trebuchet MS',system-ui,sans-serif; --r:12px; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14211B; --surface:#1B2A23; --sunk:#22342B; --line:#2E4439; --ink:#E4EEE9; --muted:#9DB3A8;
+  --green:#5FA583; --green-h:#74B694; --salvia:#3B5A4C; --on-green:#0F1A15; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14211B; --surface:#1B2A23; --sunk:#22342B; --line:#2E4439; --ink:#E4EEE9; --muted:#9DB3A8;
+  --green:#5FA583; --green-h:#74B694; --salvia:#3B5A4C; --on-green:#0F1A15; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.4;font-weight:500}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ochre);outline-offset:2px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
+.brand canvas{width:92px;height:28px}
+.brand b{font-weight:700;font-size:16px;letter-spacing:.02em;white-space:nowrap}
+.brand span{color:var(--muted);font-size:13px;white-space:nowrap}
+.seg{display:inline-flex;background:var(--sunk);border-radius:999px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:6px 13px;border-radius:999px;font-weight:600;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(31,59,46,.18)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 16px;font-weight:600;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn:hover{border-color:var(--green)}
+.btn.primary{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.btn.primary:hover{background:var(--green-h)}
+.btn.small{padding:5px 12px;font-size:13px}
+.btn:disabled{opacity:.55;cursor:wait}
+.work{display:grid;grid-template-columns:370px minmax(0,1fr);min-height:calc(100% - 58px)}
+.panel{background:var(--surface);border-right:1px solid var(--line);padding-block:14px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:16px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:none;padding:8px 10px 10px;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ochre)}
+.group{display:flex;flex-direction:column;gap:10px}
+.group>h3{margin:0;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:600}
+select,input[type=text],input[type=email],input[type=password]{border:1px solid var(--line);border-radius:9px;padding:7px 10px;background:var(--surface);min-width:0}
+textarea{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--surface);resize:vertical;width:100%;min-height:44px;line-height:1.35}
+input[type=range]{width:100%;accent-color:var(--green)}
+.blocks{display:flex;flex-direction:column;gap:10px}
+.block{border:1px solid var(--line);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.block .bh{display:flex;align-items:center;gap:6px}
+.block .bh select{font-size:13px;padding:4px 8px;font-weight:700}
+.block .bh .sp{flex:1}
+.ico{border:0;background:var(--sunk);width:30px;height:30px;border-radius:9px;display:inline-grid;place-items:center;font-size:15px;color:var(--ink);line-height:1}
+.ico:hover{background:var(--line)}
+.add{display:flex;flex-wrap:wrap;gap:6px}
+.add button{border:1px dashed var(--muted);background:none;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600}
+.add button:hover{border-color:var(--green);color:var(--green)}
+.add.elems{align-items:center}
+.add.elems button{border-color:var(--ochre)}
+.block.elem{border-color:var(--ochre)}
+.block .enm{font-size:13px;font-weight:700}
+.block.elem input[type=text]{width:100%}
+.fmtbar{display:none;align-items:center;gap:8px}
+.chips{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none;padding:2px}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;white-space:nowrap}
+.chips button[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
+.cards button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 6px;font-size:13px;font-weight:600;text-align:center;line-height:1.2}
+.cards button small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-top:2px}
+.cards button[aria-pressed="true"]{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green);color:var(--green)}
+.sw{display:flex;gap:8px;flex-wrap:wrap}
+.sw button{width:34px;height:34px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line)}
+.sw button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink)}
+.check{display:flex;align-items:center;gap:8px;font-size:14px}
+.check input{accent-color:var(--green);width:17px;height:17px}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.drop{border:1px dashed var(--muted);border-radius:var(--r);padding:12px;display:flex;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+.drop.over{border-color:var(--green);background:var(--sunk)}
+.drop img{width:56px;height:56px;object-fit:cover;border-radius:8px}
+.stage{padding-block:16px 48px;padding-right:max(16px,env(safe-area-inset-right,0px));padding-left:24px;display:flex;flex-direction:column;gap:24px;min-width:0}
+.stagehead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.stagehead h2{margin:0;font-weight:700;font-size:20px}
+.stagehead .meta{color:var(--muted);font-size:13px}
+.stagehead .sp{flex:1}
+.mainwrap{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.canvasbox{background:var(--sunk);border-radius:16px;padding:18px;display:grid;place-items:center;flex:1 1 380px;min-width:0;position:relative}
+#main{display:block;box-shadow:0 10px 34px rgba(31,59,46,.18);max-width:100%;height:auto;max-height:76vh;width:auto}
+.side{flex:0 1 260px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.side .card{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px}
+.side h4{margin:0;font-size:15px;font-weight:700}
+.player{display:flex;align-items:center;gap:10px}
+.player input{flex:1}
+.player output{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);width:44px;text-align:right}
+.sec h3{margin:0 0 4px;font-weight:700;font-size:17px}
+.sec p.hint{margin-bottom:10px}
+.muts{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;align-items:end}
+.mut{display:flex;flex-direction:column;gap:6px;min-width:0}
+.mut .th{background:var(--sunk);border-radius:12px;padding:10px;display:grid;place-items:center;border:2px solid transparent;cursor:pointer;position:relative}
+.mut.on .th{border-color:var(--green)}
+.mut canvas{max-width:100%;height:auto;box-shadow:0 3px 12px rgba(31,59,46,.15)}
+.mut .nm{font-weight:700;font-size:14px;display:flex;justify-content:space-between;gap:6px;align-items:baseline;flex-wrap:wrap}
+.mut .nm small{color:var(--muted);font-weight:500;font-size:12px}
+.play{position:absolute;right:14px;bottom:14px;background:var(--coral);color:#fff;border-radius:999px;font-size:11px;font-weight:700;padding:3px 9px}
+.vars{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.vars button{border:2px solid transparent;background:var(--sunk);border-radius:12px;padding:8px;display:grid;place-items:center}
+.vars button:hover{border-color:var(--ochre)}
+.vars canvas{max-width:100%;height:auto}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
+.menu{position:relative}
+.menu .pop{position:absolute;right:0;top:calc(100% + 6px);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 34px rgba(31,59,46,.2);padding:6px;min-width:270px;display:flex;flex-direction:column;z-index:30}
+.menu .pop button{border:0;background:none;text-align:left;padding:9px 12px;border-radius:9px;display:flex;justify-content:space-between;gap:12px;font-weight:600}
+.menu .pop button small{color:var(--muted);font-weight:500}
+.menu .pop button:hover{background:var(--sunk)}
+.menu .pop .fname{padding:8px 12px 4px}
+.menu .pop .fname input{font-weight:600;color:var(--ink)}
+.menu .pop .fname small{font-weight:500;color:var(--muted);font-size:12px;word-break:break-all}
+.menu .pop hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.saved{padding-block:24px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.saved h1{margin:0;font-size:28px;font-weight:700}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
+.sitem{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.sitem img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:var(--sunk)}
+.sitem b{font-size:14px}
+.sitem small{color:var(--muted);font-size:12px}
+.empty{color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:28px;text-align:center}
+.login{max-width:380px;margin:12vh auto 0;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;display:flex;flex-direction:column;gap:14px}
+.login h1{margin:0;font-size:24px}
+.err{color:var(--coral);font-size:13px;margin:0}
+.brief{background:var(--sunk);border-radius:var(--r);padding:12px;margin-inline:-4px}
+.brief textarea{min-height:110px}
+#briefNote{background:var(--surface);border-radius:9px;padding:8px 10px;color:var(--ink)}
+@media (max-width:1150px){.muts{grid-template-columns:repeat(3,minmax(0,1fr))}.vars{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:860px){
+  /* mobil: náhľad je stále pripnutý hore, pod ním sa posúvajú úpravy */
+  .top{position:static}
+  .brand span{display:none}
+  .work{display:flex;flex-direction:column}
+  .stage{display:contents}
+  .stage>.sec{padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+  .stage>.sec:first-child{order:1;padding-top:12px}
+  .stagehead h2{font-size:17px}
+  .mainwrap{order:2;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:8px;
+    padding:8px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line);box-shadow:0 8px 16px -12px rgba(31,59,46,.35)}
+  .fmtbar{display:flex}
+  .canvasbox{flex:none;padding:8px;border-radius:12px}
+  #main{max-height:34vh;box-shadow:0 4px 14px rgba(31,59,46,.18)}
+  .mainwrap.big #main{max-height:64vh}
+  body.kb #main{max-height:22vh}
+  .side{flex:none}
+  .side .card:not(#playerCard){display:none}
+  #playerCard{padding:8px 12px}
+  #playerCard h4{display:none}
+  .panel{order:3;border-right:0;padding-top:4px;padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .stage>.sec:nth-child(3){order:4;padding-top:24px;border-top:1px solid var(--line)}
+  .stage>.sec:nth-child(4){order:5;padding-top:16px;padding-bottom:48px}
+  .muts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* export na mobile ako panel zospodu cez celú šírku */
+  .menu .pop{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));min-width:0;z-index:40;padding:8px;
+    box-shadow:0 0 0 100vmax rgba(10,20,15,.45),0 12px 34px rgba(0,0,0,.35);max-height:calc(100dvh - 40px);overflow:auto}
+  .menu .pop button{padding:13px 12px;font-size:16px}
+  .menu .pop button small{font-size:13px;text-align:right}
+  .menu .pop .check{font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="top">
+  <div class="brand"><canvas id="brandLogo" width="184" height="56" aria-hidden="true"></canvas><b>ŠTÚDIO</b><span>grafika pre Lesný klub Handrbolka</span></div>
+  <div class="seg" role="group" aria-label="Zobrazenie">
+    <button id="vEdit" aria-pressed="true">Návrh</button>
+    <button id="vSaved" aria-pressed="false">Moje návrhy</button>
+  </div>
+  <button class="btn" id="shuffle" title="Nové rozmiestnenie kresbičiek">Nová variácia</button>
+  <button class="btn" id="saveBtn">Uložiť</button>
+  <button class="btn" id="saveNewBtn" hidden title="Uloží aktuálny stav ako ďalší návrh, pôvodný ostane">Uložiť ako nový</button>
+  <div class="menu">
+    <button class="btn primary" id="expBtn" aria-haspopup="true" aria-expanded="false">Exportovať ▾</button>
+    <div class="pop" id="expPop" hidden>
+      <label class="f fname">Téma v názve súboru<input type="text" id="fileTheme" autocomplete="off" spellcheck="false"><small id="fileEx"></small></label>
+      <hr>
+      <button data-exp="post">Insta post <small>PNG, 72 dpi</small></button>
+      <button data-exp="igvid">Insta video <small>MP4, 1080 × 1350</small></button>
+      <button data-exp="story">Insta story <small>PNG, 72 dpi</small></button>
+      <button data-exp="reel">Story / reel video <small>MP4, 1080 × 1920</small></button>
+      <button data-exp="a4">Plagát A4 <small>PDF na tlač, vektory + 300 dpi</small></button>
+      <button data-exp="a3">Plagát A3 <small>PDF na tlač, vektory + 300 dpi</small></button>
+      <hr>
+      <button data-exp="all">Všetko naraz <small>ZIP</small></button>
+      <label class="check" style="padding:8px 12px"><input type="checkbox" id="bleed"> Tlač: spadávka 3 mm + orezové značky</label>
+    </div>
+  </div>
+</header>
+
+<div class="work" id="editView">
+  <aside class="panel">
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="obsah">Obsah</button>
+      <button role="tab" aria-selected="false" data-tab="vzhlad">Vzhľad</button>
+      <button role="tab" aria-selected="false" data-tab="anim">Animácia</button>
+    </div>
+
+    <div data-pane="obsah" class="group" style="gap:20px">
+      <div class="group brief">
+        <h3>Zadanie</h3>
+        <textarea id="brief" rows="5" placeholder="Napíš vlastnými slovami, čo potrebuješ. Napríklad: Pozvánka na tekvicovú slávnosť v sobotu 25. 10. od 15:00 v klube na Kubrickej. Bude vyrezávanie tekvíc, opekanie a lampiónový sprievod. Chcem fotku detí v rámiku a veselé kresbičky."></textarea>
+        <div class="row"><button class="btn primary" id="briefBtn">Pripraviť návrh</button><span class="hint" id="briefState"></span></div>
+        <p class="hint" id="briefNote" hidden></p>
+      </div>
+      <div class="group">
+        <h3>Alebo začni zo šablóny</h3>
+        <select id="tpl"><option value="">Vyber šablónu…</option></select>
+      </div>
+      <div class="group">
+        <h3>Texty a prvky</h3>
+        <div class="blocks" id="blocks"></div>
+        <div class="add">
+          <button data-add="nadpis">+ Nadpis</button>
+          <button data-add="podnadpis">+ Podnadpis</button>
+          <button data-add="sekcia">+ Nadpis s vlnovkou</button>
+          <button data-add="info">+ Dátum / miesto</button>
+          <button data-add="odrazky">+ Odrážky</button>
+          <button data-add="citat">+ Citát</button>
+          <button data-add="text">+ Malý text</button>
+        </div>
+        <div class="add elems"><span class="hint">Prvky:</span>
+          <button data-add="qr">+ QR kód</button>
+          <button data-add="obrazok">+ Obrázok</button>
+        </div>
+        <p class="hint">Nový riadok spravíš klávesom Enter. Pri odrážkach je každý riadok jedna odrážka. Poradie meníš šípkami. QR kód alebo obrázok môžeš aj chytiť prstom v náhľade a posunúť kamkoľvek.</p>
+      </div>
+      <div class="group">
+        <h3>Logo</h3>
+        <div class="cards" id="logoModes"></div>
+        <label class="check"><input type="checkbox" id="logoSub"> Podnadpis pod logom</label>
+        <input type="text" id="logoSubText" aria-label="Text pod logom">
+        <label class="f">Veľkosť loga<input type="range" id="logoSize" min="0.6" max="1.3" step="0.02"></label>
+      </div>
+      <div class="group">
+        <h3>Fotka</h3>
+        <div class="drop" id="drop"><img id="photoPrev" alt="" hidden><div style="flex:1">Fotku pretiahni sem alebo ju vyber. Vloží sa do rámika z kresbičky.<div class="row" style="margin-top:6px"><button class="btn small" id="photoBtn">Vybrať fotku</button><button class="btn small" id="photoDel" hidden>Odstrániť</button></div></div><input type="file" id="photoIn" accept="image/*" hidden></div>
+        <label class="check"><input type="checkbox" id="photoOn"> Zobraziť fotku</label>
+        <div id="photoCtl" class="group" hidden>
+          <label class="f">Veľkosť fotky<input type="range" id="photoSize" min="0.6" max="1.2" step="0.02"></label>
+          <label class="f">Priblíženie<input type="range" id="photoZoom" min="1" max="2.5" step="0.02"></label>
+          <label class="f">Posun doľava / doprava<input type="range" id="photoX" min="0" max="1" step="0.01"></label>
+          <label class="f">Posun hore / dole<input type="range" id="photoY" min="0" max="1" step="0.01"></label>
+        </div>
+      </div>
+      <div class="group">
+        <h3>Pätička</h3>
+        <label class="check"><input type="checkbox" id="footPrint"> QR kódy na plagátoch (web, Instagram, Facebook)</label>
+        <label class="check"><input type="checkbox" id="footHandle"> Instagram meno na poste a story</label>
+        <input type="text" id="handleText" aria-label="Instagram meno">
+      </div>
+    </div>
+
+    <div data-pane="vzhlad" class="group" style="gap:20px" hidden>
+      <div class="group"><h3>Rozloženie</h3><div class="cards" id="layouts"></div>
+        <div class="seg" role="group" aria-label="Zarovnanie" id="aligns"><button data-align="center">Na stred</button><button data-align="left">Doľava</button></div>
+      </div>
+      <div class="group"><h3>Pozadie</h3><div class="sw" id="bgs"></div><p class="hint" id="bgHint"></p></div>
+      <div class="group"><h3>Kresbičky</h3>
+        <div class="cards" id="dsets"></div>
+        <label class="f">Počet kresbičiek<input type="range" id="dCount" min="0" max="9" step="1"></label>
+        <label class="f">Veľkosť kresbičiek<input type="range" id="dSize" min="0.6" max="1.4" step="0.02"></label>
+        <label class="check"><input type="checkbox" id="dMono"> Jemné, jednofarebné (keď je veľa textu)</label>
+        <button class="btn small" id="shuffle2" style="align-self:flex-start">Premiešať rozmiestnenie</button>
+      </div>
+      <div class="group"><h3>Rámik fotky</h3><div class="cards" id="frames"></div><div class="sw" id="frameColors"></div></div>
+      <div class="group"><h3>Písmo</h3>
+        <label class="f">Veľkosť nadpisu<input type="range" id="titleScale" min="0.6" max="1.4" step="0.02"></label>
+        <label class="f">Veľkosť textov<input type="range" id="textScale" min="0.7" max="1.4" step="0.02"></label>
+        <label class="check"><input type="checkbox" id="underline"> Vlnovka s ceruzkou pod nadpisom sekcie</label>
+      </div>
+    </div>
+
+    <div data-pane="anim" class="group" style="gap:20px" hidden>
+      <div class="group"><h3>Štýl intra</h3><div class="cards" id="animStyles"></div></div>
+      <div class="group"><h3>Dĺžka</h3><div class="seg" role="group" id="durs"></div></div>
+      <div class="group"><h3>Čo je v intre</h3>
+        <label class="check"><input type="checkbox" id="animTitle"> Hlavný nadpis</label>
+        <label class="check"><input type="checkbox" id="animSub"> Podnadpis alebo dátum</label>
+      </div>
+      <p class="hint">Video sa exportuje ako MP4 v dvoch rozmeroch: na post 1080 × 1350 a na story alebo reel 1080 × 1920. Na Instagrame ho pridáš ako prvý klip pred svoje video. Logo sa najprv nakreslí po kúskoch ako detská kresba, potom vyrastie nápis Handrbolka.</p>
+      <button class="btn" id="goReel" style="align-self:flex-start">▶ Prehrať intro</button>
+    </div>
+  </aside>
+
+  <section class="stage">
+    <div class="sec">
+      <div class="stagehead"><h2 id="mainName">Insta post</h2><span class="meta" id="mainMeta"></span><span class="sp"></span>
+        <label class="check"><input type="checkbox" id="safeOn"> Ukázať okraje Instagramu</label>
+        <button class="btn small" id="expMain">Exportovať tento</button></div>
+    </div>
+    <div class="mainwrap" id="mainwrap">
+      <div class="fmtbar" role="group" aria-label="Formát náhľadu"><div class="chips" id="fmtChips"></div><button class="ico" id="bigPrev" aria-label="Zväčšiť náhľad" title="Zväčšiť náhľad">⤢</button></div>
+      <div class="canvasbox" id="canvasbox"><canvas id="main" width="540" height="675" aria-label="Náhľad návrhu"></canvas></div>
+      <div class="side">
+        <div class="card" id="playerCard" hidden>
+          <h4>Prehrávanie intra</h4>
+          <div class="player"><button class="ico" id="playBtn" aria-label="Prehrať">▶</button><input type="range" id="scrub" min="0" max="4" step="0.01" value="0" aria-label="Čas"><output id="tOut">0,0 s</output></div>
+        </div>
+        <div class="card">
+          <h4>Ako to funguje</h4>
+          <p class="hint">Upravuješ jeden hlavný návrh. Apka z neho hneď poskladá všetky formáty dole. Klikni na formát a pozri si ho zblízka. Hotové návrhy si ulož, nájdeš ich v Moje návrhy.</p>
+          <p class="hint" id="storeHint"></p>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <h3>Všetky formáty</h3>
+      <p class="hint">Menia sa spolu s hlavným návrhom. Text a kresbičky sa každému rozmeru prispôsobia samé.</p>
+      <div class="muts" id="muts"></div>
+    </div>
+    <div class="sec">
+      <div class="stagehead"><h3 style="margin:0">Návrhy variácií</h3><span class="sp"></span><button class="btn small" id="moreVars">Ďalšie návrhy</button></div>
+      <p class="hint">Klikni na návrh a použije sa. Texty a fotka ostanú tvoje.</p>
+      <div class="vars" id="vars"></div>
+    </div>
+  </section>
+</div>
+
+<div class="saved" id="savedView" hidden>
+  <h1>Moje návrhy</h1>
+  <p class="hint" id="savedHint"></p>
+  <div class="sgrid" id="sgrid"></div>
+</div>
+
+<div class="login" id="loginView" hidden>
+  <h1>Prihlásenie</h1>
+  <p class="hint">Prihlás sa e-mailom a heslom, ktoré ti nastavil Peter.</p>
+  <label class="f">E-mail<input type="email" id="lgEmail" autocomplete="username"></label>
+  <label class="f">Heslo<input type="password" id="lgPass" autocomplete="current-password"></label>
+  <p class="err" id="lgErr" hidden></p>
+  <button class="btn primary" id="lgBtn" style="justify-content:center">Prihlásiť sa</button>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/qrcode.min.js"></script>
+<script src="vendor/mp4-muxer.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="vendor/opentype.min.js"></script>
+<script src="pdfcanvas.js"></script>
+<script src="config.js"></script>
+<script src="assets.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+
+</body></html>

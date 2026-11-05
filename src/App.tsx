@@ -54,8 +54,19 @@ export default function App() {
 
   const audience = audienceOf(session)
   const apps = APPS.filter((a) => a.audience.includes(audience))
-  const app = apps.find((a) => a.id === current && a.module)
-  const Module = app && MODULES[app.id]
+  const app = apps.find((a) => a.id === current && (a.module || a.frame))
+  const Module = app?.module ? MODULES[app.id] : undefined
+  if (app?.frame) {
+    return (
+      <div className="hub-module">
+        <header className="hub-bar no-print">
+          <a href="#/" className="hub-back">‹ Studio</a>
+          <span className="hub-bar-title">{app.name}</span>
+        </header>
+        <iframe className="hub-frame" src={`${import.meta.env.BASE_URL}${app.frame}`} title={app.name} allow="clipboard-write; fullscreen" />
+      </div>
+    )
+  }
   if (app && Module) {
     return (
       <div className="hub-module">
@@ -87,11 +98,10 @@ function Launcher({ apps, session }: { apps: HubApp[]; session: Session }) {
       <FaceIdSetup email={session.user.email ?? ''} />
       <nav className="hub-list">
         {apps.map((a) => {
-          const soon = !a.module && !a.url
+          const soon = !a.module && !a.frame
           if (soon) return <span key={a.id} className="hub-item soon">{a.name}<small>čoskoro</small></span>
           return (
-            <a key={a.id} className="hub-item" href={a.module ? `#/${a.id}` : a.url}
-              target={a.url ? '_blank' : undefined} rel={a.url ? 'noopener' : undefined}>{a.name}</a>
+            <a key={a.id} className="hub-item" href={`#/${a.id}`}>{a.name}</a>
           )
         })}
       </nav>

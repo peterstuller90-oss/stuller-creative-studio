@@ -64,3 +64,5 @@ button, input { font: inherit; color: inherit; }
 .hub-item:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--hub-ink); }
 .hub-item small { font-size: 15px; color: var(--hub-muted); }
 .hub-item.soon { opacity: 0.5; box-shadow: none; }
+
+.hub-frame { flex: 1; width: 100%; border: 0; display: block; min-height: calc(100dvh - 52px); background: #fff; }

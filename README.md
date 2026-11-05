@@ -7,14 +7,16 @@ Jedna appka pre všetky Štullers appky: jedno prihlásenie, jeden dizajn (font 
 |---|---|
 | Stullers Home (rodinné úlohy) | v hube (`src/modules/home`) |
 | Ponuky (cenové ponuky a zmluvy) | v hube (`src/modules/ponuky`) |
-| Handrbolka Studio, Atelier Studio, Stullers Studio | spoločné Studio s témami (pripravujeme), zatiaľ odkaz na samostatné appky |
-| Stullers Social | zatiaľ odkaz na samostatnú appku |
+| Handrbolka Studio, Atelier Studio | v hube ako pôvodné appky (`public/apps/<id>/`), neskôr spoločné Studio s témami |
+| Stullers Studio | pripravujeme (spoločné Studio) |
+| Stullers Social | v hube ako pôvodná appka (`public/apps/social/`) |
 | Učiteľ, Hudy Packaging | pripravujeme |
 
 ## Ako to funguje
 - `src/App.tsx` – prihlásenie (rodinné profily s PIN, alebo e-mail), úvodná obrazovka s dlaždicami, otváranie modulov na `#/<id>`.
 - `src/apps.ts` – zoznam appiek na úvodnej obrazovke a kto ich vidí (rodičia, deti, ostatní).
 - `src/modules/<id>/` – každá appka má vlastný priečinok. Jej CSS sa automaticky obmedzí na `.mod-<id>` (pozri `vite.config.ts`), takže sa appky navzájom nerozbijú.
+- `public/apps/<id>/` – pôvodné samostatné appky skopírované do hubu (bez vlastného service workera, UI vo fonte Barlow cez `public/hub-ui-font.css`). Zdieľajú prihlásenie s hubom, lebo bežia na rovnakej adrese.
 - `src/lib/supabase.ts` – jeden spoločný Supabase klient pre všetky moduly.
 - `supabase/` – SQL a Edge Functions jednotlivých modulov.
 

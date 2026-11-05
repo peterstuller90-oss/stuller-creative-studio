@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Štullers Social</title>
+<meta name="theme-color" content="#acffd3">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Štullers">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Dizajn prevzatý zo Stullers Home: mätové pozadie, Barlow Condensed verzálky, biele karty s obrysom a tvrdým tieňom. */
+:root{
+  --mint:#acffd3;--ink:#5b4b7a;--coral:#f66c85;--sky:#a1f3ff;--pink:#ffd3ee;--teal:#00777d;
+  --bg:var(--mint);--card:#fff;--text:var(--ink);--muted:#8a7fa0;--line:#e6e0f0;
+  --accent:var(--coral);--accent-dark:#c73a57;--radius:28px;--border:2px solid var(--ink);--shadow:0 4px 0 var(--ink);
+  --head:"Barlow Condensed",-apple-system,BlinkMacSystemFont,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--head);font-size:18px;font-weight:500;-webkit-text-size-adjust:100%;overflow-x:hidden}
+body{animation:bg-drift 90s ease-in-out infinite}
+@keyframes bg-drift{0%,100%{background-color:#acffd3}25%{background-color:#ffd3ee}50%{background-color:#f3d3d4}75%{background-color:#a1f3ff}}
+@media (prefers-reduced-motion:reduce){body{animation:none}}
+button,input,select{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+.muted{color:var(--muted)}
+.card{background:var(--card);border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+.top{display:flex;align-items:center;gap:12px 18px;flex-wrap:wrap;padding:calc(env(safe-area-inset-top) + 20px) 24px 4px;max-width:1500px;margin:0 auto}
+.logo{font-size:42px;font-weight:600;text-transform:uppercase;line-height:.9;letter-spacing:.01em}
+.logo small{display:block;font-size:17px;letter-spacing:.3em;margin-top:2px;font-weight:500}
+.top .sp{flex:1}
+
+.wrap{display:grid;grid-template-columns:340px minmax(0,1fr);gap:22px;padding:16px 24px 60px;max-width:1500px;margin:0 auto;align-items:start}
+.side{position:sticky;top:16px;max-height:calc(100dvh - 32px);overflow:auto;padding:18px 16px 20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin}
+.grp{display:flex;flex-direction:column;gap:8px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.grp:last-child{border-bottom:0;padding-bottom:0}
+.grp h3{font-size:22px;font-weight:600;text-transform:uppercase;line-height:1}
+.lbl{font-size:15px;text-transform:uppercase;color:var(--muted);letter-spacing:.02em}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+input[type=text],select{width:100%;border:var(--border);border-radius:16px;padding:9px 14px;background:#fff;outline:none;font-size:18px}
+input[type=text]:focus,select:focus{box-shadow:0 0 0 3px rgba(91,75,122,.18)}
+input[type=range]{width:100%;accent-color:var(--ink)}
+.chk{display:flex;align-items:center;gap:10px;cursor:pointer;text-transform:uppercase;font-size:17px}
+.chk input{width:20px;height:20px;accent-color:var(--ink)}
+.out{font-variant-numeric:tabular-nums;color:var(--muted);font-size:16px}
+
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:var(--border);background:#fff;border-radius:999px;padding:6px 13px;font-size:16px;text-transform:uppercase;cursor:pointer;transition:transform .15s,background .2s}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+.seg button:active{transform:scale(.95)}
+
+.sw{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sw button{width:30px;height:30px;border-radius:50%;border:var(--border);cursor:pointer;padding:0;position:relative}
+.sw button.auto{width:auto;border-radius:999px;padding:0 10px;font-size:14px;text-transform:uppercase;background:#fff}
+.sw button[aria-pressed=true]{box-shadow:0 0 0 3px #fff,0 0 0 5px var(--ink)}
+.sw button.auto[aria-pressed=true]{background:var(--ink);color:#fff;box-shadow:none}
+.sw input[type=color]{width:34px;height:32px;border:var(--border);border-radius:10px;padding:0;background:#fff;cursor:pointer}
+
+.btn{border:var(--border);border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px 12px;font-size:19px;text-transform:uppercase;cursor:pointer;transition:transform .15s,opacity .15s;text-decoration:none;white-space:nowrap}
+.btn:active{transform:scale(.96)}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.sec{background:#fff;color:var(--accent-dark);box-shadow:var(--shadow)}
+.btn.mint{background:var(--mint);color:var(--ink);box-shadow:var(--shadow)}
+.btn.small{padding:6px 12px 7px;font-size:16px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.drop{border:2px dashed var(--ink);border-radius:22px;padding:16px;text-align:center;cursor:pointer;background:rgba(255,255,255,.5);position:relative;transition:background .2s}
+.drop.over{background:var(--pink)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.drop img{max-height:150px;max-width:100%;margin:0 auto 8px;display:block;border-radius:10px}
+.drop .t{font-size:20px;text-transform:uppercase}
+.pal{display:flex;gap:4px;height:16px;border-radius:999px;overflow:hidden;border:var(--border)}
+.pal span{flex:1}
+
+.main{display:flex;flex-direction:column;gap:22px;min-width:0}
+.sec{padding:20px 22px 22px}
+.sec-head{display:flex;align-items:baseline;gap:8px 14px;flex-wrap:wrap;margin-bottom:14px}
+.sec-head h2{font-size:34px;font-weight:600;text-transform:uppercase;line-height:1}
+.sec-head .muted{font-size:17px}
+.sec-head .sp{flex:1}
+.strip{display:flex;gap:0;overflow-x:auto;padding:6px 2px 10px;scrollbar-width:thin}
+.strip .it{display:flex;flex-direction:column;gap:8px;align-items:center;flex-shrink:0}
+.strip canvas{display:block;height:var(--ph,440px);width:auto;background:#eee}
+.strip .it:first-child canvas{border-radius:14px 0 0 14px}
+.strip .it:last-child canvas{border-radius:0 14px 14px 0}
+.strip .it + .it canvas{box-shadow:-1px 0 0 rgba(255,255,255,.7)}
+.strip.gap{gap:14px}
+.strip.gap canvas{border-radius:14px!important}
+.it .cap{font-size:15px;text-transform:uppercase;color:var(--muted)}
+
+.anim{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:22px;align-items:start}
+.anim canvas{width:100%;height:auto;border-radius:18px;border:var(--border);display:block;background:#eee}
+.anim .ctl{display:flex;flex-direction:column;gap:12px}
+.prog{height:14px;border:var(--border);border-radius:99px;background:var(--line);overflow:hidden}
+.prog > div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-dark));transition:width .15s}
+
+.mk{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:end}
+.mk .it{display:flex;flex-direction:column;gap:8px;align-items:center}
+.mk canvas{width:100%;height:auto;border-radius:14px;border:var(--border);display:block}
+
+.empty{padding:60px 24px;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.empty h2{font-size:44px;text-transform:uppercase;line-height:.95;font-weight:600}
+.empty p{max-width:520px;font-size:20px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 22px;border-radius:999px;z-index:50;text-transform:uppercase;font-size:17px;border:2px solid var(--ink);max-width:calc(100% - 32px)}
+.hide{display:none!important}
+
+@media (max-width:980px){
+  .wrap{grid-template-columns:1fr;padding:12px 14px 50px}
+  .side{position:static;max-height:none}
+  .anim{grid-template-columns:1fr}
+  .anim canvas{max-width:300px}
+  .mk{grid-template-columns:1fr 1fr}
+  .strip canvas{height:var(--phm,320px)}
+  .top{padding:calc(env(safe-area-inset-top) + 14px) 14px 0}
+}
+</style>
+<link rel="stylesheet" href="../../hub-ui-font.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="logo">Štullers<small>Social formáty</small></div>
+  <div class="sp"></div>
+  <button class="btn sec" id="variant" type="button" disabled>Nová variácia</button>
+  <button class="btn primary" id="zipAll" type="button" disabled>Stiahnuť všetko · ZIP</button>
+</header>
+
+<div class="wrap">
+  <aside class="side card">
+    <div class="grp">
+      <h3>Ilustrácia</h3>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="image/*" aria-label="Nahrať ilustráciu">
+        <img id="thumb" alt="" class="hide">
+        <div class="t" id="dropT">Pusti sem ilustráciu</div>
+        <div class="muted" style="font-size:15px">PNG, JPG alebo WebP · aj vloženie cez Ctrl+V</div>
+      </label>
+      <div class="pal hide" id="pal"></div>
+      <button class="btn small mint" id="demo" type="button">Skúsiť s ukážkou</button>
+    </div>
+
+    <div class="grp">
+      <h3>Pozadie</h3>
+      <select id="bgMode">
+        <option value="auto">Auto · dorátať podľa ilustrácie</option>
+        <option value="extend">Natiahnuť okraje</option>
+        <option value="blur">Rozmazaná ilustrácia</option>
+        <option value="solid">Jednofarebné</option>
+        <option value="paper">Papier</option>
+      </select>
+      <div class="lbl">Farba pozadia</div>
+      <div class="sw" id="bgSw"></div>
+      <label class="chk"><input type="checkbox" id="grain"> Jemné zrno</label>
+    </div>
+
+    <div class="grp">
+      <h3>Ilustrácia na ploche</h3>
+      <div class="seg" data-group="card">
+        <button type="button" data-v="auto" aria-pressed="true">Auto</button>
+        <button type="button" data-v="none">Bez rámu</button>
+        <button type="button" data-v="paper">Papier</button>
+        <button type="button" data-v="round">Karta</button>
+      </div>
+      <div class="row between"><span class="lbl">Veľkosť</span><span class="out" id="sizeO"></span></div>
+      <input type="range" id="size" min="60" max="100" value="90">
+    </div>
+
+    <div class="grp">
+      <h3>Spojovacia línia</h3>
+      <label class="chk"><input type="checkbox" id="line" checked> Línia cez všetky formáty</label>
+      <div class="sw" id="lineSw"></div>
+      <div class="row between"><span class="lbl">Hrúbka</span><span class="out" id="lineWO"></span></div>
+      <input type="range" id="lineW" min="4" max="40" value="16">
+    </div>
+
+    <div class="grp">
+      <h3>Texty</h3>
+      <label class="chk"><input type="checkbox" id="showText" checked> Zobraziť texty</label>
+      <div class="lbl">Nadpis</div>
+      <input type="text" id="title" placeholder="napr. Nová ilustrácia">
+      <div class="lbl">Instagram</div>
+      <input type="text" id="handle" value="@stullers_creative">
+      <div class="lbl">Výzva na poslednej story</div>
+      <input type="text" id="cta" value="Dostupné ako print">
+    </div>
+
+    <div class="grp">
+      <h3>Carousel</h3>
+      <div class="seg" data-group="layout">
+        <button type="button" data-v="hero" aria-pressed="true">Hlavná + detaily</button>
+        <button type="button" data-v="panorama">Panoráma</button>
+        <button type="button" data-v="bleed">Na celú plochu</button>
+      </div>
+      <div class="row between"><span class="lbl">Počet slidov</span>
+        <select id="slides" style="width:90px"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></div>
+      <div class="row between"><span class="lbl">Posun ilustrácie</span><span class="out" id="offsetO"></span></div>
+      <input type="range" id="offset" min="0" max="100" value="50">
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="card empty" id="empty">
+      <h2>Ilustrácia dnu,<br>posty von</h2>
+      <p class="muted">Nahraj ilustráciu vľavo. Appka z nej spraví 3 nadväzujúce IG stories, carousel, animované video a print mockup. Pozadie dopočíta podľa farieb a okrajov kresby.</p>
+    </section>
+
+    <section class="card sec hide" id="secStory">
+      <div class="sec-head"><h2>IG Stories</h2><span class="muted">3 × 1080 × 1920 · línia a pozadie pokračujú z jednej do druhej</span></div>
+      <div class="strip" id="storyStrip" style="--ph:460px"></div>
+    </section>
+
+    <section class="card sec hide" id="secPost">
+      <div class="sec-head"><h2>Carousel post</h2><span class="muted">1280 × 1600 · pri posúvaní na seba plynulo nadväzujú</span></div>
+      <div class="strip" id="postStrip" style="--ph:380px;--phm:280px"></div>
+    </section>
+
+    <section class="card sec hide" id="secAnim">
+      <div class="sec-head"><h2>Animácia</h2><span class="muted">video MP4 alebo WebM podľa prehliadača</span></div>
+      <div class="anim">
+        <canvas id="animCv" width="540" height="960"></canvas>
+        <div class="ctl">
+          <div class="lbl">Čo animovať</div>
+          <select id="animTarget"></select>
+          <div class="lbl">Príchod ilustrácie</div>
+          <div class="seg" data-group="animType">
+            <button type="button" data-v="left" aria-pressed="true">Zľava</button>
+            <button type="button" data-v="right">Sprava</button>
+            <button type="button" data-v="top">Zhora</button>
+            <button type="button" data-v="bottom">Zdola</button>
+            <button type="button" data-v="sides">Zo všetkých strán</button>
+            <button type="button" data-v="fade">Priehľadnosť</button>
+            <button type="button" data-v="blur">Z rozmazania</button>
+            <button type="button" data-v="pop">Vyskočenie</button>
+          </div>
+          <div class="lbl">Štýl pohybu</div>
+          <div class="seg" data-group="move">
+            <button type="button" data-v="spring" aria-pressed="true">Pružina s náklonom</button>
+            <button type="button" data-v="smooth">Plynulý dojazd</button>
+          </div>
+          <div class="row between"><span class="lbl">Dĺžka príchodu</span><span class="out" id="durO"></span></div>
+          <input type="range" id="dur" min="0.4" max="2.4" step="0.1" value="1">
+          <div class="row between"><span class="lbl">Státie na konci</span><span class="out" id="holdO"></span></div>
+          <input type="range" id="hold" min="1" max="8" step="0.5" value="3">
+          <div class="row">
+            <button class="btn primary" id="animExport" type="button">Exportovať video</button>
+            <button class="btn sec" id="animExportStories" type="button">Všetky 3 stories</button>
+          </div>
+          <div class="prog hide" id="animProg"><div></div></div>
+          <div class="muted" id="animStatus" style="font-size:16px">Video sa nahráva v reálnom čase. Počas exportu nechaj túto kartu otvorenú v popredí.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card sec hide" id="secMock">
+      <div class="sec-head"><h2>Print mockup</h2><span class="muted">čistý print na papieri, rovnaká šablóna ako v obchode na webe</span></div>
+      <div class="row" style="gap:10px 18px;margin-bottom:16px">
+        <div class="seg" data-group="mkTone"><button type="button" data-v="A" aria-pressed="true">Biely papier</button><button type="button" data-v="B">Krémový</button></div>
+        <div class="seg" data-group="mkShadow"><button type="button" data-v="soft" aria-pressed="true">Jemný tieň</button><button type="button" data-v="medium">Stredný</button><button type="button" data-v="strong">Výrazný</button></div>
+        <div class="seg" data-group="mkSize"><button type="button" data-v="large" aria-pressed="true">Väčší print</button><button type="button" data-v="airy">Viac priestoru</button></div>
+        <div class="seg" data-group="mkBg"><button type="button" data-v="white" aria-pressed="true">Biele pozadie</button><button type="button" data-v="theme">Farba z návrhu</button></div>
+      </div>
+      <div class="mk" id="mkGrid"></div>
+    </section>
+  </main>
+</div>
+<div class="toast hide" id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Štullers Social – lokálna appka. Všetko beží v prehliadači, nič sa neodosiela.
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const HEAD = '"Barlow Condensed","Arial Narrow",Arial,sans-serif';
+const BODY = '"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif';
+const BRAND = { mint:'#acffd3', sky:'#a1f3ff', pink:'#ffd3ee', coral:'#f66c85', ink:'#5b4b7a', cream:'#fbf7ef', white:'#ffffff', black:'#151614' };
+const STORY = { PW:1080, PH:1920, n:3 };
+const POST  = { PW:1280, PH:1600 };
+
+function mk(w,h){ const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(w)); c.height=Math.max(1,Math.round(h)); return c; }
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+function rng(seed){ let s=(Math.imul(seed|0,2654435761)>>>0)||1; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- farby ---------- */
+const hexToRgb=h=>{ h=h.replace('#',''); if(h.length===3) h=h.split('').map(x=>x+x).join(''); const n=parseInt(h,16); return {r:n>>16&255,g:n>>8&255,b:n&255}; };
+const rgbToHex=c=>'#'+[c.r,c.g,c.b].map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('');
+const lum=c=>{ const f=v=>{ v/=255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4); }; return .2126*f(c.r)+.7152*f(c.g)+.0722*f(c.b); };
+const satOf=c=>{ const mx=Math.max(c.r,c.g,c.b)/255, mn=Math.min(c.r,c.g,c.b)/255, l=(mx+mn)/2; if(mx===mn) return 0; return (mx-mn)/(1-Math.abs(2*l-1)); };
+const mixC=(a,b,t)=>({r:lerp(a.r,b.r,t),g:lerp(a.g,b.g,t),b:lerp(a.b,b.b,t)});
+const cdist=(a,b)=>Math.sqrt((a.r-b.r)**2+(a.g-b.g)**2+(a.b-b.b)**2);
+const css=c=>typeof c==='string'?c:rgbToHex(c);
+
+/* =====================================================================
+   Mockup – prevzaté zo Štullers administrácie (generátor clean print mockupov),
+   rozšírené len o ľubovoľný formát plátna a farbu pozadia. Pri štvorci a bielom
+   pozadí kreslí presne to isté ako pôvodný modul.
+   ===================================================================== */
+const Mock=(function(){
+  const TONES = { A:{ paper:'#ffffff', sk:'A – Čistá biela' }, B:{ paper:'#fbf7ef', sk:'B – Jemná krémová' } };
+  const SHADOWS = {
+    soft:   { a:0.10, blur:0.023, y:0.007, edge:0.10, sk:'jemný tieň' },
+    medium: { a:0.14, blur:0.028, y:0.010, edge:0.13, sk:'stredný tieň' },
+    strong: { a:0.19, blur:0.033, y:0.013, edge:0.16, sk:'výraznejší tieň' },
+  };
+  const SIZES = { large:{ scale:0.80, sk:'väčší print' }, airy:{ scale:0.68, sk:'viac priestoru' } };
+  const MARGIN = 0.09;
+
+  function analyze(img){
+    const W=400, sc=Math.min(1, W/Math.max(img.naturalWidth, img.naturalHeight));
+    const w=Math.max(1,Math.round(img.naturalWidth*sc)), h=Math.max(1,Math.round(img.naturalHeight*sc));
+    const c=mk(w,h), g=c.getContext('2d',{willReadFrequently:true});
+    g.drawImage(img,0,0,w,h);
+    const d=g.getImageData(0,0,w,h).data;
+    let transparent=false;
+    const blank=(x,y)=>{ const i=(y*w+x)*4; if(d[i+3]<12){ transparent=true; return true; } return d[i]>246&&d[i+1]>246&&d[i+2]>246; };
+    const rowBlank=y=>{ for(let x=0;x<w;x++) if(!blank(x,y)) return false; return true; };
+    const colBlank=x=>{ for(let y=0;y<h;y++) if(!blank(x,y)) return false; return true; };
+    let top=0; while(top<h/2&&rowBlank(top)) top++;
+    let bottom=0; while(bottom<h/2&&rowBlank(h-1-bottom)) bottom++;
+    let left=0; while(left<w/2&&colBlank(left)) left++;
+    let right=0; while(right<w/2&&colBlank(w-1-right)) right++;
+    for(let i=3;i<d.length;i+=4){ if(d[i]<250){ transparent=true; break; } }
+    return { border:Math.min(top,bottom,left,right)/Math.min(w,h), transparent,
+      landscape: img.naturalWidth>img.naturalHeight*1.05, width:img.naturalWidth, height:img.naturalHeight };
+  }
+
+  // rozmer papiera a umiestnenie ilustrácie na ňom (rovnaký výpočet ako v administrácii)
+  function paperGeom(info, S, scale){
+    const r=Math.SQRT2; let pw,ph;
+    if(info.landscape){ pw=S*scale; ph=pw/r; } else { ph=S*scale; pw=ph/r; }
+    pw=Math.round(pw); ph=Math.round(ph);
+    let m=Math.min(pw,ph)*MARGIN;
+    const s0=Math.min((pw-2*m)/info.width,(ph-2*m)/info.height);
+    const own=info.border*Math.min(info.width,info.height)*s0;
+    m=Math.max(Math.min(pw,ph)*0.02, m-own);
+    const s=Math.min((pw-2*m)/info.width,(ph-2*m)/info.height);
+    return { pw, ph, iw:info.width*s, ih:info.height*s };
+  }
+
+  function render(img, info, opt, W, H, bg){
+    H=H||W; const tone=TONES[opt.tone]||TONES.A, sh=SHADOWS[opt.shadow]||SHADOWS.soft, sz=SIZES[opt.size]||SIZES.large;
+    const S=W===H?W:Math.min(W,H)*(H/W>1.4?1.12:1);
+    const c=mk(W,H), ctx=c.getContext('2d');
+    ctx.fillStyle=bg||'#ffffff'; ctx.fillRect(0,0,W,H);
+    const G=paperGeom(info,S,sz.scale);
+    const x=Math.round((W-G.pw)/2), y=Math.round((H-G.ph)/2-S*0.008);
+    ctx.save(); ctx.shadowColor=`rgba(0,0,0,${sh.a})`; ctx.shadowBlur=S*sh.blur; ctx.shadowOffsetY=S*sh.y;
+    ctx.fillStyle=tone.paper; ctx.fillRect(x,y,G.pw,G.ph); ctx.restore();
+    ctx.save(); ctx.shadowColor=`rgba(0,0,0,${sh.edge})`; ctx.shadowBlur=Math.max(1.5,S*0.0015); ctx.shadowOffsetY=Math.max(0.5,S*0.0005);
+    ctx.fillStyle=tone.paper; ctx.fillRect(x,y,G.pw,G.ph); ctx.restore();
+    ctx.imageSmoothingQuality='high';
+    ctx.drawImage(img, x+(G.pw-G.iw)/2, y+(G.ph-G.ih)/2, G.iw, G.ih);
+    return c;
+  }
+  return { TONES, SHADOWS, SIZES, MARGIN, analyze, render, paperGeom };
+})();
+
+/* =====================================================================
+   Analýza ilustrácie: okraje, paleta, miesta s detailom
+   ===================================================================== */
+function kmeans(px,k){
+  if(!px.length) return [];
+  const C=[{...px[Math.floor(px.length/2)]}];
+  while(C.length<k){
+    let best=-1, bi=0;
+    for(let i=0;i<px.length;i+=3){ let m=Infinity; for(const c of C){ const d=cdist(px[i],c); if(d<m) m=d; } if(m>best){ best=m; bi=i; } }
+    if(best<8) break;
+    C.push({...px[bi]});
+  }
+  const as=new Int16Array(px.length);
+  for(let it=0;it<9;it++){
+    const acc=C.map(()=>({r:0,g:0,b:0,n:0}));
+    for(let i=0;i<px.length;i++){ let m=Infinity,mi=0; for(let j=0;j<C.length;j++){ const d=cdist(px[i],C[j]); if(d<m){ m=d; mi=j; } } as[i]=mi; const a=acc[mi]; a.r+=px[i].r; a.g+=px[i].g; a.b+=px[i].b; a.n++; }
+    acc.forEach((a,j)=>{ if(a.n){ C[j]={r:a.r/a.n,g:a.g/a.n,b:a.b/a.n}; } C[j].n=a.n; });
+  }
+  return C.filter(c=>c.n>0).sort((a,b)=>b.n-a.n);
+}
+
+function analyze(img){
+  const W=img.naturalWidth, H=img.naturalHeight;
+  const sc=Math.min(1,240/Math.max(W,H));
+  const w=Math.max(8,Math.round(W*sc)), h=Math.max(8,Math.round(H*sc));
+  const thumb=mk(w,h), g=thumb.getContext('2d',{willReadFrequently:true});
+  g.imageSmoothingQuality='high'; g.drawImage(img,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data;
+  let transparent=false; for(let i=3;i<d.length;i+=4){ if(d[i]<240){ transparent=true; break; } }
+  // okraje
+  const ring=Math.max(1,Math.round(Math.min(w,h)*.025));
+  let sr=0,sg=0,sb=0,n=0,ringAll=0; const bp=[];
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    if(x>=ring&&y>=ring&&x<w-ring&&y<h-ring) continue;
+    ringAll++; const i=(y*w+x)*4; if(d[i+3]<200) continue;
+    bp.push(i); sr+=d[i]; sg+=d[i+1]; sb+=d[i+2]; n++;
+  }
+  const edge=n?{r:sr/n,g:sg/n,b:sb/n}:{r:255,g:255,b:255};
+  let v=0; for(const i of bp) v+=(d[i]-edge.r)**2+(d[i+1]-edge.g)**2+(d[i+2]-edge.b)**2;
+  const edgeStd=n?Math.sqrt(v/n/3):0;
+  const edgeTransparent=n/ringAll<.6;
+  // paleta
+  const px=[], step=Math.max(1,Math.floor(w*h/5000));
+  for(let p=0;p<w*h;p+=step){ const i=p*4; if(d[i+3]<200) continue; px.push({r:d[i],g:d[i+1],b:d[i+2]}); }
+  const palette=kmeans(px,7);
+  // mapa detailov: hrany + sýtosť
+  const L=new Float32Array(w*h), Sa=new Float32Array(w*h);
+  for(let p=0;p<w*h;p++){ const i=p*4, a=d[i+3]/255; const c={r:d[i],g:d[i+1],b:d[i+2]};
+    L[p]=(.3*c.r+.59*c.g+.11*c.b)*a+255*(1-a); Sa[p]=satOf(c)*a; }
+  const sal=new Float32Array(w*h);
+  for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){ const p=y*w+x;
+    sal[p]=(Math.abs(L[p+1]-L[p-1])+Math.abs(L[p+w]-L[p-w]))*(.5+Sa[p])+Sa[p]*18; }
+  const W1=w+1, I=new Float64Array(W1*(h+1));
+  for(let y=0;y<h;y++){ let row=0; for(let x=0;x<w;x++){ row+=sal[y*w+x]; I[(y+1)*W1+x+1]=I[y*W1+x+1]+row; } }
+  return { img, W, H, thumb, w, h, sc, transparent, edge, edgeStd, edgeTransparent, palette, I, mk:Mock.analyze(img) };
+}
+
+function findDetails(A,aspect,count,rand){
+  const {w,h,I}=A, W1=w+1;
+  const sum=(x,y,ww,hh)=>I[(y+hh)*W1+x+ww]-I[y*W1+x+ww]-I[(y+hh)*W1+x]+I[y*W1+x];
+  const cands=[];
+  for(const s of [.34,.46,.6]){
+    let hh=Math.min(h,w/aspect)*s, ww=hh*aspect; hh=Math.max(4,Math.round(hh)); ww=Math.max(4,Math.round(ww));
+    if(ww>w||hh>h) continue;
+    const st=Math.max(1,Math.round(Math.min(ww,hh)/7));
+    for(let y=0;y+hh<=h;y+=st) for(let x=0;x+ww<=w;x+=st)
+      cands.push({x,y,w:ww,h:hh,score:sum(x,y,ww,hh)/(ww*hh)*(.8+.4*s)*(.8+.4*rand())});
+  }
+  cands.sort((a,b)=>b.score-a.score);
+  const iou=(a,b)=>{ const ix=Math.max(0,Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x)), iy=Math.max(0,Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y)); const i=ix*iy; return i/(a.w*a.h+b.w*b.h-i); };
+  const out=[];
+  for(const c of cands){ if(out.length>=count) break; if(out.every(o=>iou(o,c)<.2)) out.push(c); }
+  for(const c of cands){ if(out.length>=count) break; if(out.every(o=>iou(o,c)<.5)) out.push(c); }
+  while(out.length<count){ let hh=Math.min(h,w/aspect)*.6, ww=hh*aspect; out.push({x:(w-ww)*rand(),y:(h-hh)*rand(),w:ww,h:hh}); }
+  return out.map(c=>[c.x/A.sc,c.y/A.sc,c.w/A.sc,c.h/A.sc]);
+}
+
+/* =====================================================================
+   Téma: pozadie, akcent, farba textu
+   ===================================================================== */
+function makeTheme(A,o){
+  const pal=A.palette, tot=pal.reduce((s,p)=>s+p.n,0)||1;
+  const edgeUniform=!A.edgeTransparent && A.edgeStd<16;
+  let mode=o.bgMode;
+  if(mode==='auto') mode=(A.edgeTransparent||edgeUniform)?'solid':'extend';
+  let bg;
+  if(o.bgColor!=='auto') bg=hexToRgb(o.bgColor);
+  else if(mode==='paper') bg=hexToRgb(BRAND.cream);
+  else if(A.edgeTransparent){ const light=[...pal].sort((a,b)=>lum(b)-lum(a))[0]||{r:255,g:255,b:255}; bg=mixC(light,{r:255,g:255,b:255},.55); }
+  else bg={...A.edge};
+  const cands=pal.filter(p=>p.n/tot>.012).map(p=>({c:p,s:satOf(p)*(.6+Math.min(1,p.n/tot*10))})).filter(x=>cdist(x.c,bg)>70).sort((a,b)=>b.s-a.s);
+  let accent;
+  if(o.lineColor!=='auto') accent=hexToRgb(o.lineColor);
+  else if(cands.length&&satOf(cands[0].c)>.15) accent=cands[Math.min(cands.length-1,o.seed%Math.min(2,cands.length))].c;
+  else accent=hexToRgb(lum(bg)>.4?BRAND.coral:BRAND.mint);
+  const darkest=[...pal].sort((a,b)=>lum(a)-lum(b))[0]||{r:21,g:22,b:20};
+  return { mode, bg, accent, darkest, edgeUniform };
+}
+function resolveStyle(T,o){ if(o.card!=='auto') return o.card; if(T.mode==='blur') return 'round'; if(T.mode==='paper') return 'paper'; return 'none'; }
+
+/* =====================================================================
+   Kreslenie: rozmazanie, prvky (sprity), text, línia, pozadie
+   ===================================================================== */
+function softBlur(src,steps){
+  const w=src.width,h=src.height; let cur=src, cw=w, ch=h;
+  for(let i=0;i<steps;i++){ cw=Math.max(2,Math.round(cw/2)); ch=Math.max(2,Math.round(ch/2)); const t=mk(cw,ch), g=t.getContext('2d'); g.imageSmoothingQuality='high'; g.drawImage(cur,0,0,cw,ch); cur=t; }
+  while(cw<w||ch<h){ cw=Math.min(w,cw*2); ch=Math.min(h,ch*2); const t=mk(cw,ch), g=t.getContext('2d'); g.imageSmoothingQuality='high'; g.drawImage(cur,0,0,cw,ch); cur=t; }
+  return cur;
+}
+
+function drawImg(g,img,src,x,y,w,h,f){
+  if(!f){ g.drawImage(img,src[0],src[1],src[2],src[3],x,y,w,h); return; }
+  const t=mk(w,h), tg=t.getContext('2d'); tg.imageSmoothingQuality='high';
+  tg.drawImage(img,src[0],src[1],src[2],src[3],0,0,t.width,t.height);
+  tg.globalCompositeOperation='destination-out';
+  const W=t.width,H=t.height;
+  const edge=(x0,y0,x1,y1,rx,ry,rw,rh)=>{ const gr=tg.createLinearGradient(x0,y0,x1,y1); gr.addColorStop(0,'rgba(0,0,0,1)'); gr.addColorStop(1,'rgba(0,0,0,0)'); tg.fillStyle=gr; tg.fillRect(rx,ry,rw,rh); };
+  edge(0,0,f,0,0,0,f,H); edge(W,0,W-f,0,W-f,0,f,H); edge(0,0,0,f,0,0,W,f); edge(0,H,0,H-f,0,H-f,W,f);
+  g.drawImage(t,x,y,w,h);
+}
+function roundRect(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+
+// sprite = otočený prvok s tieňom, kreslí sa podľa stredu
+function makeSprite(cw,ch,draw,{rot=0,sh=null}={}){
+  cw=Math.round(cw); ch=Math.round(ch);
+  const r=rot*Math.PI/180, cs=Math.abs(Math.cos(r)), sn=Math.abs(Math.sin(r));
+  const bw=cw*cs+ch*sn, bh=cw*sn+ch*cs, S=Math.max(cw,ch)*1.25;
+  const blur=sh?S*sh.blur:0, pad=Math.ceil(blur*2.4+(sh?S*sh.y:0)+4);
+  const face=mk(cw,ch); const fg=face.getContext('2d'); fg.imageSmoothingQuality='high'; draw(fg,cw,ch);
+  const c=mk(bw+pad*2,bh+pad*2), g=c.getContext('2d'); g.imageSmoothingQuality='high';
+  g.translate(c.width/2,c.height/2); g.rotate(r);
+  if(sh){
+    g.save(); g.shadowColor=`rgba(0,0,0,${sh.a})`; g.shadowBlur=blur; g.shadowOffsetY=S*sh.y; g.drawImage(face,-cw/2,-ch/2); g.restore();
+    g.save(); g.shadowColor=`rgba(0,0,0,${sh.edge})`; g.shadowBlur=Math.max(1.5,S*.0015); g.shadowOffsetY=Math.max(.5,S*.0005); g.drawImage(face,-cw/2,-ch/2); g.restore();
+  } else g.drawImage(face,-cw/2,-ch/2);
+  return { c, hw:c.width/2, hh:c.height/2 };
+}
+
+function fitBox(sw,sh,bw,bh,style){
+  let s=Math.min(bw/sw,bh/sh);
+  if(style==='paper'){ const m=.07*Math.min(sw,sh)*s; s=Math.min((bw-2*m)/sw,(bh-2*m)/sh); }
+  const iw=sw*s, ih=sh*s, m=style==='paper'?.07*Math.min(iw,ih):0;
+  return { iw, ih, ow:iw+2*m, oh:ih+2*m };
+}
+
+function cardEl(A,src,F,style,opt,x,y,order){
+  const m=style==='paper'?Math.round(.07*Math.min(F.iw,F.ih)):0;
+  const cw=F.iw+2*m, ch=F.ih+2*m;
+  const sh=style==='none'?null:Mock.SHADOWS[opt.shadow||'soft'];
+  const sp=makeSprite(cw,ch,(g,W,H)=>{
+    if(style==='paper'){ g.fillStyle=opt.paper||'#ffffff'; g.fillRect(0,0,W,H); drawImg(g,A.img,src,m,m,W-2*m,H-2*m,0); return; }
+    if(style==='round'){ g.save(); roundRect(g,0,0,W,H,Math.min(W,H)*.05); g.clip(); g.fillStyle='#ffffff'; g.fillRect(0,0,W,H); drawImg(g,A.img,src,0,0,W,H,0); g.restore(); return; }
+    drawImg(g,A.img,src,0,0,W,H,opt.feather?Math.round(Math.min(W,H)*.035):0);
+  },{rot:opt.rot||0,sh});
+  return { sp, x, y, order, ow:cw, oh:ch };
+}
+
+function printEl(A,longSide,o,x,y,order){
+  const G=Mock.paperGeom(A.mk,longSide/.8,.8);
+  const tone=Mock.TONES[o.mkTone]||Mock.TONES.A;
+  const sp=makeSprite(G.pw,G.ph,(g,W,H)=>{ g.fillStyle=tone.paper; g.fillRect(0,0,W,H); g.drawImage(A.img,(W-G.iw)/2,(H-G.ih)/2,G.iw,G.ih); },{sh:Mock.SHADOWS[o.mkShadow]||Mock.SHADOWS.soft});
+  return { sp, x, y, order, ow:G.pw, oh:G.ph };
+}
+
+function textSprite(str,{size,head=true,color,halo,maxW,align='center'}){
+  const t=head?str.toLocaleUpperCase('sk'):str;
+  const font=`${head?600:600} ${size}px ${head?HEAD:BODY}`;
+  const m=mk(10,10).getContext('2d'); m.font=font;
+  const lines=[]; let cur='';
+  for(const w of t.split(/\s+/).filter(Boolean)){ const test=cur?cur+' '+w:w; if(m.measureText(test).width>maxW&&cur){ lines.push(cur); cur=w; } else cur=test; }
+  if(cur) lines.push(cur);
+  const lh=size*(head?.98:1.25), pad=Math.ceil(size*.32);
+  const wMax=Math.max(1,...lines.map(l=>m.measureText(l).width));
+  const c=mk(wMax+pad*2,lh*lines.length+pad*2), g=c.getContext('2d');
+  g.font=font; g.fillStyle=color; g.textBaseline='middle'; g.textAlign=align; g.lineJoin='round';
+  if(halo){ g.strokeStyle=halo; g.lineWidth=size*.34; lines.forEach((l,i)=>{ const x=align==='left'?pad:c.width/2; g.strokeText(l,x,pad+lh*(i+.5)+size*.04); }); }
+  lines.forEach((l,i)=>{ const x=align==='left'?pad:c.width/2; g.fillText(l,x,pad+lh*(i+.5)+size*.04); });
+  return { c, hw:c.width/2, hh:c.height/2, pad };
+}
+
+function inkFor(bg,cx,cy,w,h,T){
+  const t=mk(12,4), g=t.getContext('2d');
+  const sx=clamp(cx-w/2,0,bg.width-2), sy=clamp(cy-h/2,0,bg.height-2);
+  g.drawImage(bg,sx,sy,Math.max(2,Math.min(w,bg.width-sx)),Math.max(2,Math.min(h,bg.height-sy)),0,0,12,4);
+  const d=g.getImageData(0,0,12,4).data; let L=0; for(let i=0;i<d.length;i+=4) L+=lum({r:d[i],g:d[i+1],b:d[i+2]});
+  L/=d.length/4; const halo=rgbToHex({r:d[20],g:d[21],b:d[22]});
+  if(L>.42) return { color:lum(T.darkest)<.06?css(T.darkest):BRAND.black, halo };
+  return { color:'#ffffff', halo };
+}
+
+function drawRibbon(g,W,H,n,color,width,rand){
+  const segs=n*2, flip=rand()<.5, pts=[];
+  for(let i=0;i<=segs;i++){
+    const x=lerp(-W*.03,W*1.03,i/segs), up=(i%2===0)!==flip;
+    pts.push([x, up?H*(.05+.14*rand()):H*(.8+.14*rand())]);
+  }
+  g.beginPath(); g.moveTo(pts[0][0],pts[0][1]);
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[Math.max(0,i-1)], p1=pts[i], p2=pts[i+1], p3=pts[Math.min(pts.length-1,i+2)];
+    g.bezierCurveTo(p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6,p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6,p2[0],p2[1]);
+  }
+  g.strokeStyle=css(color); g.lineWidth=width; g.lineCap='round'; g.lineJoin='round'; g.stroke();
+}
+
+let NOISE=null;
+function noise(){ if(NOISE) return NOISE; const c=mk(256,256), g=c.getContext('2d'), id=g.createImageData(256,256); for(let i=0;i<id.data.length;i+=4){ const v=Math.random()*255; id.data[i]=id.data[i+1]=id.data[i+2]=v; id.data[i+3]=255; } g.putImageData(id,0,0); NOISE=c; return c; }
+
+function buildBg(sc,A,T,o,rand){
+  const {W,H}=sc; const c=mk(W,H), g=c.getContext('2d'); g.imageSmoothingQuality='high';
+  if(sc.bleed){
+    const s=Math.max(W/A.W,H/A.H), dw=A.W*s, dh=A.H*s;
+    g.drawImage(A.img,(W-dw)*o.offset/100,(H-dh)/2,dw,dh);
+  } else if(T.mode==='extend'&&sc.primary){
+    const f=8, sw=Math.ceil(W/f), shh=Math.ceil(H/f), s=mk(sw,shh), sg=s.getContext('2d'); sg.imageSmoothingQuality='high';
+    sg.fillStyle=css(T.bg); sg.fillRect(0,0,sw,shh);
+    const r=sc.primary, rx=r.x/f, ry=r.y/f, rw=r.w/f, rh=r.h/f, t=A.thumb, tw=t.width, th=t.height, k=Math.min(2,tw-2,th-2);
+    sg.drawImage(t,rx,ry,rw,rh);
+    if(rx>0) sg.drawImage(t,k,0,1,th,0,ry,rx,rh);
+    if(rx+rw<sw) sg.drawImage(t,tw-1-k,0,1,th,rx+rw,ry,sw-rx-rw,rh);
+    if(ry>0) sg.drawImage(t,0,k,tw,1,rx,0,rw,ry);
+    if(ry+rh<shh) sg.drawImage(t,0,th-1-k,tw,1,rx,ry+rh,rw,shh-ry-rh);
+    if(rx>0&&ry>0) sg.drawImage(t,k,k,1,1,0,0,rx,ry);
+    if(rx+rw<sw&&ry>0) sg.drawImage(t,tw-1-k,k,1,1,rx+rw,0,sw-rx-rw,ry);
+    if(rx>0&&ry+rh<shh) sg.drawImage(t,k,th-1-k,1,1,0,ry+rh,rx,shh-ry-rh);
+    if(rx+rw<sw&&ry+rh<shh) sg.drawImage(t,tw-1-k,th-1-k,1,1,rx+rw,ry+rh,sw-rx-rw,shh-ry-rh);
+    g.drawImage(softBlur(s,3),0,0,W,H);
+  } else if(T.mode==='blur'){
+    const f=10, sw=Math.ceil(W/f), shh=Math.ceil(H/f), s=mk(sw,shh), sg=s.getContext('2d'); sg.imageSmoothingQuality='high';
+    const k=Math.max(sw/A.w,shh/A.h)*1.15, dw=A.w*k, dh=A.h*k;
+    sg.drawImage(A.thumb,(sw-dw)/2,(shh-dh)/2,dw,dh);
+    g.drawImage(softBlur(s,4),0,0,W,H);
+    g.fillStyle=lum(T.bg)>.35?'rgba(255,255,255,.22)':'rgba(0,0,0,.18)'; g.fillRect(0,0,W,H);
+  } else { g.fillStyle=css(T.bg); g.fillRect(0,0,W,H); }
+  if(o.grain){ g.save(); g.globalAlpha=.07; g.fillStyle=g.createPattern(noise(),'repeat'); g.globalCompositeOperation='overlay'; g.fillRect(0,0,W,H); g.restore(); }
+  if(o.line&&!sc.bleed) drawRibbon(g,W,H,sc.n,T.accent,o.lineW*(H/1920),rand);
+  return c;
+}
+
+/* =====================================================================
+   Rozloženia
+   ===================================================================== */
+const detCache=new Map();
+function details(aspect,count){
+  const key=aspect+'|'+count+'|'+S.o.seed;
+  if(!detCache.has(key)) detCache.set(key,findDetails(S.A,aspect,count,rng(S.o.seed*13+count*7+Math.round(aspect*100))));
+  return detCache.get(key);
+}
+function featherFor(A,T,style,o){ return style==='none'&&!A.edgeTransparent&&(T.mode==='extend'||(T.mode==='solid'&&o.bgColor==='auto'&&T.edgeUniform)); }
+
+function layoutStories(A,T,o,rand){
+  const {PW,PH,n}=STORY, W=PW*n, H=PH;
+  const sc={kind:'story',PW,PH,n,W,H,els:[],texts:[]};
+  const st=resolveStyle(T,o), fill=o.size/100, full=[0,0,A.W,A.H], txt=o.showText;
+  // 1 · celá ilustrácia
+  const F0=fitBox(A.W,A.H,PW*.86*fill,PH*.6*fill,st);
+  const cy0=PH*(txt&&o.title?.5:.47);
+  sc.els.push(cardEl(A,full,F0,st,{feather:featherFor(A,T,st,o),paper:'#ffffff'},PW*.5,cy0,0));
+  sc.primary={x:PW*.5-F0.iw/2,y:cy0-F0.ih/2,w:F0.iw,h:F0.ih};
+  if(txt&&o.title) sc.texts.push({str:o.title,x:PW*.5,y:Math.max(330,cy0-F0.oh/2-130),size:108,head:true,maxW:PW*.84,order:1});
+  if(txt&&o.handle) sc.texts.push({str:o.handle,x:PW*.5,y:PH-330,size:46,head:false,maxW:PW*.8,order:2});
+  // 2 · detail
+  const [det]=details(.8,1), dst=st==='paper'?'paper':'round';
+  const Fd=fitBox(det[2],det[3],PW*.76*fill,PW*.76*fill/.8,dst);
+  const cx1=PW*1.5+(rand()-.5)*PW*.05, cy1=PH*.44;
+  sc.els.push(cardEl(A,det,Fd,dst,{rot:(rand()-.5)*4,paper:'#ffffff'},cx1,cy1,0));
+  const Fs=fitBox(A.W,A.H,PW*.34,PW*.42,'paper');
+  sc.els.push(cardEl(A,full,Fs,'paper',{rot:-6+rand()*4,paper:'#ffffff',shadow:'medium'},cx1+Fd.ow*.4,cy1+Fd.oh*.47,1));
+  // 3 · print
+  const land=A.mk.landscape, L=land?Math.min(PW*.82,PH*.5*fill/.75):Math.min(PH*.5*fill,PW*.8*Math.SQRT2);
+  const pe=printEl(A,L,o,PW*2.5,PH*.44,0); sc.els.push(pe);
+  if(txt&&o.cta) sc.texts.push({str:o.cta,x:PW*2.5,y:PH*.44+pe.oh/2+130,size:76,head:true,maxW:PW*.84,order:1});
+  if(txt&&o.handle) sc.texts.push({str:o.handle,x:PW*2.5,y:PH-330,size:46,head:false,maxW:PW*.8,order:2});
+  return sc;
+}
+
+function layoutCarousel(A,T,o,rand){
+  const {PW,PH}=POST, n=o.slides, W=PW*n, H=PH;
+  const sc={kind:'post',PW,PH,n,W,H,els:[],texts:[]};
+  const st=resolveStyle(T,o), fill=o.size/100, full=[0,0,A.W,A.H], txt=o.showText;
+  if(o.layout==='bleed'){
+    sc.bleed=true;
+    if(txt&&o.handle) sc.texts.push({str:o.handle,x:W-PW*.5,y:PH-100,size:42,head:false,maxW:PW*.8,order:0});
+    return sc;
+  }
+  if(o.layout==='panorama'){
+    const F=fitBox(A.W,A.H,W-PW*.14,PH*.84*fill,st);
+    const lo=F.ow/2+PW*.07, hi=W-F.ow/2-PW*.07;
+    const cx=hi>lo?lerp(lo,hi,o.offset/100):W/2, cy=PH*.5;
+    sc.els.push(cardEl(A,full,F,st,{feather:featherFor(A,T,st,o),paper:'#ffffff'},cx,cy,0));
+    sc.primary={x:cx-F.iw/2,y:cy-F.ih/2,w:F.iw,h:F.ih};
+    if(txt&&o.handle) sc.texts.push({str:o.handle,x:W-PW*.5,y:PH-90,size:42,head:false,maxW:PW*.8,order:1});
+    return sc;
+  }
+  // hlavná ilustrácia presahuje do druhého slidu, ďalej detaily
+  const F=fitBox(A.W,A.H,PW*.92*fill,PH*.74*fill,st);
+  const cx=n>1?PW-.26*F.ow:PW*.5, cy=PH*.53;
+  sc.els.push(cardEl(A,full,F,st,{feather:featherFor(A,T,st,o),paper:'#ffffff',rot:st==='none'?0:(rand()-.5)*2},cx,cy,0));
+  sc.primary={x:cx-F.iw/2,y:cy-F.ih/2,w:F.iw,h:F.ih};
+  if(txt&&o.title) sc.texts.push({str:o.title,x:PW*.075,y:PH*.085,size:108,head:true,maxW:PW*.8,align:'left',order:1});
+  const dets=details(.78,Math.max(1,n-1)), dst=st==='paper'?'paper':'round';
+  for(let k=1;k<n;k++){
+    const d=dets[k-1], Fd=fitBox(d[2],d[3],PW*.62*fill,PW*.62*fill/.78,dst);
+    const dx=PW*(k+.5)+(k%2?1:-1)*PW*.07, dy=PH*(k%2?.54:.47);
+    sc.els.push(cardEl(A,d,Fd,dst,{rot:(rand()-.5)*5,paper:'#ffffff'},dx,dy,0));
+  }
+  if(txt&&o.handle) sc.texts.push({str:o.handle,x:W-PW*.5,y:PH-90,size:42,head:false,maxW:PW*.8,order:1});
+  return sc;
+}
+
+function compose(kind){
+  const A=S.A, o=S.o, rand=rng(o.seed*7919+(kind==='story'?11:23));
+  const T=makeTheme(A,o);
+  const sc=kind==='story'?layoutStories(A,T,o,rand):layoutCarousel(A,T,o,rand);
+  sc.T=T; sc.bg=buildBg(sc,A,T,o,rand);
+  for(const tx of sc.texts){
+    const estW=Math.min(tx.maxW,tx.size*.5*tx.str.length);
+    const ink=inkFor(sc.bg,tx.align==='left'?tx.x+estW/2:tx.x,tx.y,estW,tx.size,T);
+    const sp=textSprite(tx.str,{size:tx.size,head:tx.head,color:ink.color,halo:o.line&&!sc.bleed?ink.halo:null,maxW:tx.maxW,align:tx.align||'center'});
+    sc.els.push({sp,x:tx.align==='left'?tx.x+sp.hw-sp.pad:tx.x,y:tx.y,order:tx.order,text:true});
+  }
+  sc.maxOrder=Math.max(0,...sc.els.map(e=>e.order));
+  return sc;
+}
+
+/* =====================================================================
+   Vykresľovanie panelov a animácia
+   ===================================================================== */
+const EASE={
+  outExpo:p=>p>=1?1:1-Math.pow(2,-10*p),
+  outCubic:p=>1-Math.pow(1-p,3),
+  inOutCubic:p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2,
+  spring:p=>p>=1?1:1-Math.exp(-6.5*p)*Math.cos(10.5*p),
+  outBack:p=>{ const c1=1.4,c3=c1+1; return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2); },
+};
+
+let blurTmp=null;
+function drawBlurred(g,c,x,y,r){
+  if(r<.6){ g.drawImage(c,x,y); return; }
+  const s=clamp(1/(1+r/3),.03,1), w=Math.max(2,Math.round(c.width*s)), h=Math.max(2,Math.round(c.height*s));
+  if(!blurTmp||blurTmp.width<w||blurTmp.height<h) blurTmp=mk(Math.max(w,blurTmp?blurTmp.width:0),Math.max(h,blurTmp?blurTmp.height:0));
+  const bg=blurTmp.getContext('2d'); bg.clearRect(0,0,w,h); bg.imageSmoothingQuality='high'; bg.drawImage(c,0,0,w,h);
+  const q=softBlur(cropTo(blurTmp,w,h),1);
+  g.imageSmoothingQuality='high'; g.drawImage(q,x,y,c.width,c.height);
+}
+function cropTo(src,w,h){ const t=mk(w,h); t.getContext('2d').drawImage(src,0,0); return t; }
+
+function drawEl(g,el,px,py,t,an,sc){
+  const sp=el.sp, x0=px-sp.hw, y0=py-sp.hh;
+  if(!an){ g.drawImage(sp.c,x0,y0); return; }
+  const start=an.stagger*el.order;
+  let type=an.type; if(el.text) type=type==='blur'?'blur':'fadeup';
+  const p=clamp((t-start)/an.dur,0,1);
+  if(type!=='sides'){ if(p<=0) return; if(p>=1){ g.drawImage(sp.c,x0,y0); return; } }
+  switch(type){
+    case 'left': case 'right': case 'top': case 'bottom': {
+      const spring=an.move==='spring', e=spring?EASE.spring(p):EASE.outExpo(p); let dx=0,dy=0,tilt=0;
+      if(type==='left'){ dx=-(px+sp.hw+30)*(1-e); tilt=-1; }
+      if(type==='right'){ dx=(sc.PW-px+sp.hw+30)*(1-e); tilt=1; }
+      if(type==='top'){ dy=-(py+sp.hh+30)*(1-e); tilt=1; }
+      if(type==='bottom'){ dy=(sc.PH-py+sp.hh+30)*(1-e); tilt=-1; }
+      const rot=spring?tilt*12*(1-e)*Math.PI/180:0, s=spring?1:.94+.06*e;
+      g.save(); g.translate(px+dx,py+dy); g.rotate(rot); g.scale(s,s); g.drawImage(sp.c,-sp.hw,-sp.hh); g.restore(); break; }
+    case 'sides': {
+      const W=sp.c.width, H=sp.c.height, w1=Math.floor(W/2), h1=Math.floor(H/2);
+      const Q=[[0,0,w1,h1,'left'],[w1,0,W-w1,h1,'top'],[w1,h1,W-w1,H-h1,'right'],[0,h1,w1,H-h1,'bottom']];
+      Q.forEach(([sx,sy,qw,qh,dir],q)=>{
+        const qp=clamp((t-start-q*.07)/an.dur,0,1); if(qp<=0) return;
+        const e=an.move==='spring'?EASE.spring(qp):EASE.outExpo(qp); let dx=0,dy=0; const ax=x0+sx, ay=y0+sy;
+        if(dir==='left') dx=-(ax+qw+30)*(1-e); if(dir==='right') dx=(sc.PW-ax+30)*(1-e);
+        if(dir==='top') dy=-(ay+qh+30)*(1-e); if(dir==='bottom') dy=(sc.PH-ay+30)*(1-e);
+        g.drawImage(sp.c,sx,sy,qw,qh,ax+dx,ay+dy,qw,qh);
+      }); break; }
+    case 'fade': g.globalAlpha=EASE.inOutCubic(p); g.drawImage(sp.c,x0,y0); g.globalAlpha=1; break;
+    case 'fadeup': { const e=EASE.outCubic(p); g.globalAlpha=e; g.drawImage(sp.c,x0,y0+50*(1-e)); g.globalAlpha=1; break; }
+    case 'blur': { const e=EASE.outCubic(p); g.globalAlpha=Math.min(1,p*1.8); drawBlurred(g,sp.c,x0,y0,(1-e)*70); g.globalAlpha=1; break; }
+    case 'pop': { const e=EASE.outBack(p), s=.55+.45*e; g.globalAlpha=Math.min(1,p*2.2); g.save(); g.translate(px,py); g.scale(s,s); g.drawImage(sp.c,-sp.hw,-sp.hh); g.restore(); g.globalAlpha=1; break; }
+  }
+}
+
+function renderPanel(sc,i,g,t,an){
+  const {PW,PH}=sc;
+  g.drawImage(sc.bg,i*PW,0,PW,PH,0,0,PW,PH);
+  for(const el of sc.els){
+    const px=el.x-i*PW, py=el.y;
+    if(px+el.sp.hw<0||px-el.sp.hw>PW) continue;
+    drawEl(g,el,px,py,t,an,sc);
+  }
+}
+
+function renderFrame(sc,i,cv,t,an,K,scale){
+  const g=cv.getContext('2d'); g.imageSmoothingQuality='high';
+  g.setTransform(scale,0,0,scale,0,0); renderPanel(sc,i,g,t,an); g.setTransform(1,0,0,1,0,0);
+}
+
+function animOpts(sc){
+  const type=chip('animType'), dur=+$('dur').value, stagger=.18;
+  return { type, dur, stagger, move:chip('move')||'spring', hold:+$('hold').value, end:stagger*(sc?sc.maxOrder:0)+dur+.25 };
+}
+
+/* =====================================================================
+   Stav a UI
+   ===================================================================== */
+const S={ A:null, o:null, story:null, post:null, bgColor:'auto', lineColor:'auto', seed:1 };
+function chip(group){ const b=document.querySelector(`.seg[data-group="${group}"] button[aria-pressed="true"]`); return b?b.dataset.v:null; }
+document.querySelectorAll('.seg').forEach(seg=>seg.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
+  const grp=seg.dataset.group;
+  if(grp==='animType'||grp==='move') restartPreview(); else if(grp.startsWith('mk')) renderMockups(); else schedule();
+}));
+
+function readOpts(){
+  return { bgMode:$('bgMode').value, bgColor:S.bgColor, grain:$('grain').checked, card:chip('card'), size:+$('size').value,
+    line:$('line').checked, lineColor:S.lineColor, lineW:+$('lineW').value, showText:$('showText').checked,
+    title:$('title').value.trim(), handle:$('handle').value.trim(), cta:$('cta').value.trim(),
+    layout:chip('layout'), slides:+$('slides').value, offset:+$('offset').value, seed:S.seed,
+    mkTone:chip('mkTone'), mkShadow:chip('mkShadow'), mkSize:chip('mkSize'), mkBg:chip('mkBg') };
+}
+
+function toast(msg,ms=2600){ const t=$('toast'); t.textContent=msg; t.classList.remove('hide'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.add('hide'),ms); }
+function outputs(){ $('sizeO').textContent=$('size').value+' %'; $('lineWO').textContent=$('lineW').value+' px'; $('offsetO').textContent=$('offset').value+' %'; $('durO').textContent=(+$('dur').value).toFixed(1)+' s'; $('holdO').textContent=(+$('hold').value).toFixed(1)+' s'; }
+
+function swatches(el,current,colors,onPick){
+  el.innerHTML='';
+  const mkb=(v,label)=>{ const b=document.createElement('button'); b.type='button'; if(v==='auto'){ b.className='auto'; b.textContent='Auto'; } else { b.style.background=v; b.title=label||v; }
+    b.setAttribute('aria-pressed',String(v===current)); b.onclick=()=>onPick(v); el.appendChild(b); };
+  mkb('auto');
+  const seen=new Set(); for(const [v,l] of colors){ if(seen.has(v)) continue; seen.add(v); mkb(v,l); }
+  const inp=document.createElement('input'); inp.type='color'; inp.value=current!=='auto'?current:'#f66c85'; inp.title='Vlastná farba';
+  inp.oninput=()=>onPick(inp.value); el.appendChild(inp);
+}
+function buildSwatches(){
+  const palC=S.A?S.A.palette.slice(0,6).map(c=>[rgbToHex(c),'z ilustrácie']):[];
+  const brand=[[BRAND.mint,'mint'],[BRAND.sky,'sky'],[BRAND.pink,'pink'],[BRAND.coral,'coral'],[BRAND.ink,'ink'],[BRAND.cream,'krémová'],[BRAND.white,'biela']];
+  swatches($('bgSw'),S.bgColor,[...palC,...brand],v=>{ S.bgColor=v; buildSwatches(); schedule(); });
+  swatches($('lineSw'),S.lineColor,[...palC,...brand,[BRAND.black,'čierna']],v=>{ S.lineColor=v; buildSwatches(); schedule(); });
+}
+
+let schedT=null;
+function schedule(){ outputs(); if(!S.A) return; clearTimeout(schedT); schedT=setTimeout(renderAll,140); }
+['bgMode','grain','size','line','lineW','showText','title','handle','cta','slides','offset'].forEach(id=>{ $(id).addEventListener('input',schedule); $(id).addEventListener('change',schedule); });
+['dur','hold'].forEach(id=>$(id).addEventListener('input',()=>{ outputs(); restartPreview(); }));
+$('animTarget').addEventListener('change',restartPreview);
+
+function panelCanvas(sc,i){ const c=mk(sc.PW,sc.PH); renderPanel(sc,i,c.getContext('2d'),0,null); return c; }
+
+function fillStrip(strip,sc,prefix,caps){
+  strip.innerHTML='';
+  for(let i=0;i<sc.n;i++){
+    const it=document.createElement('div'); it.className='it';
+    const c=panelCanvas(sc,i); c.setAttribute('aria-label',caps[i]); it.appendChild(c);
+    const row=document.createElement('div'); row.className='row';
+    const cap=document.createElement('span'); cap.className='cap'; cap.textContent=caps[i];
+    const b=document.createElement('button'); b.type='button'; b.className='btn small sec'; b.textContent='PNG';
+    b.onclick=()=>c.toBlob(bl=>download(bl,`${prefix}-${i+1}.png`),'image/png');
+    row.append(cap,b); it.appendChild(row); strip.appendChild(it);
+  }
+}
+
+function renderAll(){
+  S.o=readOpts();
+  S.story=compose('story'); S.post=compose('post');
+  fillStrip($('storyStrip'),S.story,'stullers-story',['1 · Ilustrácia','2 · Detail','3 · Print']);
+  fillStrip($('postStrip'),S.post,'stullers-carousel',Array.from({length:S.post.n},(_,i)=>`Slide ${i+1}`));
+  renderMockups(); fillTargets(); restartPreview();
+}
+
+function mockOpts(o){ return { tone:o.mkTone, shadow:o.mkShadow, size:o.mkSize }; }
+function mockBg(o){ return o.mkBg==='theme'&&S.story?css(S.story.T.bg):'#ffffff'; }
+function renderMockups(){
+  if(!S.A) return; S.o=readOpts(); const o=S.o, opt=mockOpts(o), bg=mockBg(o), grid=$('mkGrid'); grid.innerHTML='';
+  const items=[['Štvorec · 2400 × 2400',900,900,'square'],['Post · 1280 × 1600',1280,1600,'post'],['Story · 1080 × 1920',1080,1920,'story']];
+  for(const [cap,w,h,key] of items){
+    const it=document.createElement('div'); it.className='it';
+    const c=Mock.render(S.A.img,S.A.mk,opt,w,h,bg); it.appendChild(c);
+    const row=document.createElement('div'); row.className='row';
+    const s=document.createElement('span'); s.className='cap'; s.textContent=cap;
+    const b=document.createElement('button'); b.type='button'; b.className='btn small sec'; b.textContent=key==='square'?'JPG':'PNG';
+    b.onclick=async()=>{ const bl=await mockBlob(key); download(bl,mockName(key)); };
+    row.append(s,b); it.appendChild(row); grid.appendChild(it);
+  }
+}
+function mockName(k){ return k==='square'?'stullers-mockup-2400.jpg':`stullers-mockup-${k}.png`; }
+function mockBlob(key){
+  const o=S.o, opt=mockOpts(o), bg=mockBg(o);
+  const [w,h]=key==='square'?[2400,2400]:key==='post'?[1280,1600]:[1080,1920];
+  const c=Mock.render(S.A.img,S.A.mk,opt,w,h,bg);
+  return new Promise(r=>c.toBlob(r,key==='square'?'image/jpeg':'image/png',.92));
+}
+
+function fillTargets(){
+  const sel=$('animTarget'), prev=sel.value; sel.innerHTML='';
+  ['Story 1 · Ilustrácia','Story 2 · Detail','Story 3 · Print'].forEach((l,i)=>sel.add(new Option(l,'story:'+i)));
+  for(let i=0;i<S.post.n;i++) sel.add(new Option(`Carousel · slide ${i+1}`,'post:'+i));
+  if([...sel.options].some(x=>x.value===prev)) sel.value=prev;
+}
+function target(){ const [k,i]=($('animTarget').value||'story:0').split(':'); return { sc:k==='story'?S.story:S.post, i:+i, kind:k }; }
+
+let raf=null, t0=0;
+function restartPreview(){
+  if(!S.story) return; cancelAnimationFrame(raf);
+  const {sc,i}=target(), cv=$('animCv'), sc2=.5;
+  cv.width=sc.PW*sc2; cv.height=sc.PH*sc2; t0=performance.now();
+  const loop=now=>{ const an=animOpts(sc), total=an.end+an.hold+.4; const t=((now-t0)/1000)%total; renderFrame(sc,i,cv,Math.max(0,t-.4),an,5,sc2); raf=requestAnimationFrame(loop); };
+  raf=requestAnimationFrame(loop);
+}
+
+/* ---------- video ---------- */
+function pickMime(){
+  const c=['video/mp4;codecs=avc1.640028','video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  return c.find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||'';
+}
+async function recordVideo(sc,i,onProg){
+  const mime=pickMime(); if(!mime) throw new Error('Tento prehliadač nevie nahrávať video. Skús Chrome alebo Safari.');
+  const an=animOpts(sc), fps=30, total=an.end+an.hold, frames=Math.round(total*fps);
+  const cv=mk(sc.PW,sc.PH); cv.style.cssText='position:fixed;left:-99999px;top:0;width:10px;height:10px'; document.body.appendChild(cv);
+  renderFrame(sc,i,cv,0,an,1,1);
+  let stream=cv.captureStream(0); let track=stream.getVideoTracks()[0];
+  const manual=typeof track.requestFrame==='function';
+  if(!manual){ stream=cv.captureStream(fps); track=stream.getVideoTracks()[0]; }
+  const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:16e6});
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+  const stopped=new Promise(r=>rec.onstop=r);
+  rec.start(250);
+  const start=performance.now();
+  for(let f=0;f<frames;f++){
+    renderFrame(sc,i,cv,f/fps,an,10,1);
+    if(manual) track.requestFrame();
+    onProg&&onProg((f+1)/frames);
+    const wait=start+(f+1)*1000/fps-performance.now(); await sleep(Math.max(0,wait));
+  }
+  await sleep(120); rec.stop(); await stopped; cv.remove();
+  const type=mime.split(';')[0]; return { blob:new Blob(chunks,{type}), ext:type==='video/mp4'?'mp4':'webm' };
+}
+async function exportVideos(list){
+  const btns=[$('animExport'),$('animExportStories')]; btns.forEach(b=>b.disabled=true);
+  const pr=$('animProg'), bar=pr.firstElementChild; pr.classList.remove('hide');
+  try{
+    for(let k=0;k<list.length;k++){
+      const {sc,i,name}=list[k];
+      $('animStatus').textContent=`Nahrávam ${name}${list.length>1?` (${k+1}/${list.length})`:''}…`;
+      const r=await recordVideo(sc,i,p=>bar.style.width=((k+p)/list.length*100)+'%');
+      download(r.blob,`${name}.${r.ext}`);
+    }
+    $('animStatus').textContent='Hotovo. Video je v stiahnutých súboroch.';
+  }catch(err){ $('animStatus').textContent=err.message||String(err); }
+  finally{ btns.forEach(b=>b.disabled=false); setTimeout(()=>pr.classList.add('hide'),800); }
+}
+$('animExport').onclick=()=>{ const {sc,i,kind}=target(); exportVideos([{sc,i,name:`stullers-${kind==='story'?'story':'carousel'}-${i+1}-${chip('animType')}`}]); };
+$('animExportStories').onclick=()=>exportVideos([0,1,2].map(i=>({sc:S.story,i,name:`stullers-story-${i+1}-${chip('animType')}`})));
+
+/* ---------- sťahovanie a ZIP ---------- */
+function download(blob,name){ const a=document.createElement('a'), url=URL.createObjectURL(blob); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); }
+const CRC=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(u8){ let c=0xFFFFFFFF; for(let i=0;i<u8.length;i++) c=CRC[(c^u8[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function makeZip(files){
+  const enc=new TextEncoder(), parts=[], cen=[]; let off=0;
+  const d=new Date(), time=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1), date=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+  for(const f of files){
+    const name=enc.encode(f.name), crc=crc32(f.data), sz=f.data.length;
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(8,0,true);
+    lh.setUint16(10,time,true); lh.setUint16(12,date,true); lh.setUint32(14,crc,true); lh.setUint32(18,sz,true); lh.setUint32(22,sz,true);
+    lh.setUint16(26,name.length,true); lh.setUint16(28,0,true);
+    parts.push(lh.buffer,name,f.data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(10,0,true);
+    ch.setUint16(12,time,true); ch.setUint16(14,date,true); ch.setUint32(16,crc,true); ch.setUint32(20,sz,true); ch.setUint32(24,sz,true);
+    ch.setUint16(28,name.length,true); ch.setUint32(42,off,true);
+    cen.push(ch.buffer,name);
+    off+=30+name.length+sz;
+  }
+  const cenSize=cen.reduce((s,x)=>s+(x.byteLength||x.length),0);
+  const end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true); end.setUint16(8,files.length,true); end.setUint16(10,files.length,true); end.setUint32(12,cenSize,true); end.setUint32(16,off,true);
+  return new Blob([...parts,...cen,end.buffer],{type:'application/zip'});
+}
+const blobOf=(c,type='image/png',q)=>new Promise(r=>c.toBlob(r,type,q));
+$('zipAll').onclick=async()=>{
+  if(!S.story) return; const b=$('zipAll'); b.disabled=true; toast('Balím súbory…',8000);
+  try{
+    const files=[], add=async(name,blob)=>files.push({name,data:new Uint8Array(await blob.arrayBuffer())});
+    for(let i=0;i<S.story.n;i++) await add(`stories/stullers-story-${i+1}.png`,await blobOf(panelCanvas(S.story,i)));
+    for(let i=0;i<S.post.n;i++) await add(`carousel/stullers-carousel-${i+1}.png`,await blobOf(panelCanvas(S.post,i)));
+    for(const k of ['square','post','story']) await add(`mockup/${mockName(k)}`,await mockBlob(k));
+    download(makeZip(files),'stullers-social.zip'); toast('ZIP je stiahnutý');
+  } finally { b.disabled=false; }
+};
+$('variant').onclick=()=>{ S.seed++; detCache.clear(); schedule(); };
+
+/* ---------- načítanie ilustrácie ---------- */
+async function loadSrc(src){
+  const img=new Image(); img.decoding='async';
+  await new Promise((res,rej)=>{ img.onload=res; img.onerror=()=>rej(new Error('Obrázok sa nepodarilo načítať')); img.src=src; });
+  try{ await document.fonts.load(`600 100px "Barlow Condensed"`); await document.fonts.load(`600 40px "Barlow"`); }catch(e){}
+  S.A=analyze(img); detCache.clear(); S.seed=1;
+  $('thumb').src=src; $('thumb').classList.remove('hide'); $('dropT').textContent='Vymeniť ilustráciu';
+  $('pal').innerHTML=S.A.palette.slice(0,7).map(c=>`<span style="background:${rgbToHex(c)}"></span>`).join(''); $('pal').classList.remove('hide');
+  ['secStory','secPost','secAnim','secMock'].forEach(id=>$(id).classList.remove('hide')); $('empty').classList.add('hide');
+  $('variant').disabled=false; $('zipAll').disabled=false;
+  buildSwatches(); renderAll();
+}
+function loadFile(f){ if(!f||!f.type.startsWith('image/')) return toast('Toto nie je obrázok'); const r=new FileReader(); r.onload=()=>loadSrc(r.result).catch(e=>toast(e.message)); r.readAsDataURL(f); }
+$('file').onchange=e=>loadFile(e.target.files[0]);
+const drop=$('drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,()=>drop.classList.remove('over')));
+drop.addEventListener('drop',e=>{ e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+window.addEventListener('paste',e=>{ const it=[...(e.clipboardData||{}).items||[]].find(x=>x.type.startsWith('image/')); if(it) loadFile(it.getAsFile()); });
+
+// ukážková ilustrácia na vyskúšanie
+$('demo').onclick=()=>{
+  const W=1400,H=1750,c=mk(W,H),g=c.getContext('2d');
+  g.fillStyle='#fbf3e6'; g.fillRect(0,0,W,H);
+  g.lineCap='round'; g.lineJoin='round';
+  const blob=(x,y,r,col)=>{ g.fillStyle=col; g.beginPath(); for(let a=0;a<=Math.PI*2+.01;a+=.2){ const rr=r*(1+.08*Math.sin(a*3)+.05*Math.cos(a*5)); g.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr); } g.fill(); };
+  blob(700,820,430,'#acffd3'); blob(470,1180,230,'#f66c85'); blob(1010,560,200,'#a1f3ff'); blob(980,1230,160,'#ffd3ee');
+  g.strokeStyle='#151614'; g.lineWidth=9;
+  g.beginPath(); g.ellipse(700,860,210,250,0,0,Math.PI*2); g.stroke();
+  g.beginPath(); g.arc(625,800,22,0,Math.PI*2); g.arc(780,800,22,0,Math.PI*2); g.stroke();
+  g.beginPath(); g.arc(700,900,70,.2,Math.PI-.2); g.stroke();
+  for(let i=0;i<9;i++){ const a=i/9*Math.PI*2; g.beginPath(); g.moveTo(700+Math.cos(a)*290,860+Math.sin(a)*320); g.lineTo(700+Math.cos(a)*360,860+Math.sin(a)*400); g.stroke(); }
+  for(let i=0;i<14;i++){ const x=200+((i*263)%1000), y=260+((i*397)%1300); g.beginPath(); g.moveTo(x-18,y); g.lineTo(x+18,y); g.moveTo(x,y-18); g.lineTo(x,y+18); g.stroke(); }
+  g.beginPath(); g.moveTo(180,1560); g.bezierCurveTo(500,1440,900,1660,1230,1520); g.stroke();
+  loadSrc(c.toDataURL('image/png'));
+};
+outputs();
+/* service worker: the hub handles it */
+</script>
+</body>
+</html>
