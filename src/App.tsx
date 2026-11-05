@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { APPS, type Audience, type HubApp } from './apps'
@@ -14,10 +14,38 @@ const MODULES: Record<string, React.LazyExoticComponent<() => React.JSX.Element>
 }
 
 const route = () => location.hash.slice(1).split('/')[1] ?? ''
+
+// A studio inside the iframe can have an unsaved design (see public/apps/hub-leave.js).
+type Leave = { dirty: () => boolean; guard: () => Promise<boolean> }
+let openFrame: HTMLIFrameElement | null = null
+const frameLeave = (): Leave | undefined => {
+  try { return (openFrame?.contentWindow as (Window & { HubLeave?: Leave }) | null)?.HubLeave } catch { return undefined }
+}
+let leaving = false
+async function leaveTo(hash: string) {
+  const l = frameLeave()
+  if (l && !(await l.guard())) return
+  leaving = true
+  location.hash = hash
+}
+
 function useRoute() {
   const [r, setR] = useState(route)
   useEffect(() => {
-    const on = () => setR(route())
+    let shown = route()
+    const on = () => {
+      const next = route()
+      // Back gesture / back button while a design is unsaved: stay, and ask first.
+      if (!leaving && next !== shown && frameLeave()?.dirty()) {
+        const target = location.hash || '#/'
+        history.pushState(null, '', `#/${shown}`)
+        void leaveTo(target)
+        return
+      }
+      leaving = false
+      shown = next
+      setR(next)
+    }
     window.addEventListener('hashchange', on)
     return () => window.removeEventListener('hashchange', on)
   }, [])
@@ -33,6 +61,8 @@ export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
   const [emailMode, setEmailMode] = useState(false)
   const current = useRoute()
+  const frameRef = useRef<HTMLIFrameElement | null>(null)
+  useEffect(() => { openFrame = frameRef.current; return () => { openFrame = null } })
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -60,10 +90,10 @@ export default function App() {
     return (
       <div className="hub-module">
         <header className="hub-bar no-print">
-          <a href="#/" className="hub-back">‹ Studio</a>
+          <a href="#/" className="hub-back" onClick={(e) => { e.preventDefault(); void leaveTo('#/') }}>‹ Studio</a>
           <span className="hub-bar-title">{app.name}</span>
         </header>
-        <iframe className="hub-frame" src={`${import.meta.env.BASE_URL}${app.frame}?v=${__BUILD__}`} title={app.name} allow="clipboard-write; fullscreen" />
+        <iframe ref={frameRef} className="hub-frame" src={`${import.meta.env.BASE_URL}${app.frame}?v=${__BUILD__}`} title={app.name} allow="clipboard-write; fullscreen" />
       </div>
     )
   }

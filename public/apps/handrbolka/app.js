@@ -480,6 +480,7 @@ const clampN = (v, a, b, d) => Number.isFinite(+v) ? Math.max(a, Math.min(b, Mat
 $('briefBtn').onclick = async () => {
   const brief = $('brief').value.trim();
   if (brief.length < 8) { toast('Napíš do zadania aspoň jednu vetu.'); $('brief').focus(); return; }
+  if (!await HubLeave.guard()) return;
   $('briefBtn').disabled = true; $('briefState').textContent = 'Claude pripravuje návrh…'; $('briefNote').hidden = true;
   try {
     const r = await askClaude(brief);
@@ -500,7 +501,7 @@ try { const b = localStorage.getItem('hb_brief'); if (b) $('brief').value = b; }
 
 /* šablóny */
 Object.entries(TEMPLATES).forEach(([k, t]) => { const o = document.createElement('option'); o.value = k; o.textContent = t.name; $('tpl').appendChild(o); });
-$('tpl').onchange = e => { if (!e.target.value) return; const keepPhoto = st.photo; st = fromTemplate(e.target.value); if (photoImg) st.photo = { ...st.photo, zoom: keepPhoto.zoom, x: keepPhoto.x, y: keepPhoto.y }; currentId = null; syncSave(); e.target.value = ''; syncUI(); renderAll(); toast('Šablóna načítaná'); };
+$('tpl').onchange = async e => { if (!e.target.value) return; if (!await HubLeave.guard()) { e.target.value = ''; return; } const keepPhoto = st.photo; st = fromTemplate(e.target.value); if (photoImg) st.photo = { ...st.photo, zoom: keepPhoto.zoom, x: keepPhoto.x, y: keepPhoto.y }; currentId = null; syncSave(); e.target.value = ''; syncUI(); renderAll(); toast('Šablóna načítaná'); };
 
 /* záložky */
 document.querySelectorAll('[role=tab]').forEach(t => t.onclick = () => {
@@ -735,7 +736,7 @@ async function saveDesign(asNew) {
   }
   const id = asNew || !currentId ? 'l_' + Date.now() : currentId;
   const d = { id, name, state: st, photo: photoData, thumb: thumb(), updated: new Date().toISOString() };
-  try { await Store.impl.save(d); currentId = d.id; savedName = name; syncSave(); toast(asNew ? 'Uložené ako nový návrh: ' + name : 'Zmeny uložené'); } catch (e) { toast('Uloženie sa nepodarilo: ' + (e.message || e)); }
+  try { await Store.impl.save(d); currentId = d.id; savedName = name; syncSave(); HubLeave.mark(); toast(asNew ? 'Uložené ako nový návrh: ' + name : 'Zmeny uložené'); return true; } catch (e) { toast('Uloženie sa nepodarilo: ' + (e.message || e)); return false; }
 }
 let savedName = '';
 function syncSave() {
@@ -758,7 +759,7 @@ async function showSaved() {
     const sm = document.createElement('small'); sm.textContent = new Date(d.updated || d.updated_at).toLocaleString('sk-SK', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     const row = document.createElement('div'); row.className = 'row';
     const open = document.createElement('button'); open.className = 'btn small primary'; open.textContent = 'Otvoriť';
-    open.onclick = () => { st = Object.assign(BASE(), d.state); st.logo = { ...BASE().logo, ...d.state.logo }; st.footer = { ...BASE().footer, ...d.state.footer }; currentId = d.id; savedName = d.name; syncSave(); setPhoto(d.photo || null); syncUI(); setView('edit'); renderAll(); toast('Otvorený návrh. Uložiť ako nový ho neprepíše.'); };
+    open.onclick = async () => { if (!await HubLeave.guard()) return; st = Object.assign(BASE(), d.state); st.logo = { ...BASE().logo, ...d.state.logo }; st.footer = { ...BASE().footer, ...d.state.footer }; currentId = d.id; savedName = d.name; syncSave(); setPhoto(d.photo || null); syncUI(); setView('edit'); renderAll(); HubLeave.mark(); toast('Otvorený návrh. Uložiť ako nový ho neprepíše.'); };
     const copy = document.createElement('button'); copy.className = 'btn small'; copy.textContent = 'Kópia';
     copy.onclick = async () => { await Store.impl.save({ ...d, id: 'l_' + Date.now(), name: d.name + ' (kópia)', updated: new Date().toISOString() }); showSaved(); };
     const del = document.createElement('button'); del.className = 'btn small'; del.textContent = 'Zmazať';
@@ -800,6 +801,7 @@ async function start() {
   $('storeHint').textContent = Store.impl.kind === 'supabase' ? 'Návrhy sa ukladajú online do Supabase.' : 'Návrhy sa ukladajú v tomto prehliadači.';
   await loadFonts();
   restoreDraft();
+  HubLeave.register({ key: 'handrbolka', state: () => JSON.stringify(st) + '|' + (photoData ? photoData.length : 0), save: () => saveDesign(false) });
   brand();
   syncSave(); syncUI(); buildMuts(); selectFormat('post'); renderMuts(); renderVars();
 }

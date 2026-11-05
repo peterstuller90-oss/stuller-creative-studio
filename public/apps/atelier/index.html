@@ -286,16 +286,13 @@ ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;ga
 <div class="sheet" id="nSheet" hidden><div class="card" role="dialog" aria-label="Moje návrhy">
   <h2>Moje návrhy</h2>
   <div id="nLogin" hidden style="display:flex;flex-direction:column;gap:10px">
-    <p class="hint">Návrhy sa ukladajú do cloudu, takže ich nájdeš na telefóne aj na počítači. Na prvé pripojenie zadaj kód ateliéru.</p>
-    <input type="text" id="nKod" placeholder="Kód ateliéru" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-    <button class="btn primary" id="nKodOk">Pripojiť</button>
+    <p class="hint">Návrhy sa ukladajú do cloudu pod tvojím účtom. Otvor Atelier zo Stullers Creative Studio a prihlás sa tam (Face ID), potom tu uvidíš svoje návrhy.</p>
   </div>
   <div id="nMain" hidden style="display:flex;flex-direction:column;gap:10px">
     <button class="btn primary" id="nSave">Uložiť tento návrh</button>
     <button class="btn" id="nSaveNew" hidden>Uložiť ako nový</button>
     <h3>Uložené</h3>
     <div class="nlist" id="nList"><p class="hint">Načítavam…</p></div>
-    <button class="link" id="nLogout" style="align-self:flex-start">Zabudnúť kód na tomto zariadení</button>
   </div>
   <button class="link" id="nClose">Zavrieť</button>
 </div></div>
@@ -309,6 +306,7 @@ ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;ga
 <div class="toast" id="toast" hidden></div>
 
 
+<script src="../hub-leave.js"></script>
 <script src="libs/jspdf.umd.min.js"></script>
 <script src="libs/jszip.min.js"></script>
 <script src="libs/mp4-muxer.js"></script>
@@ -3099,26 +3097,29 @@ async function start(){
   try{await Promise.all(['900 100px Montserrat','800 100px Montserrat','700 100px Montserrat'].map(f=>document.fonts.load(f,'ÝŠČŤŽáéíóúýčďľňšťžô AZ')))}catch(e){}
   current=FKEYS.includes(S.master)?S.master:'story';
   if(!ULAYOUTS.some(l=>l[0]===S.layout))S.layout='klasika';if(!UBGS.some(b=>b[0]===S.bg))S.bg='pas';S.over={};S.dur=4;if(S.anim==='jemne')S.anim='skladanie';
-  initUI();initNav();syncUI();drawMain();drawBrand();
+  initUI();initNav();
+  HubLeave.register({key:'atelier',state:()=>JSON.stringify(S,(k,v)=>k==='id'||k==='photo'?undefined:v)+'|'+(S.photo?S.photo.length:0),save:()=>navSave(false)});syncUI();drawMain();drawBrand();
   window.__APP={S:()=>S,setS:o=>{Object.assign(S,o);syncUI();changed()},makeFile,makeVideo,FORMATS,render:renderFrame};
 }
 
 /* ---------- návrhy v cloude (Supabase) ---------- */
 const SB_URL='https://vupzrryhxnninttjyges.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1cHpycnloeG5uaW50dGp5Z2VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMTA4OTQsImV4cCI6MjEwODU4Njg5NH0.6eG4q5cWCWVQzUT2Qw5OUR_kV3GfFHJK6gbp-5s0igQ';
-let KOD=null,CUR=null;
-try{KOD=localStorage.getItem('atelier-kod');CUR=JSON.parse(localStorage.getItem('atelier-cur')||'null')}catch(e){}
+let KOD='',CUR=null;
+// Saved designs belong to the logged-in Studio account: no atelier code any more.
+function hubToken(){try{const j=JSON.parse(localStorage.getItem('sb-vupzrryhxnninttjyges-auth-token')||'null');return j&&j.access_token||null}catch(e){return null}}
+try{localStorage.removeItem('atelier-kod');CUR=JSON.parse(localStorage.getItem('atelier-cur')||'null')}catch(e){}
 function setCur(c){CUR=c;try{c?localStorage.setItem('atelier-cur',JSON.stringify(c)):localStorage.removeItem('atelier-cur')}catch(e){}}
 async function rpc(fn,args){
-  const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
+  const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+(hubToken()||SB_KEY),'Content-Type':'application/json'},body:JSON.stringify(args)});
   const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
-  if(!r.ok){const m=(j&&(j.message||j.hint))||t||('HTTP '+r.status);const err=new Error(m);err.badKod=String(m).includes('zly_kod');throw err}
+  if(!r.ok){const m=(j&&(j.message||j.hint))||t||('HTTP '+r.status);const err=new Error(m);err.badKod=String(m).includes('zly_kod')||r.status===401;throw err}
   return j}
 function navTitle(){const t=(S.blocks.find(b=>b.type==='title')||{}).text||'Návrh';const i=(S.blocks.find(b=>b.type==='info')||{}).text||'';return (t.replace(/\s+/g,' ').trim()+(i?' · '+i.replace(/\s+/g,' ').trim():'')).slice(0,120)}
 function thumb(){const fk=(FORMATS[current].anim?(FORMATS[current].H>1500?'story':'post'):current);const f=FORMATS[fk];const w=160,h=Math.round(w*f.H/f.W);const c=document.createElement('canvas');c.width=w;c.height=h;
   renderFrame(c.getContext('2d'),fk,S,{W:w,H:h,t:null});return c.toDataURL('image/jpeg',.72)}
 const esc=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 function fmtDate(s){try{return new Date(s).toLocaleString('sk-SK',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
-function navView(){const ok=!!KOD;$('#nLogin').hidden=ok;$('#nMain').hidden=!ok;
+function navView(){const ok=!!hubToken();$('#nLogin').hidden=ok;$('#nMain').hidden=!ok;
   $('#nSave').textContent=CUR?'Uložiť zmeny: '+CUR.nazov:'Uložiť tento návrh';$('#nSaveNew').hidden=!CUR;if(ok)navList()}
 async function navList(){const box=$('#nList');box.innerHTML='<p class="hint">Načítavam…</p>';
   try{const rows=await rpc('atelier_zoznam',{p_kod:KOD})||[];
@@ -3129,26 +3130,21 @@ async function navList(){const box=$('#nList');box.innerHTML='<p class="hint">Na
       d.querySelector('.ndel').onclick=async()=>{if(!confirm('Zmazať návrh „'+r.nazov+'“?'))return;try{await rpc('atelier_zmaz',{p_kod:KOD,p_id:r.id});if(CUR&&CUR.id===r.id)setCur(null);toast('Zmazané');navView()}catch(e){navErr(e)}};
       box.appendChild(d)}}
   catch(e){navErr(e);box.innerHTML='<p class="hint">Návrhy sa nepodarilo načítať. Skontroluj internet a skús znova.</p>'}}
-function navErr(e){if(e&&e.badKod){KOD=null;try{localStorage.removeItem('atelier-kod')}catch(_){}toast('Kód nesedí, zadaj ho znova',3500);navView();return}toast('Nepodarilo sa: '+((e&&e.message)||'chyba siete'),4200)}
+function navErr(e){if(e&&e.badKod){toast('Nie si prihlásený v Studiu. Vráť sa na úvod a prihlás sa.',4200);navView();return}toast('Nepodarilo sa: '+((e&&e.message)||'chyba siete'),4200)}
 async function navSave(asNew){const b=$('#nSave');b.disabled=true;$('#nSaveNew').disabled=true;
   try{const nazov=asNew||!CUR?navTitle():CUR.nazov;const data=JSON.parse(JSON.stringify(S));data.blocks.forEach(x=>delete x.id);
     const id=await rpc('atelier_uloz',{p_kod:KOD,p_id:asNew||!CUR?null:CUR.id,p_nazov:nazov,p_data:data,p_nahlad:thumb()});
-    setCur({id,nazov});toast('Uložené do návrhov');navView()}
-  catch(e){navErr(e)}finally{b.disabled=false;$('#nSaveNew').disabled=false}}
-async function navLoad(r){try{toast('Otváram…',8000);const data=await rpc('atelier_nacitaj',{p_kod:KOD,p_id:r.id});if(!data||!data.blocks){toast('Návrh sa nenašiel');return}
+    setCur({id,nazov});HubLeave.mark();toast('Uložené do návrhov');navView();return true}
+  catch(e){navErr(e);return false}finally{b.disabled=false;$('#nSaveNew').disabled=false}}
+async function navLoad(r){if(!await HubLeave.guard())return;try{toast('Otváram…',8000);const data=await rpc('atelier_nacitaj',{p_kod:KOD,p_id:r.id});if(!data||!data.blocks){toast('Návrh sa nenašiel');return}
     stop();S=Object.assign(defaults(),data);S.blocks.forEach(b=>b.id=UID++);S.over=S.over||{};
     try{S.photo?localStorage.setItem('hb-studio-photo',S.photo):localStorage.removeItem('hb-studio-photo')}catch(e){}
-    if(FKEYS.includes(S.master))current=S.master;setCur({id:r.id,nazov:r.nazov});syncUI();changed();$('#nSheet').hidden=true;toast('Otvorené: '+r.nazov)}
+    if(FKEYS.includes(S.master))current=S.master;setCur({id:r.id,nazov:r.nazov});syncUI();changed();HubLeave.mark();$('#nSheet').hidden=true;toast('Otvorené: '+r.nazov)}
   catch(e){navErr(e)}}
 function initNav(){
   $('#vNav').onclick=()=>{$('#nSheet').hidden=false;navView()};
   $('#nClose').onclick=()=>$('#nSheet').hidden=true;$('#nSheet').onclick=e=>{if(e.target.id==='nSheet')$('#nSheet').hidden=true};
-  $('#nKodOk').onclick=async()=>{const k=$('#nKod').value.trim().toLowerCase();if(!k)return;$('#nKodOk').disabled=true;
-    try{const ok=await rpc('atelier_ok',{p_kod:k});if(ok){KOD=k;try{localStorage.setItem('atelier-kod',k)}catch(e){}$('#nKod').value='';navView()}else toast('Kód nesedí',3000)}
-    catch(e){navErr(e)}finally{$('#nKodOk').disabled=false}};
-  $('#nKod').onkeydown=e=>{if(e.key==='Enter')$('#nKodOk').click()};
   $('#nSave').onclick=()=>navSave(false);$('#nSaveNew').onclick=()=>navSave(true);
-  $('#nLogout').onclick=()=>{KOD=null;setCur(null);try{localStorage.removeItem('atelier-kod')}catch(e){}navView()};
   $('#doneShare').onclick=async()=>{if(!PEND)return;try{await navigator.share({files:[PEND]});$('#doneSheet').hidden=true;PEND=null;toast('Hotovo')}catch(e){if(!(e&&e.name==='AbortError'))toast('Zdieľanie zlyhalo',3000)}};
   $('#doneClose').onclick=()=>{$('#doneSheet').hidden=true;PEND=null};
 }
