@@ -123,7 +123,6 @@ input[type=range]{width:100%;accent-color:var(--mag)}
 .lh .acts{display:flex;gap:2px;align-items:center}
 .socset{border:1px solid var(--line);border-radius:12px;padding:10px 14px}
 .vars{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.vars button{border:1px solid var(--line);border-radius:10px;padding:4px;background:var(--bg);cursor:pointer;line-height:0}.vars canvas{width:100%;height:auto;border-radius:6px}
-.brief textarea{width:100%;margin-top:6px}
 .socset summary{font-weight:600;cursor:pointer;color:var(--muted)}
 .socset label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted);margin-top:10px}
 .socset input{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;color:var(--ink);background:var(--bg);width:100%}
@@ -201,12 +200,6 @@ ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;ga
       <button role="tab" aria-selected="false" data-tab="fotka">Fotka</button>
     </div>
     <div class="pane" data-pane="texty">
-      <div class="group brief" id="briefBox"><h3>Návrh zo zadania (AI)</h3>
-        <p class="hint" style="margin-top:8px">Napíš vlastnými slovami, čo potrebuješ. Claude pripraví texty, rozloženie a farby, potom si všetko môžeš upraviť.</p>
-        <textarea id="brief" rows="3" placeholder="Napr. Story na výstavu prác detí v Perle, 30. januára o 17:00, pridaj Instagram"></textarea>
-        <button class="btn primary" id="briefBtn" style="margin-top:8px">Pripraviť návrh</button>
-        <p class="hint" id="briefNote" hidden style="margin-top:8px"></p>
-      </div>
       <div class="group" data-basic data-fold="texty"><h3>Texty</h3>
       <div id="blocks" class="pane" style="padding:0"></div>
       <div class="add"><button data-add="title">+ Nadpis</button><button data-add="sub">+ Podnadpis</button><button data-add="info">+ Dátum / miesto</button><button data-add="small">+ Malý text</button><button data-add="citat">+ Citát</button><button data-add="odrazky">+ Odrážky</button></div>
@@ -3068,8 +3061,6 @@ function initUI(){
   initPreviewDrag();
   Fold('[data-pane]>.group');
   $('#bigPrev').onclick=e=>{e.stopPropagation();BIGPREV=!BIGPREV;$('#bigPrev').textContent=BIGPREV?'⤡':'⤢';$('#bigPrev').setAttribute('aria-label',BIGPREV?'Zmenšiť náhľad':'Zväčšiť náhľad');drawMain()};
-  try{$('#brief').value=localStorage.getItem('atelier-brief')||''}catch(e){}
-  $('#briefBtn').onclick=runBrief;
   $('#logoS').oninput=e=>{S.logoSize=+e.target.value;changed()};
   $('#varsMore').onclick=()=>{VARSEED++;renderVars()};
   $$('[data-tab]').forEach(t=>t.addEventListener('click',()=>setTimeout(renderVars,30)));
@@ -3085,27 +3076,6 @@ function renderVars(){const box=$('#vars');if(!box||box.closest('.pane[hidden]')
     renderFrame(c.getContext('2d'),fk,v,{W:w,H:h,t:null});
     b.onclick=()=>{const keep=S.blocks;S=Object.assign(v,{blocks:keep});syncUI();changed();toast('Variácia použitá')}})}
 function renderVarsSoon(){clearTimeout(vt);vt=setTimeout(renderVars,350)}
-/* návrh zo zadania cez Claude (Supabase funkcia atelier-navrh) */
-async function runBrief(){const z=$('#brief').value.trim();if(z.length<8){toast('Napíš do zadania aspoň jednu vetu.');$('#brief').focus();return}
-  if(!await HubLeave.guard())return;
-  const btn=$('#briefBtn');btn.disabled=true;btn.textContent='Claude pripravuje návrh…';$('#briefNote').hidden=true;
-  try{const r=await fetch(SB_URL+'/functions/v1/atelier-navrh',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+(hubToken()||SB_KEY),'Content-Type':'application/json'},
-      body:JSON.stringify({zadanie:z,dnes:new Date().toISOString().slice(0,10),aktualny:{blocks:S.blocks.map(b=>({type:b.type,text:b.text}))}})});
-    const j=await r.json().catch(()=>({}));
-    if(!r.ok||!j.navrh){const e=j.error||('HTTP '+r.status);throw new Error(e==='zly_kod'?'Nie si prihlásený v Studiu.':e==='chyba_kluc'?'AI ešte nemá nastavený kľúč v Supabase.':e)}
-    const n=j.navrh;stop();
-    S.blocks=(n.blocks||[]).filter(b=>TYPEN[b.type]&&String(b.text||'').trim()).map(b=>({id:UID++,type:b.type,text:b.text}));
-    if(!S.blocks.length)S.blocks=mkBlocks([['title','Návrh']]);
-    if(ULAYOUTS.some(l=>l[0]===n.layout))S.layout=n.layout;if(UBGS.some(l=>l[0]===n.bg))S.bg=n.bg;
-    ['bgColor','textColor','decoCol'].forEach(k=>{if(typeof n[k]==='string')S[k]=n[k]});
-    if(typeof n.logo==='boolean')S.logo=n.logo;if(Number.isFinite(n.deco))S.deco=Math.max(0,Math.min(12,Math.round(n.deco)));if(Number.isFinite(n.decoSize))S.decoSize=Math.max(.6,Math.min(2,n.decoSize));
-    ['socIg','socFb','socQr'].forEach(k=>{if(typeof n[k]==='boolean')S[k]=n[k]});S.over={};S.posA=0;S.posB=0;
-    if(FKEYS.includes(n.format)){current=n.format;S.master=n.format}
-    setCur(null);syncUI();changed();drawMain();
-    $('#briefNote').textContent=(n.poznamka?n.poznamka+' ':'')+'Čokoľvek nižšie môžeš zmeniť.';$('#briefNote').hidden=false;
-    try{localStorage.setItem('atelier-brief',z)}catch(e){}}
-  catch(e){toast('Návrh sa nepodaril: '+(e.message||e),4500)}
-  finally{btn.disabled=false;btn.textContent='Pripraviť návrh'}}
 /* texty sa dajú v náhľade chytiť a presunúť vyššie / nižšie (preradia sa, takže ostanú v okrajoch) */
 function initPreviewDrag(){
   const lay=()=>{const f=FORMATS[current];return computeLayout(document.createElement('canvas').getContext('2d'),current,S,f.W,f.H)};

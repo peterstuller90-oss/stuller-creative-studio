@@ -133,9 +133,6 @@ input[type=range]{width:100%;accent-color:var(--green)}
 .login{max-width:380px;margin:12vh auto 0;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;display:flex;flex-direction:column;gap:14px}
 .login h1{margin:0;font-size:24px}
 .err{color:var(--coral);font-size:13px;margin:0}
-.brief{background:var(--sunk);border-radius:var(--r);padding:12px;margin-inline:-4px}
-.brief textarea{min-height:110px}
-#briefNote{background:var(--surface);border-radius:9px;padding:8px 10px;color:var(--ink)}
 @media (max-width:1150px){.muts{grid-template-columns:repeat(3,minmax(0,1fr))}.vars{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:860px){
   /* mobil: náhľad je stále pripnutý hore, pod ním sa posúvajú úpravy */
@@ -228,14 +225,8 @@ input[type=range]{width:100%;accent-color:var(--green)}
     </div>
 
     <div data-pane="obsah" class="group" style="gap:20px">
-      <div class="group brief">
-        <h3>Zadanie</h3>
-        <textarea id="brief" rows="5" placeholder="Napíš vlastnými slovami, čo potrebuješ. Napríklad: Pozvánka na tekvicovú slávnosť v sobotu 25. 10. od 15:00 v klube na Kubrickej. Bude vyrezávanie tekvíc, opekanie a lampiónový sprievod. Chcem fotku detí v rámiku a veselé kresbičky."></textarea>
-        <div class="row"><button class="btn primary" id="briefBtn">Pripraviť návrh</button><span class="hint" id="briefState"></span></div>
-        <p class="hint" id="briefNote" hidden></p>
-      </div>
       <div class="group">
-        <h3>Alebo začni zo šablóny</h3>
+        <h3>Začni zo šablóny</h3>
         <select id="tpl"><option value="">Vyber šablónu…</option></select>
       </div>
       <div class="group" data-basic>
