@@ -192,20 +192,25 @@ function selectFormat(k) {
   sizeMain(); renderMain(); renderVarsDebounced();
 }
 
+Fold('[data-pane]>.group', 'handrbolka');
+if (window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty('--pvh', $('mainwrap').offsetHeight + 'px')).observe($('mainwrap'));
 /* poradie blokov: ťahanie za ≡ v zozname */
 DragSort($('blocks'), (order, moved) => {
   st.blocks = order.map(i => st.blocks[i]); buildBlocks(); renderAll();
   if (moved != null) { const g = $('blocks').children[order.indexOf(moved)]; if (g) g.querySelector('.grip').focus(); }
 });
-/* QR kódy a obrázky sa dajú potiahnuť priamo v náhľade, texty sa ťahaním preradia (ostávajú v okrajoch) */
-let drag = null, tdrag = null;
-function fmtPt(pt) { const r = mainC.getBoundingClientRect(), fmt = F[cur]; return { x: (pt.clientX - r.left) / r.width * fmt.W, y: (pt.clientY - r.top) / r.height * fmt.H }; }
-const flowItems = () => mainL.items.filter(it => it.bi != null && !it.free).sort((a, b) => a.y - b.y);
-function hitText(pt) {
-  if (!mainL || F[cur].anim) return null;
-  const { y } = fmtPt(pt);
-  return mainL.items.find(it => it.bi != null && !it.free && it.type !== 'qr' && it.type !== 'obrazok' && y >= it.y - 10 && y <= it.y + it.h + 10) || null;
-}
+/* QR kódy a obrázky sa dajú potiahnuť priamo v náhľade kamkoľvek */
+let drag = null;
+/* texty sa v náhľade chytia do plávajúceho okienka a pustením sa preradia (ostávajú v okrajoch) */
+const isText = it => it.bi != null && !it.free && it.type !== 'qr' && it.type !== 'obrazok';
+DragSort.preview(mainC, {
+  layout: () => (!mainL || F[cur].anim) ? null : { W: mainL.W, H: mainL.H, items: mainL.items.filter(isText).map(it => ({ id: it.bi, x: it.x, y: it.y, w: it.tw || it.w, h: it.h, group: 0 })) },
+  drop: (id, k) => {
+    const flow = mainL.items.filter(isText).sort((a, b) => a.y - b.y).map(it => it.bi);
+    const order = DragSort.reflow(st.blocks.length, flow, id, k);
+    st.blocks = order.map(i => st.blocks[i]); buildBlocks(); renderAll();
+  },
+});
 function hitElem(pt) {
   if (!mainL || F[cur].anim) return null;
   const r = mainC.getBoundingClientRect(), fmt = F[cur];
@@ -214,31 +219,23 @@ function hitElem(pt) {
   for (let j = its.length - 1; j >= 0; j--) { const it = its[j]; if (x >= it.x && x <= it.x + it.w && y >= it.y && y <= it.y + it.h) return { it, x, y }; }
   return null;
 }
-mainC.addEventListener('touchstart', e => { if (e.touches.length === 1 && (hitElem(e.touches[0]) || hitText(e.touches[0]))) e.preventDefault(); }, { passive: false });
+mainC.addEventListener('touchstart', e => { if (e.touches.length === 1 && hitElem(e.touches[0])) e.preventDefault(); }, { passive: false });
 mainC.addEventListener('pointerdown', e => {
   const h = hitElem(e);
-  if (!h) { const t = hitText(e); if (!t) return; e.preventDefault(); mainC.setPointerCapture(e.pointerId); tdrag = { b: st.blocks[t.bi], seen: mainL, moved: false }; mainC.style.cursor = 'grabbing'; return; }
+  if (!h) return;
   const b = st.blocks[h.it.bi]; if (!b) return;
   e.preventDefault(); mainC.setPointerCapture(e.pointerId);
   drag = { b, ox: h.x - (h.it.x + h.it.w / 2), oy: h.y - (h.it.y + h.it.h / 2), moved: false };
   mainC.style.cursor = 'grabbing';
 });
 mainC.addEventListener('pointermove', e => {
-  if (tdrag) {
-    if (mainL === tdrag.seen && tdrag.moved) return; // wait for the preview to redraw after the last move
-    const from = st.blocks.indexOf(tdrag.b), { y } = fmtPt(e), flow = flowItems();
-    const k = flow.filter(it => it.bi !== from && it.y + it.h / 2 < y).length;
-    const order = DragSort.reflow(st.blocks.length, flow.map(it => it.bi), from, k);
-    if (order.some((v, i) => v !== i)) { st.blocks = order.map(i => st.blocks[i]); tdrag.moved = true; tdrag.seen = mainL; renderAll(false); }
-    return;
-  }
-  if (!drag) { mainC.style.cursor = hitElem(e) || hitText(e) ? 'grab' : ''; return; }
+  if (!drag) { if (hitElem(e)) mainC.style.cursor = 'grab'; return; }
   const r = mainC.getBoundingClientRect();
   const fx = (e.clientX - r.left) / r.width - drag.ox / F[cur].W, fy = (e.clientY - r.top) / r.height - drag.oy / F[cur].H;
   drag.b.free = true; drag.b.fx = Math.max(0, Math.min(1, fx)); drag.b.fy = Math.max(0, Math.min(1, fy)); drag.moved = true;
   renderAll(false);
 });
-const endDrag = () => { if (tdrag) { const m = tdrag.moved; tdrag = null; mainC.style.cursor = ''; if (m) { buildBlocks(); renderAll(); } return; } if (!drag) return; const m = drag.moved; drag = null; mainC.style.cursor = ''; if (m) { buildBlocks(); renderVarsDebounced(); } };
+const endDrag = () => { if (!drag) return; const m = drag.moved; drag = null; mainC.style.cursor = ''; if (m) { buildBlocks(); renderVarsDebounced(); } };
 mainC.addEventListener('pointerup', endDrag); mainC.addEventListener('pointercancel', endDrag);
 
 /* mobil: rýchly prepínač formátu a veľkosti v pripnutom náhľade */
@@ -793,7 +790,7 @@ function setView(v) {
   if (v === 'saved') showSaved();
 }
 $('vEdit').onclick = () => setView('edit');
-$('vSaved').onclick = () => setView('saved');
+$('vSaved').onclick = async () => { if ($('savedView').hidden && !await HubLeave.guard()) return; setView('saved'); };
 
 /* rozpracovaný návrh si pamätáme v prehliadači */
 let pt = 0;
@@ -821,7 +818,7 @@ async function start() {
   $('storeHint').textContent = Store.impl.kind === 'supabase' ? 'Návrhy sa ukladajú online do Supabase.' : 'Návrhy sa ukladajú v tomto prehliadači.';
   await loadFonts();
   restoreDraft();
-  HubLeave.register({ key: 'handrbolka', state: () => JSON.stringify(st) + '|' + (photoData ? photoData.length : 0), save: () => saveDesign(false) });
+  HubLeave.register({ key: 'handrbolka', state: () => JSON.stringify(st) + '|' + (photoData ? photoData.length : 0), save: () => saveDesign(false), saveCopy: () => saveDesign(true) });
   brand();
   syncSave(); syncUI(); buildMuts(); selectFormat('post'); renderMuts(); renderVars();
 }

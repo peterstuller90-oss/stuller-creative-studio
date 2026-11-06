@@ -1,5 +1,5 @@
 /* Asks "Uložiť návrh?" before a design is left (back to the Studio, opening another design, closing the page).
-   Each studio registers: { key, state: () => string, save: () => Promise<boolean> }.
+   Each studio registers: { key, state: () => string, save: () => Promise<boolean>, saveCopy?: () => Promise<boolean> }.
    The fingerprint of the last saved (or opened) design is kept in localStorage, so it survives reloads. */
 (function () {
   let api = null
@@ -21,10 +21,12 @@
       if (!document.getElementById('hl-css')) { const st = document.createElement('style'); st.id = 'hl-css'; st.textContent = css; document.head.appendChild(st) }
       const back = document.createElement('div'); back.className = 'hl-back'
       back.innerHTML = '<div class="hl-card" role="alertdialog" aria-modal="true" aria-labelledby="hl-t"><h2 id="hl-t">Uložiť návrh?</h2><p>V návrhu máš neuložené zmeny.</p>' +
-        '<button class="hl-save">Uložiť</button><button class="hl-no">Neukladať</button><button class="hl-stay">Zostať v návrhu</button></div>'
+        '<button class="hl-save">Uložiť</button>' + (api && api.saveCopy ? '<button class="hl-copy">Uložiť ako kópiu</button>' : '') +
+        '<button class="hl-no">Neukladať</button><button class="hl-stay">Zostať v návrhu</button></div>'
       const done = (v) => { back.remove(); res(v) }
       back.querySelector('.hl-save').onclick = () => done('save')
       back.querySelector('.hl-no').onclick = () => done('discard')
+      const cp = back.querySelector('.hl-copy'); if (cp) cp.onclick = () => done('copy')
       back.querySelector('.hl-stay').onclick = () => done('cancel')
       back.onclick = (e) => { if (e.target === back) done('cancel') }
       document.body.appendChild(back)
@@ -43,7 +45,7 @@
       const c = await ask()
       if (c === 'cancel') return false
       if (c === 'discard') { HubLeave.mark(); return true }
-      const ok = await api.save()
+      const ok = c === 'copy' ? await api.saveCopy() : await api.save()
       if (ok) HubLeave.mark()
       return !!ok
     },

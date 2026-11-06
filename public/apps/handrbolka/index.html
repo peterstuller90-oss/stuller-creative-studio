@@ -150,7 +150,21 @@ input[type=range]{width:100%;accent-color:var(--green)}
     padding:8px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line);box-shadow:0 8px 16px -12px rgba(31,59,46,.35)}
   .fmtbar{display:flex}
   .canvasbox{flex:none;padding:8px;border-radius:12px}
-  #main{max-height:34vh;box-shadow:0 4px 14px rgba(31,59,46,.18)}
+  #main{max-height:27vh;box-shadow:0 4px 14px rgba(31,59,46,.18)}
+  /* telefón: kompaktná lišta, len to podstatné */
+  .top{padding-block:6px;gap:6px;flex-wrap:nowrap}
+  .brand{display:none}
+  #shuffle,#saveNewBtn{display:none!important}
+  .top .seg{margin-right:auto}
+  .top .seg button{padding:6px 10px;font-size:13px}
+  .top .btn{padding:7px 12px;font-size:13px}
+  .stage>.sec:first-child{display:none}
+  .mainwrap{padding-top:6px;padding-bottom:6px;gap:6px}
+  .panel{gap:0}
+  [data-pane]{gap:0!important}
+  [data-pane]>.group{padding-block:2px}
+  .fold.open{padding-bottom:14px}
+  .tabs{position:sticky;top:var(--pvh,0px);z-index:4;background:var(--surface)}
   .mainwrap.big #main{max-height:64vh}
   body.kb #main{max-height:22vh}
   .side{flex:none}
@@ -224,7 +238,7 @@ input[type=range]{width:100%;accent-color:var(--green)}
         <h3>Alebo začni zo šablóny</h3>
         <select id="tpl"><option value="">Vyber šablónu…</option></select>
       </div>
-      <div class="group">
+      <div class="group" data-basic>
         <h3>Texty a prvky</h3>
         <div class="blocks" id="blocks"></div>
         <div class="add">
@@ -240,7 +254,7 @@ input[type=range]{width:100%;accent-color:var(--green)}
           <button data-add="qr">+ QR kód</button>
           <button data-add="obrazok">+ Obrázok</button>
         </div>
-        <p class="hint">Nový riadok spravíš klávesom Enter. Pri odrážkach je každý riadok jedna odrážka. Poradie meníš šípkami. QR kód alebo obrázok môžeš aj chytiť prstom v náhľade a posunúť kamkoľvek.</p>
+        <p class="hint">Nový riadok spravíš klávesom Enter. Pri odrážkach je každý riadok jedna odrážka. Poradie zmeníš ťahaním za ≡, alebo chyť text priamo v náhľade. QR kód alebo obrázok môžeš v náhľade posunúť kamkoľvek.</p>
       </div>
       <div class="group">
         <h3>Logo</h3>
@@ -269,7 +283,7 @@ input[type=range]{width:100%;accent-color:var(--green)}
     </div>
 
     <div data-pane="vzhlad" class="group" style="gap:20px" hidden>
-      <div class="group"><h3>Rozloženie</h3><div class="cards" id="layouts"></div>
+      <div class="group" data-basic><h3>Rozloženie</h3><div class="cards" id="layouts"></div>
         <div class="seg" role="group" aria-label="Zarovnanie" id="aligns"><button data-align="center">Na stred</button><button data-align="left">Doľava</button></div>
       </div>
       <div class="group"><h3>Pozadie</h3><div class="sw" id="bgs"></div><p class="hint" id="bgHint"></p></div>
@@ -289,7 +303,7 @@ input[type=range]{width:100%;accent-color:var(--green)}
     </div>
 
     <div data-pane="anim" class="group" style="gap:20px" hidden>
-      <div class="group"><h3>Štýl intra</h3><div class="cards" id="animStyles"></div></div>
+      <div class="group" data-basic><h3>Štýl intra</h3><div class="cards" id="animStyles"></div></div>
       <div class="group"><h3>Dĺžka</h3><div class="seg" role="group" id="durs"></div></div>
       <div class="group"><h3>Čo je v intre</h3>
         <label class="check"><input type="checkbox" id="animTitle"> Hlavný nadpis</label>
@@ -363,6 +377,7 @@ input[type=range]{width:100%;accent-color:var(--green)}
 <script src="engine.js"></script>
 <script src="../hub-leave.js"></script>
 <script src="../drag-sort.js"></script>
+<script src="../fold.js"></script>
 <script src="app.js"></script>
 
 </body></html>

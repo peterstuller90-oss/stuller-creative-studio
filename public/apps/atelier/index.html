@@ -76,6 +76,23 @@ button{cursor:pointer}
 .tabs button{border:0;background:transparent;border-radius:9px;padding:10px 0;font-weight:600;color:var(--muted)}
 .tabs button[aria-selected="true"]{background:var(--bg);color:var(--ink);box-shadow:0 1px 3px rgba(43,30,58,.14)}
 .pane{display:flex;flex-direction:column;gap:14px;padding-block:18px 8px}
+.group{display:flex;flex-direction:column;gap:10px}
+.field.group>h3,.group>h3{margin:0}
+.bigbtn{display:none;position:absolute;right:10px;bottom:10px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.92);box-shadow:0 2px 8px rgba(43,30,58,.2);font-size:18px;color:var(--ink)}
+@media (max-width:899px){
+  .bigbtn{display:block}
+  .app>header,.top{padding-block:6px!important}
+  .preview{padding:8px 16px}
+  .formats{display:flex;overflow-x:auto;gap:6px;padding-block:8px;scrollbar-width:none}
+  .formats button{flex:none;flex-direction:row;gap:5px;padding:6px 12px;border-radius:999px;font-size:13px}
+  .formats button small{font-size:11px}
+  .tabs{padding:3px}.tabs button{padding:8px 0}
+  .bar .in .btn{min-height:44px;padding:9px 10px}.bar{padding-top:8px!important}
+  .top canvas#brandLogo{height:38px;width:auto}
+  .pane{gap:0;padding-top:6px}
+  .pane>.group{padding-block:4px}
+  .fold.open{padding-bottom:14px}
+}
 .field{display:flex;flex-direction:column;gap:6px}
 .field .lh{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
 .field .x{border:0;background:none;color:var(--muted);font-size:13px;font-weight:600;padding:4px 2px;text-transform:none;letter-spacing:0}
@@ -175,7 +192,7 @@ ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;ga
 <div class="app">
 <div id="editView">
   <div class="top wrap"><canvas id="brandLogo" width="140" height="74" aria-hidden="true"></canvas><b></b><button class="link" id="vNav">Moje návrhy</button><button class="link" id="vMan">Manuál</button></div>
-  <div class="preview" id="canvasbox"><canvas id="main" width="540" height="960" aria-label="Náhľad návrhu"></canvas><button class="playbtn" id="playBtn" hidden>▶ Prehrať intro</button></div>
+  <div class="preview" id="canvasbox"><canvas id="main" width="540" height="960" aria-label="Náhľad návrhu"></canvas><button class="playbtn" id="playBtn" hidden>▶ Prehrať intro</button><button class="bigbtn" id="bigPrev" aria-label="Zväčšiť náhľad" title="Zväčšiť náhľad">⤢</button></div>
   <div class="formats wrap" id="formats" role="group" aria-label="Formát"></div>
   <div class="wrap">
     <div class="tabs" role="tablist">
@@ -184,18 +201,21 @@ ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;ga
       <button role="tab" aria-selected="false" data-tab="fotka">Fotka</button>
     </div>
     <div class="pane" data-pane="texty">
-      <details class="socset brief" id="briefBox"><summary>Návrh zo zadania (AI)</summary>
+      <div class="group brief" id="briefBox"><h3>Návrh zo zadania (AI)</h3>
         <p class="hint" style="margin-top:8px">Napíš vlastnými slovami, čo potrebuješ. Claude pripraví texty, rozloženie a farby, potom si všetko môžeš upraviť.</p>
         <textarea id="brief" rows="3" placeholder="Napr. Story na výstavu prác detí v Perle, 30. januára o 17:00, pridaj Instagram"></textarea>
         <button class="btn primary" id="briefBtn" style="margin-top:8px">Pripraviť návrh</button>
         <p class="hint" id="briefNote" hidden style="margin-top:8px"></p>
-      </details>
+      </div>
+      <div class="group" data-basic data-fold="texty"><h3>Texty</h3>
       <div id="blocks" class="pane" style="padding:0"></div>
-      <div class="field" id="posWrap"><span class="lh">Poloha textov</span>
+      <div class="add"><button data-add="title">+ Nadpis</button><button data-add="sub">+ Podnadpis</button><button data-add="info">+ Dátum / miesto</button><button data-add="small">+ Malý text</button><button data-add="citat">+ Citát</button><button data-add="odrazky">+ Odrážky</button></div>
+      </div>
+      <div class="field group" id="posWrap"><h3>Poloha textov</h3>
         <label class="rng" id="posAWrap"><span id="posALbl">Horné texty</span><input type="range" id="posA" min="-1" max="1" step="0.01"><small><span>↑ hore</span><span>dole ↓</span></small></label>
         <label class="rng" id="posBWrap"><span>Dolné texty</span><input type="range" id="posB" min="-1" max="1" step="0.01"><small><span>↑ hore</span><span>dole ↓</span></small></label>
       </div>
-      <div class="field"><span class="lh">Sociálne siete</span>
+      <div class="field group"><h3>Sociálne siete</h3>
         <label class="toggle">Instagram<input type="checkbox" id="socIg"></label>
         <label class="toggle">Facebook<input type="checkbox" id="socFb"></label>
         <label class="toggle">Zobraziť ako QR kódy<input type="checkbox" id="socQr"></label>
@@ -207,26 +227,26 @@ ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;ga
           <label>Facebook odkaz<input type="url" id="fbUrl" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://www.facebook.com/…"></label>
         </details>
       </div>
-      <div class="add"><button data-add="title">+ Nadpis</button><button data-add="sub">+ Podnadpis</button><button data-add="info">+ Dátum / miesto</button><button data-add="small">+ Malý text</button><button data-add="citat">+ Citát</button><button data-add="odrazky">+ Odrážky</button></div>
     </div>
     <div class="pane" data-pane="vzhlad" hidden>
-      <h3>Variácie</h3><p class="hint">Ťukni na variáciu, ktorá sa ti páči. Texty ostanú tvoje.</p>
-      <div class="vars" id="vars"></div><button class="link" id="varsMore" style="align-self:flex-start">Ďalšie variácie</button>
-      <h3>Rozloženie</h3><div class="opts" id="layouts"></div>
-      <h3>Pozadie</h3><div class="opts" id="bgs"></div>
-      <div class="sw" id="bgColors" hidden></div>
+      <div class="group" data-basic><h3>Variácie</h3><p class="hint">Ťukni na variáciu, ktorá sa ti páči. Texty ostanú tvoje.</p>
+      <div class="vars" id="vars"></div><button class="link" id="varsMore" style="align-self:flex-start">Ďalšie variácie</button></div>
+      <div class="group"><h3>Rozloženie</h3><div class="opts" id="layouts"></div></div>
+      <div class="group"><h3>Pozadie</h3><div class="opts" id="bgs"></div>
+      <div class="sw" id="bgColors" hidden></div></div>
+      <div class="group"><h3>Logo</h3>
       <label class="toggle">Zobraziť logo<input type="checkbox" id="logoOn"></label>
       <p class="hint" id="logoColH" style="margin:2px 0 -2px">Farba loga</p>
       <div class="sw" id="logoCols" role="group" aria-label="Farba loga"></div>
-      <label class="rng" id="logoSWrap"><span>Veľkosť loga</span><input type="range" id="logoS" min="0.6" max="1.6" step="0.02"><small><span>menšie</span><span>väčšie</span></small></label>
-      <h3>Ozdoby</h3>
+      <label class="rng" id="logoSWrap"><span>Veľkosť loga</span><input type="range" id="logoS" min="0.6" max="1.6" step="0.02"><small><span>menšie</span><span>väčšie</span></small></label></div>
+      <div class="group"><h3>Ozdoby</h3>
       <label class="rng"><span>Množstvo</span><input type="range" id="decoN" min="0" max="12" step="1"><output id="decoNv"></output></label>
       <label class="rng"><span>Veľkosť</span><input type="range" id="decoS" min="0.6" max="2" step="0.05"></label>
       <label class="rng"><span>Priehľadnosť</span><input type="range" id="decoA" min="0.25" max="1" step="0.05"><small><span>jemné</span><span>plné</span></small></label>
       <div class="sw" id="decoCols" role="group" aria-label="Farba ozdôb"></div>
-      <p class="hint">Tlačidlo 🎲 Iný vzhľad dole zamieša farby nadpisu, tvar pásu a ozdoby.</p>
-      <h3>Animácia videa</h3><div class="seg" id="anims" role="group" aria-label="Animácia videa"></div>
-      <p class="hint">Platí pre IG video a IGS video. Stop motion rýchlo prebliká rôzne vzhľady a na konci zastane na tvojom návrhu.</p>
+      <p class="hint">Tlačidlo 🎲 Iný vzhľad dole zamieša farby nadpisu, tvar pásu a ozdoby.</p></div>
+      <div class="group"><h3>Animácia videa</h3><div class="seg" id="anims" role="group" aria-label="Animácia videa"></div>
+      <p class="hint">Platí pre IG video a IGS video. Stop motion rýchlo prebliká rôzne vzhľady a na konci zastane na tvojom návrhu.</p></div>
     </div>
     <div class="pane" data-pane="fotka" hidden>
       <div class="photo" id="drop"><img id="photoPrev" alt="Vložená fotka" hidden><span id="photoTxt">Fotka môže byť v bielom páse alebo cez celé pozadie.</span><button class="btn primary" id="photoBtn">Vybrať fotku</button><button class="link" id="photoDel" hidden>Odstrániť fotku</button><input type="file" id="photoIn" accept="image/*" hidden></div>
@@ -321,6 +341,7 @@ ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;ga
 
 <script src="../hub-leave.js"></script>
 <script src="../drag-sort.js"></script>
+<script src="../fold.js"></script>
 <script src="libs/jspdf.umd.min.js"></script>
 <script src="libs/jszip.min.js"></script>
 <script src="libs/mp4-muxer.js"></script>
@@ -2962,13 +2983,13 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const ULAYOUTS=[['klasika','Klasika'],['hore','Hore'],['stred','Na stred'],['obratene','Logo dole']];
 const UBGS=[['pas','Sivá s pásom'],['konfety','Konfety'],['farba','Farebná']];
 const FSHORT={post:['IG','post'],postvid:['IG','video'],story:['IGS','story'],reel:['IGS','video'],a4:['A4','plagát'],a3:['A3','plagát']};
-let current='story',playing=false,playT=0,playStart=0,raf=0;
+let BIGPREV=false;let current='story',playing=false,playT=0,playStart=0,raf=0;
 function save(){try{const c=Object.assign({},S);delete c.photo;localStorage.setItem('hb-studio-v1',JSON.stringify(c))}catch(e){}}
 function toast(msg,ms=2600){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,ms)}
 function sizeFor(fk,maxW,maxH){const f=FORMATS[fk];const s=Math.min(maxW/f.W,maxH/f.H);return[Math.round(f.W*s),Math.round(f.H*s)]}
 function drawTo(canvas,fk,cssW,cssH,t,st){const d=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(cssW*d);canvas.height=Math.round(cssH*d);canvas.style.width=cssW+'px';canvas.style.aspectRatio=cssW+'/'+cssH;
   renderFrame(canvas.getContext('2d'),fk,st||S,{W:canvas.width,H:canvas.height,t:t==null?null:t})}
-function drawMain(){const box=$('#canvasbox');const maxW=Math.max(200,box.clientWidth-32);const desk=window.matchMedia&&matchMedia('(min-width:900px)').matches;const maxH=desk?Math.max(200,box.clientHeight-40):Math.max(200,Math.min(window.innerHeight*(window.innerWidth<700?.36:.58),760));
+function drawMain(){const box=$('#canvasbox');const maxW=Math.max(200,box.clientWidth-32);const desk=window.matchMedia&&matchMedia('(min-width:900px)').matches;const maxH=desk?Math.max(200,box.clientHeight-40):Math.max(200,Math.min(window.innerHeight*(window.innerWidth<700?(BIGPREV?.6:.27):.58),760));
   const[w,h]=sizeFor(current,maxW,maxH);drawTo($('#main'),current,w,h,FORMATS[current].anim&&playing?playT:null);
   $('#playBtn').hidden=!FORMATS[current].anim||playing;document.documentElement.style.setProperty('--pvh',box.offsetHeight+'px')}
 function drawOpts(){
@@ -3033,7 +3054,7 @@ function initUI(){
   $('#photoIn').onchange=e=>{const f=e.target.files[0];if(f)loadPhoto(f);e.target.value=''};
   const dr=$('#drop');dr.ondragover=e=>e.preventDefault();dr.ondrop=e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))loadPhoto(f)};
   $('#photoDel').onclick=()=>{S.photo=null;S.photoHi=null;try{localStorage.removeItem('hb-studio-photo')}catch(e){}syncUI();changed()};
-  $('#vMan').onclick=()=>view('man');$('#vBack').onclick=()=>view('edit');
+  $('#vMan').onclick=async()=>{if(!await HubLeave.guard())return;view('man')};$('#vBack').onclick=()=>view('edit');
   $('#bleedOn').checked=PRINTOPT.bleed;$('#bleedOn').onchange=e=>{PRINTOPT.bleed=e.target.checked;try{localStorage.setItem('atelier-bleed',PRINTOPT.bleed?'1':'0')}catch(_){}};
   $('#expBtn').onclick=()=>{$('#expMain').textContent='Tento formát: '+FORMATS[current].n;$('#sheet').hidden=false;fileHintUp()};
   const fileHintUp=()=>{const ft=$('#fileTema');if(document.activeElement!==ft)ft.value=S.fileTema||'';S.fileTema='';ft.placeholder=tema();S.fileTema=ft.value;const f=FORMATS[current];const bl=f.mm&&$('#bleedOn')&&$('#bleedOn').checked;$('#fileHint').textContent='Súbor: '+tema()+' - '+FNAME[current]+(bl?' 3mm spad':'')+'.'+f.ext};
@@ -3044,6 +3065,8 @@ function initUI(){
   $('#playBtn').onclick=play;$('#main').onclick=()=>{if(FORMATS[current].anim)playing?stop():play()};
   DragSort($('#blocks'),(order,moved)=>{S.blocks=order.map(i=>S.blocks[i]);buildBlocks();changed();if(moved!=null){const g=$('#blocks').children[order.indexOf(moved)];if(g)g.querySelector('.grip').focus()}});
   initPreviewDrag();
+  Fold('[data-pane]>.group','atelier');
+  $('#bigPrev').onclick=e=>{e.stopPropagation();BIGPREV=!BIGPREV;$('#bigPrev').textContent=BIGPREV?'⤡':'⤢';$('#bigPrev').setAttribute('aria-label',BIGPREV?'Zmenšiť náhľad':'Zväčšiť náhľad');drawMain()};
   try{$('#brief').value=localStorage.getItem('atelier-brief')||''}catch(e){}
   $('#briefBtn').onclick=runBrief;
   $('#logoS').oninput=e=>{S.logoSize=+e.target.value;changed()};
@@ -3083,23 +3106,16 @@ async function runBrief(){const z=$('#brief').value.trim();if(z.length<8){toast(
   catch(e){toast('Návrh sa nepodaril: '+(e.message||e),4500)}
   finally{btn.disabled=false;btn.textContent='Pripraviť návrh'}}
 /* texty sa dajú v náhľade chytiť a presunúť vyššie / nižšie (preradia sa, takže ostanú v okrajoch) */
-function initPreviewDrag(){const cv=$('#main');let drag=null;
-  const lay=()=>{const f=FORMATS[current];const c=document.createElement('canvas').getContext('2d');return computeLayout(c,current,S,f.W,f.H)};
-  const fy=e=>{const r=cv.getBoundingClientRect();return(e.clientY-r.top)/r.height*FORMATS[current].H};
-  const textItems=L=>L.items.filter(it=>it.b&&(it.kind==='title'||it.kind==='text'));
-  const hit=e=>{if(FORMATS[current].anim)return null;const y=fy(e);return textItems(lay()).find(it=>y>=it.y-12&&y<=it.y+it.h+12)||null};
-  cv.addEventListener('touchstart',e=>{if(e.touches.length===1&&hit(e.touches[0]))e.preventDefault()},{passive:false});
-  cv.addEventListener('pointerdown',e=>{const it=hit(e);if(!it)return;e.preventDefault();cv.setPointerCapture(e.pointerId);drag={b:it.b,moved:false};cv.style.cursor='grabbing'});
-  cv.addEventListener('pointermove',e=>{
-    if(!drag){cv.style.cursor=hit(e)?'grab':'';return}
-    const L=lay(),y=fy(e),from=S.blocks.indexOf(drag.b);
-    // texts move within their group (top / bottom), the layout decides which group a text type belongs to
-    const grp=L.A.some(it=>it.b===drag.b)?L.A:L.Bt;const flow=textItems({items:grp});
-    const k=flow.filter(it=>it.b!==drag.b&&it.y+it.h/2<y).length;
-    const order=DragSort.reflow(S.blocks.length,flow.map(it=>S.blocks.indexOf(it.b)),from,k);
-    if(order.some((v,i)=>v!==i)){S.blocks=order.map(i=>S.blocks[i]);drag.moved=true;drawMain()}});
-  const end=()=>{if(!drag)return;const m=drag.moved;drag=null;cv.style.cursor='';if(m){buildBlocks();changed()}};
-  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end)}
+function initPreviewDrag(){
+  const lay=()=>{const f=FORMATS[current];return computeLayout(document.createElement('canvas').getContext('2d'),current,S,f.W,f.H)};
+  const isT=it=>it.b&&(it.kind==='title'||it.kind==='text');
+  DragSort.preview($('#main'),{
+    layout:()=>{if(FORMATS[current].anim||playing)return null;const f=FORMATS[current],L=lay();
+      return{W:f.W,H:f.H,items:[...L.A.filter(isT).map(it=>({id:it.b.id,x:0,y:it.y,w:f.W,h:it.h,group:'A'})),...L.Bt.filter(isT).map(it=>({id:it.b.id,x:0,y:it.y,w:f.W,h:it.h,group:'B'}))]}},
+    // texts move within their group (top / bottom); the layout decides which group a text type belongs to
+    drop:(id,k)=>{const L=lay();const grp=L.A.some(it=>it.b&&it.b.id===id)?L.A:L.Bt;
+      const flow=grp.filter(isT).sort((a,b)=>a.y-b.y).map(it=>S.blocks.indexOf(it.b));const from=S.blocks.findIndex(b=>b.id===id);
+      const order=DragSort.reflow(S.blocks.length,flow,from,k);S.blocks=order.map(i=>S.blocks[i]);buildBlocks();changed()}})}
 function loadPhoto(file){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const max=2400;const s=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.photo=c.toDataURL('image/jpeg',.88);S.photoHi='f'+Date.now();hiPut(S.photoHi,file);try{localStorage.setItem('hb-studio-photo',S.photo)}catch(e){}syncUI();changed();toast('Fotka vložená')};im.src=fr.result};fr.readAsDataURL(file)}
 function view(v){$('#editView').hidden=v!=='edit';$('#manView').hidden=v!=='man';$('#bar').hidden=v!=='edit';window.scrollTo(0,0);if(v==='man')drawManual();else scheduleAll()}
 function play(){playing=true;$('#playBtn').hidden=true;playStart=performance.now();
@@ -3183,7 +3199,7 @@ async function start(){
   current=FKEYS.includes(S.master)?S.master:'story';
   if(!ULAYOUTS.some(l=>l[0]===S.layout))S.layout='klasika';if(!UBGS.some(b=>b[0]===S.bg))S.bg='pas';S.over={};S.dur=4;if(!ANIMS.some(a=>a[0]===S.anim))S.anim='skladanie';
   initUI();initNav();
-  HubLeave.register({key:'atelier',state:()=>JSON.stringify(S,(k,v)=>k==='id'||k==='photo'?undefined:v)+'|'+(S.photo?S.photo.length:0),save:()=>navSave(false)});syncUI();drawMain();drawBrand();
+  HubLeave.register({key:'atelier',state:()=>JSON.stringify(S,(k,v)=>k==='id'||k==='photo'?undefined:v)+'|'+(S.photo?S.photo.length:0),save:()=>navSave(false),saveCopy:()=>navSave(true)});syncUI();drawMain();drawBrand();
   window.__APP={S:()=>S,setS:o=>{Object.assign(S,o);syncUI();changed()},makeFile,makeVideo,FORMATS,render:renderFrame};
 }
 
