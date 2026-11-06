@@ -4,6 +4,27 @@ import type { Quote, Settings } from './types'
 export type Block = { kind: 'title' | 'note' | 'h' | 'p'; text: string }
 
 const PUBLIC_ORG = /mesto|obec|štát|škola|inštitúc/i
+const PRODUCT = /^Aplikácia na:\s*/
+
+/** Products the client bought an application for (lines "Aplikácia na: Tričko"). */
+export const productLines = (q: Quote) => q.lines.filter((l) => PRODUCT.test(l.name) && l.qty > 0).map((l) => l.name.replace(PRODUCT, ''))
+
+/**
+ * How the client may use the work, built from what was clicked in the quote:
+ * every product application, the license calculator's uses and Peter's extra text.
+ */
+export function licenseUses(q: Quote): string {
+  const parts: string[] = []
+  const products = productLines(q)
+  if (products.length) parts.push(`rozmnožovanie diela a jeho použitie na týchto produktoch: ${products.join(', ')} (licencia na tieto aplikácie je zahrnutá v odmene)`)
+  const lic = q.license
+  if (lic && lic.uses.length) {
+    const run = lic.pieces ? ` v náklade najviac ${fmtNum(lic.pieces)} ks` : ''
+    parts.push(`použitie diela v kategóriách: ${lic.uses.join(', ')}${run}`)
+  }
+  if (q.contract.uses.trim()) parts.push(q.contract.uses.trim())
+  return parts.join('; ')
+}
 
 export function contractValues(q: Quote, s: Settings): Record<string, string> {
   const t = totals(q, s)
@@ -36,7 +57,7 @@ export function contractValues(q: Quote, s: Settings): Record<string, string> {
     iban: s.company.iban || '…',
     dan,
     licencia_vyhradnost: q.contract.exclusive ? 'výhradnú' : 'nevýhradnú',
-    licencia_sposoby: q.contract.uses || '…',
+    licencia_sposoby: licenseUses(q) || '…',
     licencia_uzemie: q.contract.territory || '…',
     licencia_cas: q.contract.duration || '…',
     zverejnenie: isPublic ? 'Ak je objednávateľ povinnou osobou podľa zákona č. 211/2000 Z. z. o slobodnom prístupe k informáciám, zmluva nadobúda účinnosť dňom nasledujúcim po dni jej zverejnenia.' : 'Účinnosť nadobúda dňom podpisu.',

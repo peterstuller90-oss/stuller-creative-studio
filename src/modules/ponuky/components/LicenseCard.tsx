@@ -15,6 +15,8 @@ export function LicenseCard({ quote: q, settings, update }: Props) {
   const ls = settings.license
   const [reading, setReading] = useState(false)
   const [notes, setNotes] = useState<BriefReading | null>(null)
+  const [showRun, setShowRun] = useState(false)
+  const setRun = setShowRun
   const lic = q.license
 
   const setLic = (patch: Partial<LicenseInfo>) => update((x) => ({ ...x, license: { ...(x.license ?? emptyLicense(ls)), ...patch } }))
@@ -37,9 +39,9 @@ export function LicenseCard({ quote: q, settings, update }: Props) {
   if (!lic) {
     return (
       <div className="card pad stack">
-        <p className="hint">Keď chce klient dielo používať na produktoch, v reklame alebo na webe, appka dopočíta cenu licencie podľa rozsahu (na čo, koľko kusov, ako dlho, kde).</p>
+        <p className="hint">Licencia na produkty, ktoré si pridal ako „Aplikácia na…“, je už v ich cene a appka ju sama napíše do zmluvy. Rozšírenú licenciu (reklama, dlhšia doba, iné územie, výhradnosť) pridaj tu.</p>
         <div className="row" style={{ flexWrap: 'wrap' }}>
-          <button className="btn-secondary" onClick={() => setLic({})}><Icon name="plus" size={20} /> Pridať licenciu</button>
+          <button className="btn-secondary" onClick={() => setLic({})}><Icon name="plus" size={20} /> Rozšírená licencia</button>
           <button className="btn-secondary" onClick={() => setReading(true)}><Icon name="import" size={20} /> Načítať zo zadania</button>
         </div>
         {reading && <ReadBriefSheet settings={settings} onClose={() => setReading(false)} onRead={applyReading} />}
@@ -47,6 +49,7 @@ export function LicenseCard({ quote: q, settings, update }: Props) {
     )
   }
 
+  const run = showRun || lic.pieces > 0
   const price = licensePrice(lic, ls, q.contract.exclusive, q.lines)
   const band = qtyBand(ls, lic.pieces)
   return (
@@ -72,8 +75,6 @@ export function LicenseCard({ quote: q, settings, update }: Props) {
       </div>
 
       <div className="grid2">
-        <label className="field"><span>Počet kusov (náklad)</span><NumInput value={lic.pieces} onChange={(n) => setLic({ pieces: Math.max(0, Math.round(n)) })} /></label>
-        <label className="field"><span>Pásmo nákladu</span><input readOnly value={`${band?.label ?? ''} ×${fmtNum(band?.coef ?? 1)}`} /></label>
         <label className="field"><span>Ako dlho</span>
           <select value={lic.duration} onChange={(e) => setLic({ duration: e.target.value })}>
             {ls.duration.map((d) => <option key={d.label} value={d.label}>{d.label} ×{fmtNum(d.coef)}</option>)}
@@ -93,6 +94,15 @@ export function LicenseCard({ quote: q, settings, update }: Props) {
             : <span className="hint">Súčet ostatných položiek. Môžeš prepísať.</span>}
         </div>
       </div>
+      {run ? (
+        <div className="grid2">
+          <label className="field"><span>Veľký náklad (počet kusov)</span><NumInput value={lic.pieces} onChange={(n) => setLic({ pieces: Math.max(0, Math.round(n)) })} /></label>
+          <div className="field" style={{ justifyContent: 'flex-end', gap: 4 }}>
+            <span className="hint">{band ? `${band.label} ×${fmtNum(band.coef)}` : 'Zadaj počet kusov.'}</span>
+            <button className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => { setRun(false); setLic({ pieces: 0 }) }}>Bez počtu kusov</button>
+          </div>
+        </div>
+      ) : <button className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setRun(true)}>+ Veľký náklad (počet kusov)</button>}
       <label className="check"><input type="checkbox" checked={q.contract.exclusive} onChange={(e) => update((x) => ({ ...x, contract: { ...x.contract, exclusive: e.target.checked } }))} />Výhradná licencia ×{fmtNum(ls.exclusiveCoef)} (autor dielo nesmie dať nikomu inému)</label>
 
       <dl className="brief-list">

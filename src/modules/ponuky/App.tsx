@@ -199,7 +199,7 @@ function Workspace() {
           {back(quote)}
           <button className="btn-primary btn-sm" disabled={busy === 'contract'} onClick={() => contractPdf(quote)}><Icon name="download" size={18} /> {busy === 'contract' ? 'Pripravujem…' : 'Stiahnuť PDF'}</button>
         </div>
-        <PriceSummary quote={quote} settings={data.settings} />
+        <PriceSummary quote={quote} settings={data.settings} details={false} />
         <div className="doc-wrap"><ContractDocument quote={quote} settings={data.settings} /></div>
       </>
     )
