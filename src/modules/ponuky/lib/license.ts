@@ -7,10 +7,10 @@ export function emptyLicense(s: LicenseSettings): LicenseInfo {
   return { uses: [], pieces: 0, duration: s.duration[0]?.label ?? '', territory: s.territory[0]?.label ?? '', base: null }
 }
 
-/** The quantity band for a number of pieces (0 = not stated → first band). */
+/** The quantity band for a number of pieces; none when the quote has no "large run". */
 export function qtyBand(s: LicenseSettings, pieces: number) {
   const bands = [...s.quantity].sort((a, b) => (a.upTo || Infinity) - (b.upTo || Infinity))
-  if (!pieces) return bands[0]
+  if (!pieces) return undefined
   return bands.find((b) => !b.upTo || pieces <= b.upTo) ?? bands[bands.length - 1]
 }
 
@@ -33,7 +33,7 @@ export function licensePrice(lic: LicenseInfo, s: LicenseSettings, exclusive: bo
     { label: 'Cena diela (základ)', value: `${fmtNum(base)} €` },
     { label: 'Podiel licencie', value: `× ${fmtNum(s.basePct)} %` },
     { label: `Použitie: ${uses.map((u) => u.label).join(' + ') || 'nič nevybraté'}`, value: x(useSum) },
-    { label: `Náklad: ${lic.pieces ? `${fmtNum(lic.pieces)} ks (${qty?.label})` : `neuvedený (${qty?.label})`}`, value: x(qty?.coef ?? 1) },
+    ...(lic.pieces ? [{ label: `Veľký náklad: ${fmtNum(lic.pieces)} ks (${qty?.label})`, value: x(qty?.coef ?? 1) }] : []),
     { label: `Doba: ${time?.label ?? ''}`, value: x(time?.coef ?? 1) },
     { label: `Územie: ${area?.label ?? ''}`, value: x(area?.coef ?? 1) },
     { label: exclusive ? 'Výhradná licencia' : 'Nevýhradná licencia', value: x(excl) },
@@ -56,11 +56,8 @@ export function applyLicense(q: Quote, s: LicenseSettings): Quote {
   const line: Line = { id: old?.id ?? uid(), name: 'Licencia na použitie diela', description, qty: 1, unit: 'paušál', unitPrice: fee, coef: 1, coefLabel: '', kind: 'licencia' }
   const sameLine = old && old.unitPrice === line.unitPrice && old.description === line.description && old.qty === 1 && old.coef === 1
   const lines = sameLine ? q.lines : old ? q.lines.map((l) => (l.kind === 'licencia' ? line : l)) : [...q.lines, line]
-  const usesText = lic.uses.length
-    ? `rozmnožovanie diela a jeho použitie na produktoch a nosičoch v kategóriách: ${lic.uses.join(', ')}${pieces}; verejné vystavenie a verejný prenos diela na účely propagácie týchto produktov`
-    : q.contract.uses
-  const contract = { ...q.contract, uses: usesText, territory: lic.territory, duration: lic.duration }
-  const sameContract = contract.uses === q.contract.uses && contract.territory === q.contract.territory && contract.duration === q.contract.duration
+  const contract = { ...q.contract, territory: lic.territory, duration: lic.duration }
+  const sameContract = contract.territory === q.contract.territory && contract.duration === q.contract.duration
   if (sameLine && sameContract) return q
   return { ...q, lines, contract: sameContract ? q.contract : contract }
 }
@@ -119,7 +116,7 @@ export function readBrief(text: string, s: LicenseSettings): BriefReading {
   const pcs = [...f.matchAll(/(\d[\d\s. ]{0,12}\d|\d)\s*(ks|kus|kusy|kusov|pcs|pieces)(?![a-z])/g)].map((m) => toNum(m[1]))
   const run = [...f.matchAll(/naklad\w*\s*(?:do|cca|asi|okolo|:)?\s*(\d[\d\s. ]{0,12}\d|\d)/g)].map((m) => toNum(m[1]))
   const pieces = Math.max(0, ...pcs, ...run)
-  if (pieces) { license.pieces = pieces; found.push(`Náklad: ${fmtNum(pieces)} ks`) } else missing.push('Počet kusov (náklad) – appka zatiaľ počíta najnižšie pásmo.')
+  if (pieces) found.push(`V zadaní je náklad ${fmtNum(pieces)} ks. Ak je to veľa, zapni „Veľký náklad“.`)
 
   // How long.
   const forever = /(neobmedzen|navzdy|natrvalo|bez casoveho obmedzenia|trvania majetkovych prav|perpetu|unlimited)/.exec(f)

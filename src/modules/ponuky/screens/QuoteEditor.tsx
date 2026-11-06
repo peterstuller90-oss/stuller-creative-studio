@@ -6,6 +6,7 @@ import { ask, Icon, NumInput, toast } from '../components/ui'
 import type { IconName } from '../components/icons'
 import { fmtNum, lineTotal, money } from '../lib/calc'
 import { applyLicense } from '../lib/license'
+import { licenseUses, productLines } from '../lib/contract'
 import { STATUSES, UNITS, type Client, type ContractInfo, type Line, type PriceItem, type Quote, type Settings } from '../lib/types'
 
 interface Props {
@@ -22,11 +23,20 @@ interface Props {
   onDelete: () => void
 }
 
-function Section({ icon, title, children, aside }: { icon: IconName; title: string; children: React.ReactNode; aside?: React.ReactNode }) {
+/** A section that folds up, so the editor doesn't become one endless page. */
+function Section({ icon, title, children, aside, open: start = false, summary }: { icon: IconName; title: string; children: React.ReactNode; aside?: React.ReactNode; open?: boolean; summary?: string }) {
+  const [open, setOpen] = useState(start)
   return (
-    <section className="stack" style={{ gap: 8 }}>
-      <div className="sec-head"><Icon name={icon} /><h2>{title}</h2>{aside}</div>
-      {children}
+    <section className={`stack fold${open ? ' open' : ''}`} style={{ gap: 8 }}>
+      <div className="sec-head">
+        <button className="fold-btn" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <Icon name={icon} /><h2>{title}</h2>
+          {!open && summary && <span className="fold-sum">{summary}</span>}
+          <span className="fold-chev"><Icon name="chevron" size={20} /></span>
+        </button>
+        {open && aside}
+      </div>
+      {open && children}
     </section>
   )
 }
@@ -99,7 +109,7 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
       )}
 
       {q.brief.length > 0 && (
-        <Section icon="brief" title="Zadanie od klienta" aside={<button className="link-btn" onClick={() => setBriefOpen(!briefOpen)}>{briefOpen ? 'Skryť' : 'Zobraziť všetko'}</button>}>
+        <Section icon="brief" title="Zadanie od klienta" summary={`${q.brief.length} odpovedí`} aside={<button className="link-btn" onClick={() => setBriefOpen(!briefOpen)}>{briefOpen ? 'Skryť' : 'Zobraziť všetko'}</button>}>
           <div className="card pad">
             {q.intro && <p className="brief-text">{q.intro}</p>}
             {!q.intro && !briefOpen && <p className="hint" style={{ margin: 0 }}>Celý text zadania uvidíš po kliknutí na „Zobraziť všetko“.</p>}
@@ -112,7 +122,7 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
         </Section>
       )}
 
-      <Section icon="building" title="Klient">
+      <Section icon="building" title="Klient" open={!q.client.name && !q.client.company} summary={q.client.company || q.client.name || 'doplniť'}>
         <div className="card pad stack">
           <div className="grid2">
             <label className="field"><span>Meno</span><input list="clients" value={q.client.name} onChange={(e) => pickClient(e.target.value)} /></label>
@@ -136,15 +146,16 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
         </div>
       </Section>
 
-      <Section icon="quotes" title="Projekt">
+      <Section icon="quotes" title="Projekt" open={!q.title} summary={q.title || 'doplniť'}>
         <div className="card pad stack">
           <label className="field"><span>Názov</span><input placeholder="napr. Mural na fasáde školy" value={q.title} onChange={(e) => set({ title: e.target.value })} /></label>
           <label className="field"><span>Popis</span><textarea rows={4} value={q.intro} onChange={(e) => set({ intro: e.target.value })} /></label>
         </div>
       </Section>
 
-      <Section icon="list" title="Položky">
+      <Section icon="list" title="Položky" open summary={`${q.lines.length} ks`}>
         <div className="card">
+          <div className="lines-scroll">
           {q.lines.length === 0 && <div className="empty"><p className="muted">Zatiaľ žiadne položky.</p></div>}
           {q.lines.map((l, i) => open === l.id ? (
             <div key={l.id} className="line open">
@@ -178,17 +189,18 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
               <strong className="num">{money(lineTotal(l))}</strong>
             </button>
           ))}
+          </div>
           <div className="pad" style={{ borderTop: q.lines.length ? '1px solid var(--line)' : undefined }}>
             <button className="btn-secondary" style={{ width: '100%' }} onClick={() => setAdding(true)}><Icon name="plus" size={20} /> Pridať službu</button>
           </div>
         </div>
       </Section>
 
-      <Section icon="contract" title="Licencia">
+      <Section icon="contract" title="Licencia" open={!!q.license} summary={q.license ? money(q.lines.find((l) => l.kind === 'licencia')?.unitPrice ?? 0) : productLines(q).length ? `zahrnutá: ${productLines(q).join(', ')}` : 'bez rozšírenej licencie'}>
         <LicenseCard quote={q} settings={settings} update={setQ} />
       </Section>
 
-      <Section icon="coins" title="Úprava ceny">
+      <Section icon="coins" title="Úprava ceny" summary={[q.orgPct && `${q.orgPct > 0 ? '+' : ''}${fmtNum(q.orgPct)} %`, q.discountPct && `zľava ${fmtNum(q.discountPct)} %`, `záloha ${fmtNum(q.depositPct)} %`].filter(Boolean).join(' · ')}>
         <div className="card pad stack">
           <div className="grid3">
             <label className="field"><span>Podľa organizácie (%)</span><NumInput value={q.orgPct} onChange={(n) => set({ orgPct: n })} /></label>
@@ -199,7 +211,7 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
         </div>
       </Section>
 
-      <Section icon="contract" title="Zmluva">
+      <Section icon="contract" title="Zmluva" summary={`${q.contract.exclusive ? 'výhradná' : 'nevýhradná'} · ${q.contract.territory}`}>
         <div className="card pad stack">
           <div className="grid2">
             <label className="field"><span>Miesto realizácie</span><input value={q.contract.place} onChange={(e) => setContract({ place: e.target.value })} /></label>
@@ -207,7 +219,9 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
             <label className="field"><span>Licencia – územie</span><input value={q.contract.territory} onChange={(e) => setContract({ territory: e.target.value })} /></label>
             <label className="field"><span>Licencia – čas</span><input value={q.contract.duration} onChange={(e) => setContract({ duration: e.target.value })} /></label>
           </div>
-          <label className="field"><span>Ako môže klient dielo používať</span><textarea rows={3} value={q.contract.uses} onChange={(e) => setContract({ uses: e.target.value })} /></label>
+          <div className="field"><span>Do zmluvy pôjde (spôsoby použitia)</span><p className="uses-preview">{licenseUses(q) || '…'}</p></div>
+          <label className="field"><span>Ďalšie spôsoby použitia (nepovinné)</span><textarea rows={3} value={q.contract.uses} onChange={(e) => setContract({ uses: e.target.value })} /></label>
+          <p className="hint">Produkty z položiek „Aplikácia na…“ a rozšírenú licenciu appka dopíše sama.</p>
           <label className="check"><input type="checkbox" checked={q.contract.exclusive} onChange={(e) => setContract({ exclusive: e.target.checked })} />Výhradná licencia (dielo nemôžete použiť nikde inde)</label>
         </div>
       </Section>
