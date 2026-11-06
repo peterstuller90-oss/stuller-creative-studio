@@ -105,6 +105,8 @@ export interface Settings {
   terms: string
   contractTemplate: string
   license: LicenseSettings
+  /** Ids of price items added to an existing price list by later versions (so they are added only once). */
+  seeded?: string[]
 }
 
 export interface Client {

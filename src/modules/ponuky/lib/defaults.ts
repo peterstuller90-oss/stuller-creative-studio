@@ -1,4 +1,5 @@
 import { DEFAULT_CONTRACT } from './contractTemplate'
+import { levyRate } from './calc'
 import type { Category, LicenseSettings, PriceItem, Settings } from './types'
 
 // Starting price list. Every price is a placeholder (marked "over cenu" in the app) until Peter edits it.
@@ -38,6 +39,23 @@ const SEED: Seed[] = [
   ['doplnky', 'Ubytovanie', 'noc', 60],
   ['doplnky', 'Licencia na použitie diela', 'paušál', 200],
 ]
+
+/** Item names the quote editor looks for. */
+export const PREP_NAME = 'Príprava do tlače'
+export const EDITS_NAME = 'Úpravy'
+export const EDITS_NET = 20
+
+/**
+ * Items added after the first version, also to price lists that already exist.
+ * Edits: 20 € on hand per hour, so the client price covers health insurance and tax.
+ */
+export function extraPrices(s: Settings): PriceItem[] {
+  const edits = s.tax.pricesAreNet ? EDITS_NET : Math.round(EDITS_NET / (1 - levyRate(s.tax)) * 100) / 100
+  return [
+    { id: 'seed-prep', category: 'ine', name: PREP_NAME, unit: 'ks', price: 45, note: '1–1,5 hod (40–50 €) na jeden produkt', sort: 100, active: true, placeholder: false },
+    { id: 'seed-upravy', category: 'ine', name: EDITS_NAME, unit: 'hod', price: edits, note: `Úpravy na želanie klienta, ${EDITS_NET} € na ruku za hodinu`, sort: 101, active: true, placeholder: false },
+  ]
+}
 
 export const DEFAULT_PRICES: PriceItem[] = SEED.map(([category, name, unit, price, note], i) => ({
   id: `seed-${i + 1}`, category, name, unit, price, note: note ?? '', sort: i, active: true, placeholder: true,

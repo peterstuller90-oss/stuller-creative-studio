@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase as sharedSupabase } from '../../../lib/supabase'
-import { DEFAULT_PRICES, DEFAULT_SETTINGS } from './defaults'
+import { DEFAULT_PRICES, DEFAULT_SETTINGS, extraPrices } from './defaults'
 import { totals } from './calc'
 import type { Client, ContractInfo, PriceItem, Quote, Settings } from './types'
 
@@ -43,6 +43,18 @@ export const normalizeQuote = (q: Quote): Quote => ({
   license: q.license ?? null,
   contract: { ...DEFAULT_CONTRACT_INFO, ...q.contract },
 })
+
+/** Add price items that newer versions brought (once; if Peter deletes one, it stays deleted). */
+export async function ensureExtraPrices(store: Store, d: Data): Promise<Data> {
+  const seeded = d.settings.seeded ?? []
+  const add = extraPrices(d.settings).filter((p) => !seeded.includes(p.id) && !d.prices.some((x) => x.id === p.id || x.name === p.name))
+  const ids = extraPrices(d.settings).map((p) => p.id).filter((id) => !seeded.includes(id))
+  if (!ids.length) return d
+  for (const p of add) await store.savePrice(p)
+  const settings = { ...d.settings, seeded: [...seeded, ...ids] }
+  await store.saveSettings(settings)
+  return { ...d, settings, prices: [...d.prices, ...add] }
+}
 
 /* ───────── Demo: everything in this browser's localStorage ───────── */
 
