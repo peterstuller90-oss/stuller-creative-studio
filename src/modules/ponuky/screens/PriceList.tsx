@@ -5,6 +5,7 @@ import { CATEGORIES, UNITS, type Category, type PriceItem } from '../lib/types'
 
 export function PriceList({ prices, onSave, onDelete }: { prices: PriceItem[]; onSave: (p: PriceItem) => Promise<void>; onDelete: (id: string) => Promise<void> }) {
   const unconfirmed = prices.filter((p) => p.placeholder && p.active).length
+  const [openCat, setOpenCat] = useState<string | null>(null)
   async function add(category: Category) {
     const sort = Math.max(0, ...prices.map((p) => p.sort)) + 1
     await onSave({ id: uid(), category, name: 'Nová položka', unit: 'paušál', price: 0, note: '', sort, active: true, placeholder: false })
@@ -20,12 +21,18 @@ export function PriceList({ prices, onSave, onDelete }: { prices: PriceItem[]; o
       {CATEGORIES.map((c) => {
         const items = prices.filter((p) => p.category === c.id).sort((a, b) => a.sort - b.sort)
         return (
-          <section key={c.id} className="stack" style={{ gap: 8 }}>
-            <p className="section-title">{c.label}</p>
-            <div className="card" style={{ padding: '2px 14px' }}>
+          <section key={c.id} className={`stack fold${openCat === c.id ? ' open' : ''}`} style={{ gap: 8 }}>
+            <div className="sec-head">
+              <button className="fold-btn" aria-expanded={openCat === c.id} onClick={() => setOpenCat(openCat === c.id ? null : c.id)}>
+                <h2>{c.label}</h2>
+                <span className="fold-sum">{items.length} položiek</span>
+                <span className="fold-chev"><Icon name="chevron" size={20} /></span>
+              </button>
+            </div>
+            {openCat === c.id && <div className="card" style={{ padding: '2px 14px' }}>
               {items.map((p) => <PriceRow key={p.id} item={p} onSave={onSave} onDelete={onDelete} />)}
               <button className="link-btn" onClick={() => add(c.id)}><Icon name="plus" size={18} /> Pridať položku</button>
-            </div>
+            </div>}
           </section>
         )
       })}

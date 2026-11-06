@@ -416,3 +416,8 @@ html { font-synthesis: none; }
   height: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 22px); background-color: var(--bg); animation: bg-drift 90s ease-in-out infinite;
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 35%); mask-image: linear-gradient(to bottom, transparent, #000 35%); }
 @media (prefers-reduced-motion: reduce) { .app::after { animation: none; } }
+
+/* Folding sections in Nastavenia (6. 11.) */
+.fold-title { display: flex; justify-content: space-between; align-items: center; width: 100%; background: none; border: none; border-bottom: 2px solid var(--ink); padding: 10px 4px; color: var(--ink); font: inherit; cursor: pointer; text-align: left; }
+.fold-arrow { font-size: 26px; line-height: 1; transition: transform .25s cubic-bezier(.33,0,.67,1); transform: rotate(90deg); }
+.fold-arrow.open { transform: rotate(-90deg); }

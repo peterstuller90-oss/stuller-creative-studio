@@ -121,6 +121,9 @@ input[type=range]{width:100%;accent-color:var(--ink)}
   .strip canvas{height:var(--phm,320px)}
   .top{padding:calc(env(safe-area-inset-top) + 14px) 14px 0}
 }
+/* 6. 11.: bez veľkých písmen v ovládaní (logo ostáva), menšie písmo */
+.lbl,.chk,.seg button,.sw button.auto,.btn,.drop .t,.sec-head h2,.it .cap{text-transform:none!important;letter-spacing:normal!important}
+.sec-head h2{font-size:26px}.chk{font-size:16px}.drop .t{font-size:18px}
 </style>
 <link rel="stylesheet" href="../../hub-ui-font.css">
 </head>
@@ -994,5 +997,7 @@ $('demo').onclick=()=>{
 outputs();
 /* service worker: the hub handles it */
 </script>
+<script src="../fold.js"></script>
+<script>Fold('.side .grp')</script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Icon } from '../components/Icon'
 import { FaceIdToggle } from '../components/FaceIdToggle'
@@ -21,6 +22,19 @@ function DemoNote({ icon, title }: { icon: string; title: string }) {
   )
 }
 
+// A section that starts folded; tap the title to open it (Peter, 6. 11.).
+function Fold({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button className="section-title fold-title" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span>{title}</span><span className={`fold-arrow${open ? ' open' : ''}`} aria-hidden="true">›</span>
+      </button>
+      {open && children}
+    </>
+  )
+}
+
 // Everything that changes how the app behaves on this device, in one place behind the gear icon.
 export function Settings({ supabase, onBack, onSignOut }: { supabase: SupabaseClient; onBack: () => void; onSignOut: () => void }) {
   return (
@@ -28,19 +42,22 @@ export function Settings({ supabase, onBack, onSignOut }: { supabase: SupabaseCl
       <button className="back-btn" onClick={onBack}>‹ Späť</button>
       <h1 className="page-title">Nastavenia</h1>
 
-      <h2 className="section-title">Prihlásenie</h2>
-      <FaceIdToggle supabase={supabase} />
-      {demo && <DemoNote icon="🙂" title="Prihlásenie cez Face ID" />}
+      <Fold title="Prihlásenie">
+        <FaceIdToggle supabase={supabase} />
+        {demo && <DemoNote icon="🙂" title="Prihlásenie cez Face ID" />}
+      </Fold>
 
-      <h2 className="section-title">Upozornenia</h2>
-      <PushToggle supabase={supabase} />
-      {demo && <DemoNote icon="🔔" title="Notifikácie" />}
-      <SoundToggle />
+      <Fold title="Upozornenia">
+        <PushToggle supabase={supabase} />
+        {demo && <DemoNote icon="🔔" title="Notifikácie" />}
+        <SoundToggle />
+      </Fold>
 
-      <h2 className="section-title">Účet</h2>
-      <button className="btn-secondary" onClick={onSignOut}>
-        <Icon name="logout" size={20} /> Odhlásiť sa
-      </button>
+      <Fold title="Účet">
+        <button className="btn-secondary" onClick={onSignOut}>
+          <Icon name="logout" size={20} /> Odhlásiť sa
+        </button>
+      </Fold>
     </>
   )
 }

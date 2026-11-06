@@ -355,3 +355,41 @@ h1, h2, h3, h4, p { margin: 0; font-weight: 500; }
   .chip { font-size: 14px; padding: 6px 11px; }
   .line-row > strong { font-size: 17px; }
 }
+
+/* ───────── Smaller type, no capitals, everything folded (Peter, 6. 11.) ───────── */
+:root, html body { font-size: 16px; }
+* { text-transform: none !important; letter-spacing: normal !important; }
+.page-title { font-size: 28px; line-height: 1.1; }
+.section-title { font-size: 15px; }
+.btn-primary, .btn-secondary, .btn-ghost { font-size: 16px; padding: 10px 18px 11px; }
+.icon-btn, .link-btn { font-size: 16px; }
+.back-btn { font-size: 17px; }
+.check { font-size: 16px; }
+.chip { font-size: 14px; }
+.pill { font-size: 13px; }
+.list-main strong, .list-side strong { font-size: 17px; }
+.stat strong { font-size: 21px; }
+.stat span { font-size: 13px; }
+.line-head input { font-size: 17px; }
+.line-nums .field input, .line-nums .field select { font-size: 16px; }
+.line-total, .sum-cell strong { font-size: 17px; }
+.sum-table .grand td, .sum-cell .sum-big, .sum-big { font-size: 21px; }
+.sheet h3 { font-size: 21px; }
+.service { font-size: 16px; }
+.service .emo { font-size: 26px; }
+.tab { font-size: 14px; }
+.error, #toast { font-size: 15px; }
+.price-row .pr-name { font-size: 16px; }
+.sec-head h2, .fold-btn h2 { font-size: 17px; }
+.action strong, .line-row > strong { font-size: 16px; }
+.brief-text { font-size: 15px; }
+.field > span { font-size: 13px; opacity: .85; }
+.tax-table .tax-net td { font-size: 15px; }
+.doc-title h1 { font-size: 26px; }
+.doc.contract h1 { font-size: 22px; }
+.doc-project h2 { font-size: 20px; }
+/* Nastavenia: a closed heading hides the card(s) right under it */
+.fold-head { border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.fold-head.open .fold-chev { transform: rotate(180deg); }
+.fold-head:not(.open) + .card, .fold-head:not(.open) + .card + .card { display: none; }
+.fold-btn .fold-sum { font-size: 13px; }

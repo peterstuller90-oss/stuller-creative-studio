@@ -23,9 +23,9 @@ interface Props {
   onDelete: () => void
 }
 
-/** A section that folds up, so the editor doesn't become one endless page. */
-function Section({ icon, title, children, aside, open: start = false, summary }: { icon: IconName; title: string; children: React.ReactNode; aside?: React.ReactNode; open?: boolean; summary?: string }) {
-  const [open, setOpen] = useState(start)
+/** A section that folds up, so the editor doesn't become one endless page. All start folded (Peter, 6. 11.). */
+function Section({ icon, title, children, aside, summary }: { icon: IconName; title: string; children: React.ReactNode; aside?: React.ReactNode; open?: boolean; summary?: string }) {
+  const [open, setOpen] = useState(false)
   return (
     <section className={`stack fold${open ? ' open' : ''}`} style={{ gap: 8 }}>
       <div className="sec-head">
@@ -122,7 +122,7 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
         </Section>
       )}
 
-      <Section icon="building" title="Klient" open={!q.client.name && !q.client.company} summary={q.client.company || q.client.name || 'doplniť'}>
+      <Section icon="building" title="Klient" summary={q.client.company || q.client.name || 'doplniť'}>
         <div className="card pad stack">
           <div className="grid2">
             <label className="field"><span>Meno</span><input list="clients" value={q.client.name} onChange={(e) => pickClient(e.target.value)} /></label>
@@ -146,14 +146,14 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
         </div>
       </Section>
 
-      <Section icon="quotes" title="Projekt" open={!q.title} summary={q.title || 'doplniť'}>
+      <Section icon="quotes" title="Projekt" summary={q.title || 'doplniť'}>
         <div className="card pad stack">
           <label className="field"><span>Názov</span><input placeholder="napr. Mural na fasáde školy" value={q.title} onChange={(e) => set({ title: e.target.value })} /></label>
           <label className="field"><span>Popis</span><textarea rows={4} value={q.intro} onChange={(e) => set({ intro: e.target.value })} /></label>
         </div>
       </Section>
 
-      <Section icon="list" title="Položky" open summary={`${q.lines.length} ks`}>
+      <Section icon="list" title="Položky" summary={`${q.lines.length} ks`}>
         <div className="card">
           <div className="lines-scroll">
           {q.lines.length === 0 && <div className="empty"><p className="muted">Zatiaľ žiadne položky.</p></div>}
@@ -196,7 +196,7 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
         </div>
       </Section>
 
-      <Section icon="contract" title="Licencia" open={!!q.license} summary={q.license ? money(q.lines.find((l) => l.kind === 'licencia')?.unitPrice ?? 0) : productLines(q).length ? `zahrnutá: ${productLines(q).join(', ')}` : 'bez rozšírenej licencie'}>
+      <Section icon="contract" title="Licencia" summary={q.license ? money(q.lines.find((l) => l.kind === 'licencia')?.unitPrice ?? 0) : productLines(q).length ? `zahrnutá: ${productLines(q).join(', ')}` : 'bez rozšírenej licencie'}>
         <LicenseCard quote={q} settings={settings} update={setQ} />
       </Section>
 

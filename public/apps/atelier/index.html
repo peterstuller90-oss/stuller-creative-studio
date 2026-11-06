@@ -3066,7 +3066,7 @@ function initUI(){
   $('#playBtn').onclick=play;$('#main').onclick=()=>{if(FORMATS[current].anim)playing?stop():play()};
   DragSort($('#blocks'),(order,moved)=>{S.blocks=order.map(i=>S.blocks[i]);buildBlocks();changed();if(moved!=null){const g=$('#blocks').children[order.indexOf(moved)];if(g)g.querySelector('.grip').focus()}});
   initPreviewDrag();
-  Fold('[data-pane]>.group','atelier');
+  Fold('[data-pane]>.group');
   $('#bigPrev').onclick=e=>{e.stopPropagation();BIGPREV=!BIGPREV;$('#bigPrev').textContent=BIGPREV?'⤡':'⤢';$('#bigPrev').setAttribute('aria-label',BIGPREV?'Zmenšiť náhľad':'Zväčšiť náhľad');drawMain()};
   try{$('#brief').value=localStorage.getItem('atelier-brief')||''}catch(e){}
   $('#briefBtn').onclick=runBrief;

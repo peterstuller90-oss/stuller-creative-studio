@@ -6,8 +6,17 @@ import { CONTRACT_PLACEHOLDERS, DEFAULT_CONTRACT } from '../lib/contractTemplate
 import { DEFAULT_LICENSE } from '../lib/defaults'
 import type { Author, Company, LicenseSettings, Settings, TaxSettings } from '../lib/types'
 
+/** Section heading that folds the card(s) right under it (CSS hides them while closed). All start folded. */
 function Head({ icon, title }: { icon: IconName; title: string }) {
-  return <div className="sec-head"><Icon name={icon} /><h2>{title}</h2></div>
+  const [open, setOpen] = useState(false)
+  return (
+    <div className={`sec-head fold-head${open ? ' open' : ''}`}>
+      <button className="fold-btn" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <Icon name={icon} /><h2>{title}</h2>
+        <span className="fold-chev"><Icon name="chevron" size={20} /></span>
+      </button>
+    </div>
+  )
 }
 
 export function SettingsScreen({ settings, onSave, demo, onLogout }: { settings: Settings; onSave: (s: Settings) => Promise<void>; demo: boolean; onLogout?: () => void }) {

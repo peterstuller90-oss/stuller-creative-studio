@@ -90,7 +90,7 @@ export async function makeBriefPdf(s: Settings, prices: PriceItem[]): Promise<Ui
     if (sec.newPage || y - need < 60) { footer(page, pageNo); page = doc.addPage([W, H]); pageNo++; y = header(page, false) }
     // Section band
     page.drawRectangle({ x: M, y: y - 22, width: usable, height: 26, color: MINT })
-    page.drawText(sec.title.toUpperCase(), { x: M + 10, y: y - 14, size: 14, font: bold, color: INK })
+    page.drawText(sec.title, { x: M + 10, y: y - 14, size: 14, font: bold, color: INK })
     y -= 36
     if (sec.hint) {
       for (const l of wrap(sec.hint, body, 10.5, usable)) { page.drawText(l, { x: M, y, size: 10.5, font: body, color: MUTED }); y -= 14 }
@@ -109,7 +109,7 @@ export async function makeBriefPdf(s: Settings, prices: PriceItem[]): Promise<Ui
         for (const [i, l] of wrap(f.label, body, 11, w - 22).entries()) page.drawText(l, { x: x + 19, y: y - 11 - i * 13, size: 11, font: body, color: INK })
         rowH = Math.max(rowH, 24)
       } else if (f.kind === 'radio') {
-        page.drawText(f.label.toUpperCase(), { x, y: y - 9, size: 8.5, font: bold, color: MUTED })
+        page.drawText(f.label, { x, y: y - 9, size: 8.5, font: bold, color: MUTED })
         const rg = form.createRadioGroup(f.id)
         let ox = x
         for (const o of f.options ?? []) {
@@ -120,7 +120,7 @@ export async function makeBriefPdf(s: Settings, prices: PriceItem[]): Promise<Ui
         rowH = Math.max(rowH, 40)
       } else {
         const h = f.kind === 'multiline' ? (f.h ?? 80) : fieldH
-        page.drawText(f.label.toUpperCase(), { x, y: y - 9, size: 8.5, font: bold, color: MUTED })
+        page.drawText(f.label, { x, y: y - 9, size: 8.5, font: bold, color: MUTED })
         const opts = { x, y: y - 14 - h, width: w, height: h, borderColor: INK, borderWidth: 1, textColor: INK, backgroundColor: rgb(1, 1, 1) }
         if (f.kind === 'dropdown') {
           const dd = form.createDropdown(f.id)
@@ -184,7 +184,7 @@ export async function makeContractPdf(q: Quote, s: Settings): Promise<Uint8Array
     }
   }
   for (const b of buildContract(q, s)) {
-    if (b.kind === 'title') { para(b.text.toUpperCase(), bold, 20, INK, true, 1.2); y -= 4 }
+    if (b.kind === 'title') { para(b.text, bold, 20, INK, true, 1.2); y -= 4 }
     else if (b.kind === 'note') { para(b.text, body, 10, MUTED, true); y -= 8 }
     else if (b.kind === 'h') { ensure(40); y -= 8; para(b.text, bold, 13); y -= 2 }
     else { para(b.text, body, 10.5); y -= 6 }

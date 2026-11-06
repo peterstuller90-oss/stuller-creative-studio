@@ -192,7 +192,7 @@ function selectFormat(k) {
   sizeMain(); renderMain(); renderVarsDebounced();
 }
 
-Fold('[data-pane]>.group', 'handrbolka');
+Fold('[data-pane]>.group'); Fold('.stage>.sec');
 if (window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty('--pvh', $('mainwrap').offsetHeight + 'px')).observe($('mainwrap'));
 /* poradie blokov: ťahanie za ≡ v zozname */
 DragSort($('blocks'), (order, moved) => {
