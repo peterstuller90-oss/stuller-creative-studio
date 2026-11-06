@@ -342,6 +342,7 @@ ul.rules{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;ga
 <script src="../hub-leave.js"></script>
 <script src="../drag-sort.js"></script>
 <script src="../fold.js"></script>
+<script src="../typo.js"></script>
 <script src="libs/jspdf.umd.min.js"></script>
 <script src="libs/jszip.min.js"></script>
 <script src="libs/mp4-muxer.js"></script>
@@ -2781,20 +2782,20 @@ function drawStroke(ctx,c,g){ // confetti stroke
 /* ---------- rozloženie ---------- */
 function textLines(ctx,text,font,maxW){
   ctx.font=font;const out=[];
-  for(const para of String(text).split('\n')){const words=para.split(/\s+/).filter(Boolean);if(!words.length){out.push('');continue}
+  for(const para of String(text).split('\n')){const words=para.split(/[ \t]+/).filter(Boolean);if(!words.length){out.push('');continue}
     let cur=words[0];for(let i=1;i<words.length;i++){const tr=cur+' '+words[i];if(ctx.measureText(tr).width>maxW){out.push(cur);cur=words[i]}else cur=tr}out.push(cur)}
-  return out;
+  return out.map(l=>l.replace(/\u00A0/g,' '));
 }
 function fitTitle(ctx,text,maxW,maxFs){
   ctx.font=`900 100px ${FONT}`;const fit=l=>Math.min(maxFs,100*maxW/Math.max(1,ctx.measureText(l).width));
   const paras=text.split('\n').map(s=>s.trim()).filter(Boolean);if(!paras.length)return{lines:[],fs:0};
   if(paras.length>1){return{lines:paras,fs:Math.min(...paras.map(fit))}}
-  const words=paras[0].split(/\s+/);let best={lines:[paras[0]],fs:fit(paras[0])};
+  const words=paras[0].split(/[ \t]+/);let best={lines:[paras[0]],fs:fit(paras[0])};
   if(words.length>1&&best.fs<maxFs*.62){
     for(let i=1;i<words.length;i++){const ls=[words.slice(0,i).join(' '),words.slice(i).join(' ')];const fs=Math.min(...ls.map(fit));if(fs>best.fs*1.08)best={lines:ls,fs}}
     if(words.length>2&&best.fs<maxFs*.5)for(let i=1;i<words.length-1;i++)for(let j=i+1;j<words.length;j++){const ls=[words.slice(0,i).join(' '),words.slice(i,j).join(' '),words.slice(j).join(' ')];const fs=Math.min(...ls.map(fit));if(fs>best.fs*1.1)best={lines:ls,fs}}
   }
-  return best;
+  best.lines=best.lines.map(l=>l.replace(/\u00A0/g,' '));return best;
 }
 function effLayout(fk,S){return(S.over&&S.over[fk])||S.layout}
 function logoStyleFor(S){if(S.logoStyle!=='auto')return S.logoStyle;if(S.bg==='farba')return['mag','orange'].includes(S.bgColor)?'white':['teal','turq'].includes(S.bgColor)?'white':'ink';return'color'}
@@ -2807,7 +2808,7 @@ function buildItems(ctx,fk,S,W,H,k){
   const logoW=W*(intro?.62:.34)*(intro?1:S.logoSize)*(intro?1:k);
   const logo=(S.logo||intro)?{kind:'logo',w:logoW,h:logoW*LB.h/LB.w}:null;
   const T=[];
-  if(!intro)for(const b of S.blocks){const txt=(b.type==='title'&&S.upper)?b.text.toLocaleUpperCase('sk'):b.text;if(!txt.trim())continue;
+  if(!intro)for(const b of S.blocks){const tt=window.Typo?Typo.sk(b.text):b.text;const txt=(b.type==='title'&&S.upper)?tt.toLocaleUpperCase('sk'):tt;if(!txt.trim())continue;
     if(b.type==='title'){const ft=fitTitle(ctx,txt,maxW*Math.min(1,S.titleScale),W*.26*k*Math.max(1,S.titleScale));const fs=ft.fs*Math.min(1,k);ctx.font=`900 ${fs}px ${FONT}`;
       const L=ft.lines.map(l=>{const m=ctx.measureText(l);return{t:l,asc:m.actualBoundingBoxAscent,desc:m.actualBoundingBoxDescent,w:m.width}});
       const gap=fs*.06;const h=L.reduce((a,l)=>a+l.asc+l.desc,0)+gap*(L.length-1);

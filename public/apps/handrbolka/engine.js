@@ -47,7 +47,7 @@ const HB = (() => {
   function wrap(ctx, text, maxW) {
     const out = [];
     String(text || '').split('\n').forEach(par => {
-      const words = par.split(/\s+/).filter(Boolean);
+      const words = par.split(/[ \t]+/).filter(Boolean);
       if (!words.length) { out.push(''); return; }
       let line = words[0];
       for (let i = 1; i < words.length; i++) {
@@ -56,7 +56,7 @@ const HB = (() => {
       }
       out.push(line);
     });
-    return out;
+    return out.map(l => l.replace(/\u00A0/g, ' '));
   }
   const rectHit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
@@ -322,10 +322,10 @@ const HB = (() => {
         const weight = b.type === 'nadpis' || b.type === 'sekcia' ? 700 : b.type === 'podnadpis' || b.type === 'text' ? 400 : 600;
         let maxW = b.type === 'odrazky' ? cw * .92 : cw;
         ctx.font = font(weight, size);
-        let text = b.text;
-        if (b.type === 'citat') { text = text.trim(); if (!/^[„“"]/.test(text)) text = '“' + text; if (!/[”“"]$/.test(text)) text += '”'; }
+        let text = window.Typo ? Typo.sk(b.text) : b.text;
+        if (b.type === 'citat') { text = text.trim(); if (!/^[„“"]/.test(text)) text = '„' + text; if (!/[”“"]$/.test(text)) text += '“'; }
         if (b.type === 'odrazky') {
-          const lines = []; const bl = String(b.text).split('\n').map(s => s.replace(/^[-•·\s]+/, '')).filter(Boolean);
+          const lines = []; const bl = String(window.Typo ? Typo.sk(b.text) : b.text).split('\n').map(s => s.replace(/^[-•·\s]+/, '')).filter(Boolean);
           const indent = size * 1.1;
           bl.forEach(t => wrap(ctx, t, maxW - indent).forEach((l, j) => lines.push({ t: l, first: j === 0 })));
           let tw = Math.max(...lines.map(l => ctx.measureText(l.t).width)) + indent;
