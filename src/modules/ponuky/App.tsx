@@ -9,7 +9,7 @@ import { addDays, nextNumber, today, token, uid } from './lib/calc'
 import { saveFile } from './lib/download'
 import { briefToQuote } from './lib/importBrief'
 import { applyLicense, readBrief } from './lib/license'
-import { DEFAULT_CONTRACT_INFO, store, supabase, type Data } from './lib/store'
+import { DEFAULT_CONTRACT_INFO, ensureExtraPrices, store, supabase, type Data } from './lib/store'
 import type { Quote } from './lib/types'
 import { Login } from './screens/Login'
 import { PriceList } from './screens/PriceList'
@@ -71,7 +71,7 @@ function Workspace() {
   const hash = useHash()
   const latest = useRef(data)
   useEffect(() => { latest.current = data }, [data])
-  const reload = useCallback(() => store.loadAll().then(setData).catch((e) => setError(e.message)), [])
+  const reload = useCallback(() => store.loadAll().then((d) => ensureExtraPrices(store, d).catch(() => d)).then(setData).catch((e) => setError(e.message)), [])
   useEffect(() => { reload() }, [reload])
 
   const saveQuote = useCallback(async (q: Quote, rememberClient = false) => {

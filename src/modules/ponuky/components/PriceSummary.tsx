@@ -2,6 +2,8 @@ import { fmtNum, levies, money, totals } from '../lib/calc'
 import type { Quote, Settings } from '../lib/types'
 import { Icon } from './icons'
 
+const neg = (n: number) => (n > 0 ? `−${money(n)}` : money(0))
+
 /**
  * What the client pays and what stays on hand. The sticky bar shows the current tax mode;
  * the table under it always shows both ways of taxing the fee, so Peter can compare.
@@ -31,8 +33,8 @@ export function PriceSummary({ quote, settings, sticky = false, details = true }
           <thead><tr><th></th><th>Zrážková daň</th><th>Daňové priznanie</th></tr></thead>
           <tbody>
             <tr><td>Klient zaplatí</td><td>{money(t.total)}</td><td>{money(t.total)}</td></tr>
-            <tr><td>Zdravotné poistenie</td><td>0 €</td><td>−{money(filed.health)}</td></tr>
-            <tr><td>Daň</td><td>−{money(withheld.tax)}<small>{fmtNum(tx.withholdPct)} %, zrazí klient</small></td><td>−{money(filed.tax)}<small>{fmtNum(tx.taxPct)} %, platíš sám</small></td></tr>
+            <tr><td>Zdravotné poistenie</td><td>0 €</td><td>{neg(filed.health)}</td></tr>
+            <tr><td>Daň</td><td>{neg(withheld.tax)}<small>{fmtNum(tx.withholdPct)} %, zrazí klient</small></td><td>{neg(filed.tax)}<small>{fmtNum(tx.taxPct)} %, platíš sám</small></td></tr>
             <tr className="tax-net"><td>Na ruku</td><td className={cur === 'zrazka' ? 'on' : ''}>{money(withheld.net)}</td><td className={cur === 'priznanie' ? 'on' : ''}>{money(filed.net)}</td></tr>
           </tbody>
         </table>

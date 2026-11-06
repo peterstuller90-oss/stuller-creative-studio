@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { fmtNum, money, uid } from '../lib/calc'
 import { CATEGORIES, type Category, type Line, type PriceItem, type Settings } from '../lib/types'
 import { Icon, NumInput, Sheet } from './ui'
+import { EDITS_NAME, PREP_NAME } from '../lib/defaults'
 
 type Step = 'menu' | 'design' | 'mural' | 'workshop' | 'pricelist'
 
@@ -19,6 +20,8 @@ export function AddServiceSheet({ prices, settings, onAdd, onClose }: Props) {
   const active = useMemo(() => prices.filter((p) => p.active).sort((a, b) => a.sort - b.sort), [prices])
   const of = (c: Category) => active.filter((p) => p.category === c)
   const add = (lines: Line[]) => { onAdd(lines); onClose() }
+  const prep = active.find((p) => p.name === PREP_NAME)
+  const edits = active.find((p) => p.name === EDITS_NAME)
 
   if (step === 'menu') {
     return (
@@ -28,6 +31,7 @@ export function AddServiceSheet({ prices, settings, onAdd, onClose }: Props) {
           <button className="service" onClick={() => { setDesignCat('logo'); setStep('design') }}><Icon name="logo" size={32} />Logo<small>logo / logotyp + produkty</small></button>
           <button className="service" onClick={() => setStep('mural')}><Icon name="mural" size={32} />Mural<small>veľkosť × zložitosť</small></button>
           <button className="service" onClick={() => setStep('workshop')}><Icon name="workshop" size={32} />Workshop<small>typ a počet ľudí</small></button>
+          {edits && <button className="service" onClick={() => add([fromItem(edits, { qty: 1 })])}><Icon name="custom" size={32} />Úpravy<small>na hodiny, {money(edits.price)}/hod</small></button>}
           <button className="service" onClick={() => setStep('pricelist')}><Icon name="list" size={32} />Z cenníka<small>hocijaká položka</small></button>
           <button className="service" onClick={() => add([line({ name: 'Nová položka' })])}><Icon name="custom" size={32} />Vlastná<small>prázdny riadok</small></button>
         </div>
@@ -35,7 +39,7 @@ export function AddServiceSheet({ prices, settings, onAdd, onClose }: Props) {
     )
   }
   const back = <button className="back-btn" onClick={() => setStep('menu')}><Icon name="back" size={20} /> Späť</button>
-  if (step === 'design') return <DesignStep key={designCat} cat={designCat} base={of(designCat)} products={of('aplikacia')} back={back} onAdd={add} onClose={onClose} />
+  if (step === 'design') return <DesignStep key={designCat} cat={designCat} base={of(designCat)} products={of('aplikacia')} prep={prep} back={back} onAdd={add} onClose={onClose} />
   if (step === 'mural') return <MuralStep murals={of('mural')} extras={of('doplnky')} settings={settings} back={back} onAdd={add} onClose={onClose} />
   if (step === 'workshop') return <WorkshopStep items={of('workshop')} back={back} onAdd={add} onClose={onClose} />
   return (
@@ -57,13 +61,13 @@ export function AddServiceSheet({ prices, settings, onAdd, onClose }: Props) {
 
 interface StepProps { back: React.ReactNode; onAdd: (l: Line[]) => void; onClose: () => void }
 
-function DesignStep({ cat, base, products, back, onAdd, onClose }: StepProps & { cat: Category; base: PriceItem[]; products: PriceItem[] }) {
+function DesignStep({ cat, base, products, prep, back, onAdd, onClose }: StepProps & { cat: Category; base: PriceItem[]; products: PriceItem[]; prep?: PriceItem }) {
   const [pick, setPick] = useState(base[0]?.id ?? '')
   const [count, setCount] = useState(1)
   const [chosen, setChosen] = useState<string[]>([])
   const item = base.find((b) => b.id === pick)
   const sel = products.filter((p) => chosen.includes(p.id))
-  const sum = (item ? item.price * count : 0) + sel.reduce((s, p) => s + p.price, 0)
+  const sum = (item ? item.price * count : 0) + sel.reduce((s, p) => s + p.price + (prep?.price ?? 0), 0)
   const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]))
   return (
     <Sheet title={cat === 'logo' ? 'Logo / logotyp' : 'Ilustrácia'} onClose={onClose}>
@@ -81,10 +85,14 @@ function DesignStep({ cat, base, products, back, onAdd, onClose }: StepProps & {
           <button key={p.id} className={chosen.includes(p.id) ? 'chip on' : 'chip'} aria-pressed={chosen.includes(p.id)} onClick={() => toggle(p.id)}>{p.name}</button>
         ))}
       </div>
+      {prep && sel.length > 0 && <p className="hint">Ku každému produktu sa pridá aj „príprava do tlače“ ({money(prep.price)}, {prep.note}).</p>}
       <div className="calc-preview"><span>Spolu</span><strong>{money(sum)}</strong></div>
       <button className="btn-primary" disabled={!item} onClick={() => item && onAdd([
         fromItem(item, { qty: count, unit: count > 1 ? 'ks' : item.unit }),
-        ...sel.map((p) => fromItem(p, { name: `Aplikácia na: ${p.name}` })),
+        ...sel.flatMap((p) => [
+          fromItem(p, { name: `Aplikácia na: ${p.name}` }),
+          ...(prep ? [fromItem(prep, { name: `${p.name} – príprava do tlače`, qty: 1 })] : []),
+        ]),
       ])}>Pridať do ponuky</button>
     </Sheet>
   )

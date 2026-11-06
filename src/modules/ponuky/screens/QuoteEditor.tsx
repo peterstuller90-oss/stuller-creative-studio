@@ -166,7 +166,7 @@ export function QuoteEditor({ quote, settings, prices, clients, warnings, onSave
               </div>
               <input className="line-desc" aria-label="Popis" placeholder="Popis (nepovinný)" value={l.description} onChange={(e) => setLine(l.id, { description: e.target.value })} />
               <div className="line-nums">
-                <label className="field"><span>Množstvo</span><NumInput value={l.qty} onChange={(n) => setLine(l.id, { qty: n })} /></label>
+                <label className="field"><span>{l.unit === 'hod' ? 'Hodiny' : 'Množstvo'}</span><NumInput value={l.qty} onChange={(n) => setLine(l.id, { qty: n })} /></label>
                 <label className="field"><span>Jednotka</span>
                   <select value={l.unit} onChange={(e) => setLine(l.id, { unit: e.target.value })}>
                     {[...new Set([...UNITS, l.unit])].map((u) => <option key={u}>{u}</option>)}

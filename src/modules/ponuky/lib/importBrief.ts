@@ -1,4 +1,5 @@
 import { briefSections, type BriefValues } from './brief'
+import { PREP_NAME } from './defaults'
 import { fmtNum, slug, uid } from './calc'
 import type { BriefAnswer, Line, PriceItem, Quote, Settings } from './types'
 
@@ -50,7 +51,11 @@ export function briefToQuote(v: BriefValues, prices: PriceItem[], s: Settings): 
   }
   if (v.s_logo) { const it = of('logo')[0]; if (it) lines.push(fromItem(it)) }
   if (v.s_ilustracia || v.s_logo) {
-    for (const p of of('aplikacia')) if (v[`a_${slug(p.name)}`]) lines.push(fromItem(p, { name: `Aplikácia na: ${p.name}` }))
+    const prep = active.find((p) => p.name === PREP_NAME)
+    for (const p of of('aplikacia')) if (v[`a_${slug(p.name)}`]) {
+      lines.push(fromItem(p, { name: `Aplikácia na: ${p.name}` }))
+      if (prep) lines.push(fromItem(prep, { name: `${p.name} – príprava do tlače` }))
+    }
   }
   if (v.s_workshop || str(v.w_typ)) {
     const it = of('workshop').find((p) => p.name === str(v.w_typ)) ?? of('workshop')[0]
