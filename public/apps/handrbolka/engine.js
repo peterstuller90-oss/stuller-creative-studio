@@ -114,15 +114,79 @@ const HB = (() => {
     }
     const s = w / F.w, h = F.h * s;
     ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
-    ctx.save(); ctx.clip(path(F.mask));
-    ctx.setTransform(ctx.getTransform()); // nech clip ostane, kreslíme v jednotkách rámika
     const mb = maskBox(F);
-    if (img) coverImg(ctx, img, mb.x, mb.y, mb.w, mb.h, ph); else placeholder(ctx, mb.x, mb.y, mb.w, mb.h);
-    ctx.restore();
+    const M = rasterMask('frame:' + frameKey, F.frame, F.w, F.h, 'inside', [mb.x + mb.w / 2, mb.y + mb.h / 2]);
+    if (M) drawMasked(ctx, M, F.w, F.h, img, ph, 0, 0, F.w, F.h);
+    else {
+      ctx.save(); ctx.clip(path(F.mask));
+      if (img) coverImg(ctx, img, mb.x, mb.y, mb.w, mb.h, ph); else placeholder(ctx, mb.x, mb.y, mb.w, mb.h);
+      ctx.restore();
+    }
     if (prog > 0) { ctx.globalAlpha = clamp(prog, 0, 1); ctx.fillStyle = frameColor; ctx.fill(path(F.frame)); }
     ctx.restore();
     return h;
   }
+
+  /* ---------- masky z kresieb ----------
+     inside: vnútro rámika od stredu až po nakreslené čiary (fotka tak vyplní celý rámik)
+     silhouette: celá silueta kresbičky (čiary aj to, čo uzatvárajú) – fotka "vymaskovaná" do kresbičky */
+  const MASKS = {};
+  function rasterMask(key, d, w, h, mode, seed) {
+    if (key in MASKS) return MASKS[key];
+    const k = 1200 / Math.max(w, h), P = 2, cw = Math.ceil(w * k) + P * 2, ch = Math.ceil(h * k) + P * 2;
+    const c = document.createElement('canvas'); c.width = cw; c.height = ch; const g = c.getContext('2d');
+    g.translate(P, P); g.scale(k, k); g.fill(path(d));
+    const src = g.getImageData(0, 0, cw, ch).data, N = cw * ch, ink = new Uint8Array(N);
+    for (let i = 0; i < N; i++) ink[i] = src[i * 4 + 3] > 90 ? 1 : 0;
+    const mark = new Uint8Array(N), stack = [];
+    const push = i => { if (!mark[i] && !ink[i]) { mark[i] = 1; stack.push(i); } };
+    if (mode === 'inside') { const sx = Math.round(seed[0] * k + P), sy = Math.round(seed[1] * k + P); push(sy * cw + sx); }
+    else { for (let x = 0; x < cw; x++) { push(x); push((ch - 1) * cw + x); } for (let y = 0; y < ch; y++) { push(y * cw); push(y * cw + cw - 1); } }
+    while (stack.length) { const i = stack.pop(), x = i % cw; if (x > 0) push(i - 1); if (x < cw - 1) push(i + 1); if (i >= cw) push(i - cw); if (i < N - cw) push(i + cw); }
+    let sel = new Uint8Array(N), count = 0;
+    for (let i = 0; i < N; i++) { sel[i] = mode === 'inside' ? mark[i] : (mark[i] ? 0 : 1); count += sel[i]; }
+    if (mode === 'inside' && (count > N * .8 || count < N * .02)) return (MASKS[key] = null); // obrys nie je uzavretý
+    // o pár bodov väčšia, aby fotka zašla pod nakreslenú čiaru
+    const grow = mode === 'inside' ? Math.max(2, Math.round(k * 3)) : 1;
+    for (let r = 0; r < grow; r++) { const nx = sel.slice(); for (let i = 0; i < N; i++) if (!sel[i]) { const x = i % cw; if ((x > 0 && sel[i - 1]) || (x < cw - 1 && sel[i + 1]) || (i >= cw && sel[i - cw]) || (i < N - cw && sel[i + cw])) nx[i] = 1; } sel = nx; }
+    const out = g.createImageData(cw, ch); let x0 = cw, y0 = ch, x1 = 0, y1 = 0;
+    for (let i = 0; i < N; i++) if (sel[i]) { out.data[i * 4 + 3] = 255; const x = i % cw, y = (i / cw) | 0; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cw, ch); g.putImageData(out, 0, 0);
+    return (MASKS[key] = { c, k, P, box: { x: (x0 - P) / k, y: (y0 - P) / k, w: (x1 - x0 + 1) / k, h: (y1 - y0 + 1) / k } });
+  }
+  // fotku vloží do masky; tvar má rozmer sw × sh a kreslí sa na x, y, w, h
+  function drawMasked(ctx, M, sw, sh, img, ph, x, y, w, h) {
+    const T = ctx.getTransform ? ctx.getTransform() : null;
+    const real = typeof CanvasRenderingContext2D !== 'undefined' && ctx instanceof CanvasRenderingContext2D;
+    const sc = real && T ? Math.hypot(T.a, T.b) : 1;
+    const pw = Math.max(16, Math.min(3200, Math.round(w * sc))), phh = Math.max(16, Math.round(pw * h / w));
+    const oc = document.createElement('canvas'); oc.width = pw; oc.height = phh; const g = oc.getContext('2d');
+    g.imageSmoothingQuality = 'high';
+    g.scale(pw / sw, phh / sh);
+    const b = M.box; if (img && (img.naturalWidth || img.width)) coverImg(g, img, b.x, b.y, b.w, b.h, ph || {}); else placeholder(g, b.x, b.y, b.w, b.h);
+    const fx = pw / sw / M.k, fy = phh / sh / M.k;
+    g.setTransform(fx, 0, 0, fy, -M.P * fx, -M.P * fy); g.globalCompositeOperation = 'destination-in'; g.drawImage(M.c, 0, 0);
+    oc.__alpha = true;
+    ctx.drawImage(oc, x, y, w, h);
+  }
+  // farebný obrys okolo masky (ako okraj nálepky): maska zväčšená o kúsok a vyfarbená
+  function maskRing(M, color) {
+    M.rings = M.rings || {};
+    if (M.rings[color]) return M.rings[color];
+    if (!M.grown) {
+      const cw = M.c.width, ch = M.c.height, N = cw * ch, a = M.c.getContext('2d').getImageData(0, 0, cw, ch).data;
+      let sel = new Uint8Array(N); for (let i = 0; i < N; i++) sel[i] = a[i * 4 + 3] > 0 ? 1 : 0;
+      const R = Math.max(4, Math.round(Math.max(cw, ch) * .014));
+      for (let r = 0; r < R; r++) { const nx = sel.slice(); for (let i = 0; i < N; i++) if (!sel[i]) { const x = i % cw; if ((x > 0 && sel[i - 1]) || (x < cw - 1 && sel[i + 1]) || (i >= cw && sel[i - cw]) || (i < N - cw && sel[i + cw])) nx[i] = 1; } sel = nx; }
+      const g = document.createElement('canvas'); g.width = cw; g.height = ch; const gx = g.getContext('2d'); const out = gx.createImageData(cw, ch);
+      for (let i = 0; i < N; i++) if (sel[i]) out.data[i * 4 + 3] = 255;
+      gx.putImageData(out, 0, 0); M.grown = g;
+    }
+    const c = document.createElement('canvas'); c.width = M.grown.width; c.height = M.grown.height; const g = c.getContext('2d');
+    g.drawImage(M.grown, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = color; g.fillRect(0, 0, c.width, c.height); c.__alpha = true;
+    return (M.rings[color] = c);
+  }
+  const MASK_SHAPES = { psik: 'Psík', hrad: 'Hrad', drak: 'Drak', rytier: 'Rytier', panacik: 'Panáčik', stromcek: 'Stromček', lego: 'Lego', hrib: 'Hríbik', tvar: 'Tvár' };
   const MB = {};
   function maskBox(F) {
     const k = F.mask.length; if (MB[k]) return MB[k];
@@ -207,6 +271,11 @@ const HB = (() => {
         const capSize = b.cap && String(b.cap).trim() ? Math.max(22 * u, w * .11) : 0;
         return { type: 'qr', text: String(b.text).trim(), cap: capSize ? String(b.cap).trim() : '', capSize, qw: w, pad, w: w + pad * 2, tw: w + pad * 2, h: w + pad * 2 + (capSize ? capSize * 1.6 : 0), gap: 44 * u * k };
       }
+      if (b.type === 'fotomaska') {
+        const D = ASSETS.doodles[b.shape] || ASSETS.doodles.psik;
+        let w = cw * sz * k, h = w * D.h / D.w; const maxH = availH * .6; if (h > maxH) { h = maxH; w = h * D.w / D.h; }
+        return { type: 'fotomaska', img: b.img ? blockImg(b.img) : null, shape: b.shape in ASSETS.doodles ? b.shape : 'psik', outline: b.outline !== false, zoom: b.zoom || 1, w, tw: w, h, gap: 44 * u * k };
+      }
       if (!b.img) return null;
       const im = blockImg(b.img);
       const ar = im ? im.naturalHeight / im.naturalWidth : 1;
@@ -242,7 +311,7 @@ const HB = (() => {
       };
       if (photoFirst) photoItem();
       blocks.forEach((b, i) => {
-        if (b.type === 'qr' || b.type === 'obrazok') {
+        if (b.type === 'qr' || b.type === 'obrazok' || b.type === 'fotomaska') {
           if (b.free) { freeB.push([b, i]); return; }
           const it = elemItem(b, k); if (it) { it.bi = i; add(it); }
           return;
@@ -305,7 +374,7 @@ const HB = (() => {
     const rects = [];
     items.forEach(it => {
       it.y = y;
-      const w = it.type === 'logo' || it.type === 'photo' || it.type === 'qr' || it.type === 'obrazok' ? it.w : it.tw;
+      const w = it.type === 'logo' || it.type === 'photo' || it.type === 'qr' || it.type === 'obrazok' || it.type === 'fotomaska' ? it.w : it.tw;
       it.x = left ? side : (W - w) / 2;
       rects.push({ x: it.x - W * .02, y: y - H * .008, w: w + W * .04, h: it.h + H * .016, type: it.type });
       y += it.h + it.gap;
@@ -457,6 +526,13 @@ const HB = (() => {
         }
         break;
       }
+      case 'fotomaska': {
+        const D = ASSETS.doodles[it.shape]; if (!D) break;
+        const M = rasterMask('doodle:' + it.shape, D.d, D.w, D.h, 'silhouette');
+        if (it.outline) { const ring = maskRing(M, th.map.ochre), sx = it.w / D.w / M.k, sy = it.h / D.h / M.k; ctx.drawImage(ring, it.x - M.P * sx, it.y - M.P * sy, ring.width * sx, ring.height * sy); }
+        drawMasked(ctx, M, D.w, D.h, it.img, { zoom: it.zoom }, it.x, it.y, it.w, it.h);
+        break;
+      }
       case 'obrazok': {
         if (!it.img) break;
         const x = it.x;
@@ -555,6 +631,6 @@ const HB = (() => {
     };
   }
 
-  const api = { COL, FORMATS, BGS, DOODLE_SETS, render, layout, drawLogo, drawUnderline, drawDoodle, font, blockImg, onAsset: null };
+  const api = { COL, FORMATS, BGS, DOODLE_SETS, MASK_SHAPES, render, layout, drawLogo, drawUnderline, drawDoodle, font, blockImg, onAsset: null };
   return api;
 })();

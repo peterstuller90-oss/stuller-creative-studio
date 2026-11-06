@@ -5,7 +5,7 @@
   const EASE = 'cubic-bezier(.33,0,.67,1)'
   const css = `.grip{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;border:0;background:none;color:inherit;opacity:.6;font-size:22px;line-height:1;padding:6px 10px;min-width:40px;min-height:36px;border-radius:8px}
 .grip:hover,.grip:focus-visible{opacity:1;background:rgba(0,0,0,.06)}
-.ds-drag{position:relative;z-index:30;background:var(--surface,var(--bg,#fff));box-shadow:0 14px 34px rgba(0,0,0,.22);border-radius:12px;transition:box-shadow .2s ${EASE}!important;will-change:transform}
+.ds-drag{position:relative;z-index:30;background:var(--surface,var(--bg,#fff));background:var(--surface,var(--bg,#fff));box-shadow:0 14px 34px rgba(0,0,0,.22);border-radius:12px;transition:box-shadow .2s ${EASE}!important;will-change:transform}
 .ds-drag .grip{cursor:grabbing}
 .ds-shift{transition:transform .22s ${EASE}}
 .ds-card{position:fixed;left:0;top:0;z-index:9998;pointer-events:none;background:#fff;border-radius:12px;padding:6px;box-shadow:0 16px 40px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.06);will-change:transform;transition:opacity .15s ${EASE}}

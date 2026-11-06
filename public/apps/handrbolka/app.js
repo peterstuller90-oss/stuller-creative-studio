@@ -202,7 +202,7 @@ DragSort($('blocks'), (order, moved) => {
 /* QR kódy a obrázky sa dajú potiahnuť priamo v náhľade kamkoľvek */
 let drag = null;
 /* texty sa v náhľade chytia do plávajúceho okienka a pustením sa preradia (ostávajú v okrajoch) */
-const isText = it => it.bi != null && !it.free && it.type !== 'qr' && it.type !== 'obrazok';
+const isText = it => it.bi != null && !it.free && !ELEMS[it.type];
 DragSort.preview(mainC, {
   layout: () => (!mainL || F[cur].anim) ? null : { W: mainL.W, H: mainL.H, items: mainL.items.filter(isText).map(it => ({ id: it.bi, x: it.x, y: it.y, w: it.tw || it.w, h: it.h, group: 0 })) },
   drop: (id, k) => {
@@ -215,7 +215,7 @@ function hitElem(pt) {
   if (!mainL || F[cur].anim) return null;
   const r = mainC.getBoundingClientRect(), fmt = F[cur];
   const x = (pt.clientX - r.left) / r.width * fmt.W, y = (pt.clientY - r.top) / r.height * fmt.H;
-  const its = mainL.items.filter(it => (it.type === 'qr' || it.type === 'obrazok') && it.bi != null);
+  const its = mainL.items.filter(it => ELEMS[it.type] && it.bi != null);
   for (let j = its.length - 1; j >= 0; j--) { const it = its[j]; if (x >= it.x && x <= it.x + it.w && y >= it.y && y <= it.y + it.h) return { it, x, y }; }
   return null;
 }
@@ -271,7 +271,7 @@ $('goReel').onclick = play;
 $('scrub').oninput = e => { stopPlay(); scrubT = +e.target.value; $('tOut').textContent = scrubT.toFixed(1).replace('.', ',') + ' s'; renderMain(); };
 
 /* ---------- panel: obsah ---------- */
-const ELEMS = { qr: 'QR kód', obrazok: 'Obrázok' };
+const ELEMS = { qr: 'QR kód', obrazok: 'Obrázok', fotomaska: 'Fotka v kresbičke' };
 function moveIcons(i) {
   const grip = document.createElement('button'); grip.className = 'grip'; grip.textContent = '≡'; grip.title = 'Potiahni hore alebo dole'; grip.setAttribute('aria-label', 'Zmeniť poradie: potiahni, alebo šípky hore a dole');
   const del = mkIco('×', 'Odstrániť', () => { st.blocks.splice(i, 1); buildBlocks(); renderAll(); });
@@ -303,6 +303,24 @@ function buildBlocks() {
         const c = document.createElement('input'); c.type = 'text'; c.value = b.cap || ''; c.placeholder = 'Popis pod kódom (nepovinné)'; c.setAttribute('aria-label', 'Popis pod QR kódom');
         c.oninput = () => { b.cap = c.value; renderAll(false); renderVarsDebounced(); };
         el.append(u, c, sizeSlider(b, i, .32), pos);
+      } else if (b.type === 'fotomaska') {
+        // fotka vymaskovaná do tvaru kresbičky (clipping mask)
+        const row = document.createElement('div'); row.className = 'drop';
+        const im = document.createElement('img'); im.alt = ''; if (b.img) im.src = b.img; else im.hidden = true;
+        const fi = document.createElement('input'); fi.type = 'file'; fi.accept = 'image/*'; fi.hidden = true;
+        const bt = document.createElement('button'); bt.className = 'btn small'; bt.textContent = b.img ? 'Zmeniť fotku' : 'Vybrať fotku'; bt.onclick = () => fi.click();
+        const tx = document.createElement('div'); tx.style.flex = '1'; tx.append('Fotka sa vloží do tvaru kresbičky. ', bt);
+        fi.onchange = () => readElemImage(fi.files[0], data => { b.img = data; buildBlocks(); renderAll(); });
+        row.append(im, tx, fi);
+        const shp = document.createElement('select'); shp.setAttribute('aria-label', 'Tvar kresbičky');
+        Object.entries(HB.MASK_SHAPES).forEach(([k, n]) => { const o = document.createElement('option'); o.value = k; o.textContent = n; if (k === b.shape) o.selected = true; shp.appendChild(o); });
+        shp.onchange = () => { b.shape = shp.value; renderAll(); };
+        const ol = document.createElement('label'); ol.className = 'check'; const oc = document.createElement('input'); oc.type = 'checkbox'; oc.checked = b.outline !== false;
+        oc.onchange = () => { b.outline = oc.checked; renderAll(); }; ol.append(oc, ' Obrys kresbičky');
+        const zl = document.createElement('label'); zl.className = 'f'; zl.textContent = 'Priblíženie fotky';
+        const zr = document.createElement('input'); zr.type = 'range'; zr.min = 1; zr.max = 2.5; zr.step = .02; zr.value = b.zoom || 1; zr.oninput = () => { b.zoom = +zr.value; renderAll(false); }; zl.appendChild(zr);
+        const lt = document.createElement('label'); lt.className = 'f'; lt.textContent = 'Tvar'; lt.appendChild(shp);
+        el.append(row, lt, ol, sizeSlider(b, i, .5), zl, pos);
       } else {
         const row = document.createElement('div'); row.className = 'drop';
         const im = document.createElement('img'); im.alt = ''; if (b.img) im.src = b.img; else im.hidden = true;
@@ -347,6 +365,12 @@ function mkIco(t, label, fn) { const b = document.createElement('button'); b.cla
 document.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
   const t = b.dataset.add;
   if (t === 'qr') { st.blocks.push({ type: 'qr', text: 'https://handrbolka.sk', cap: '', size: .32 }); buildBlocks(); renderAll(); const u = $('bx' + (st.blocks.length - 1)); if (u) { u.focus(); u.select(); } return; }
+  if (t === 'fotomaska') {
+    const shapes = Object.keys(HB.MASK_SHAPES), used = st.blocks.filter(b => b.type === 'fotomaska').length;
+    const fi = document.createElement('input'); fi.type = 'file'; fi.accept = 'image/*';
+    fi.onchange = () => readElemImage(fi.files[0], data => { st.blocks.push({ type: 'fotomaska', img: data, shape: shapes[used % shapes.length], size: .45, outline: true, text: '' }); buildBlocks(); renderAll(); toast('Fotka v kresbičke pridaná. Tvar zmeníš v jej bloku, v náhľade ju posunieš kamkoľvek.'); });
+    fi.click(); return;
+  }
   if (t === 'obrazok') {
     const fi = document.createElement('input'); fi.type = 'file'; fi.accept = 'image/*';
     fi.onchange = () => readElemImage(fi.files[0], data => { st.blocks.push({ type: 'obrazok', img: data, size: .5, text: '' }); buildBlocks(); renderAll(); toast('Obrázok pridaný. Veľkosť a poradie zmeníš v jeho bloku.'); });
