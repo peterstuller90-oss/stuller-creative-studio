@@ -83,8 +83,8 @@ button{cursor:pointer}
   .bigbtn{display:block}
   .app>header,.top{padding-block:6px!important}
   .preview{padding:8px 16px}
-  .formats{display:flex;overflow-x:auto;gap:6px;padding-block:8px;scrollbar-width:none}
-  .formats button{flex:none;flex-direction:row;gap:5px;padding:6px 12px;border-radius:999px;font-size:13px}
+  .formats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding-block:8px}
+  .formats button{justify-content:center;flex-direction:row;gap:5px;padding:6px 12px;border-radius:999px;font-size:13px}
   .formats button small{font-size:11px}
   .tabs{padding:3px}.tabs button{padding:8px 0}
   .bar .in .btn{min-height:44px;padding:9px 10px}.bar{padding-top:8px!important}

@@ -445,7 +445,7 @@ function bgHint() { $('bgHint').textContent = st.bg === 'foto' ? 'Na pozadí bud
 
 /* šablóny */
 Object.entries(TEMPLATES).forEach(([k, t]) => { const o = document.createElement('option'); o.value = k; o.textContent = t.name; $('tpl').appendChild(o); });
-$('tpl').onchange = async e => { if (!e.target.value) return; if (!await HubLeave.guard()) { e.target.value = ''; return; } const keepPhoto = st.photo; st = fromTemplate(e.target.value); if (photoImg) st.photo = { ...st.photo, zoom: keepPhoto.zoom, x: keepPhoto.x, y: keepPhoto.y }; currentId = null; syncSave(); e.target.value = ''; syncUI(); renderAll(); toast('Šablóna načítaná'); };
+$('tpl').onchange = async e => { if (!e.target.value) return; const keepPhoto = st.photo; st = fromTemplate(e.target.value); if (photoImg) st.photo = { ...st.photo, zoom: keepPhoto.zoom, x: keepPhoto.x, y: keepPhoto.y }; currentId = null; syncSave(); e.target.value = ''; syncUI(); renderAll(); toast('Šablóna načítaná'); };
 
 /* záložky */
 document.querySelectorAll('[role=tab]').forEach(t => t.onclick = () => {

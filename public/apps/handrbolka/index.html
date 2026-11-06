@@ -154,6 +154,13 @@ input[type=range]{width:100%;accent-color:var(--green)}
   #shuffle,#saveNewBtn{display:none!important}
   .top .seg{margin-right:auto}
   .top .seg button{padding:6px 10px;font-size:13px}
+  .top .seg{flex-wrap:nowrap}
+  .top .seg button,.top .btn{white-space:nowrap}
+  /* formáty v dvoch riadkoch po troch, nič sa neoreže; zväčšenie je v rohu náhľadu */
+  .fmtbar{display:block}
+  .chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;overflow:visible;padding:0}
+  .chips button{padding:6px 4px;text-align:center;overflow:hidden;text-overflow:ellipsis}
+  .mainwrap #bigPrev{position:absolute;right:max(24px,calc(env(safe-area-inset-right,0px) + 8px));bottom:16px;z-index:2;width:40px;height:40px;border-radius:999px;background:var(--surface);box-shadow:0 2px 8px rgba(31,59,46,.25)}
   .top .btn{padding:7px 12px;font-size:13px}
   .stage>.sec:first-child{display:none}
   .mainwrap{padding-top:6px;padding-bottom:6px;gap:6px}
@@ -178,6 +185,12 @@ input[type=range]{width:100%;accent-color:var(--green)}
   .menu .pop button{padding:13px 12px;font-size:16px}
   .menu .pop button small{font-size:13px;text-align:right}
   .menu .pop .check{font-size:15px}
+}
+/* úzky telefón: prepínač cez celú šírku, pod ním Uložiť a Exportovať vedľa seba */
+@media (max-width:400px){
+  .top{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .top .seg{grid-column:1/-1;margin-right:0;display:grid;grid-template-columns:1fr 1fr}
+  .top .btn,.top .menu,.top .menu .btn{width:100%;justify-content:center;text-align:center}
 }
 /* desktop: vľavo nástroje a vpravo náhľad sa posúvajú každý zvlášť (podľa toho, kde je myš), stránka stojí */
 @media (min-width:861px){
