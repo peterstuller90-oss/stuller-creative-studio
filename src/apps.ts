@@ -16,6 +16,7 @@ export const APPS: HubApp[] = [
   { id: 'home', name: 'Stullers Home', description: 'Rodinné úlohy, body a levely', module: true, audience: ['parent', 'child'] },
   { id: 'ponuky', name: 'Ponuky', description: 'Cenové ponuky a zmluvy', module: true, audience: ['parent'] },
   { id: 'stullers-studio', name: 'Stullers Studio', description: 'Grafika pre Štullers (pripravujeme)', audience: ['parent'] },
+  { id: 'illustrator', name: 'Stullers Illustrator', description: 'Kresba z fotky Štullers čiarou, až 6 fotiek naraz', frame: 'apps/illustrator/', audience: ['parent'] },
   { id: 'handrbolka', name: 'Handrbolka Studio', description: 'Posty, plagáty a intro videá', frame: 'apps/handrbolka/', audience: ['parent', 'other'] },
   { id: 'atelier', name: 'Atelier Studio', description: 'Grafika pre Atelier Handrbolka', frame: 'apps/atelier/', audience: ['parent', 'other'] },
   { id: 'social', name: 'Stullers Social', description: 'Stories, carousel a mockupy z ilustrácie', frame: 'apps/social/', audience: ['parent'] },
