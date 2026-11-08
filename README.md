@@ -9,6 +9,7 @@ Jedna appka pre všetky Štullers appky: jedno prihlásenie, jeden dizajn (font 
 | Ponuky (cenové ponuky a zmluvy) | v hube (`src/modules/ponuky`) |
 | Handrbolka Studio, Atelier Studio | v hube ako pôvodné appky (`public/apps/<id>/`), neskôr spoločné Studio s témami |
 | Stullers Studio | pripravujeme (spoločné Studio) |
+| Stullers Illustrator (kresba z fotky, až 6 fotiek naraz) | v hube (`public/apps/illustrator/`), kreslí cez Edge Function `illustrator-draw`, návrhy v tabuľke `illustrator_designs` (`supabase/illustrator/`) |
 | Stullers Social | v hube ako pôvodná appka (`public/apps/social/`) |
 | Hudy Packaging | v hube (`public/apps/hudy/`), CMYK šablóna .ai sa nahrá raz tlačidlom Šablóna (nie je v repozitári) |
 | Učiteľ | pripravujeme |
