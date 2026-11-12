@@ -8,6 +8,8 @@ export interface HubApp {
   module?: boolean
   /** Existing standalone app copied into public/apps/<id>/, shown inside the hub until it is rebuilt as a module. */
   frame?: string
+  /** Opens without logging in (#/<id> and a button on the login screen). */
+  public?: boolean
   /** Who sees the tile. */
   audience: Audience[]
 }
@@ -19,6 +21,6 @@ export const APPS: HubApp[] = [
   { id: 'handrbolka', name: 'Handrbolka Studio', description: 'Posty, plagáty a intro videá', frame: 'apps/handrbolka/', audience: ['parent', 'other'] },
   { id: 'atelier', name: 'Atelier Studio', description: 'Grafika pre Atelier Handrbolka', frame: 'apps/atelier/', audience: ['parent', 'other'] },
   { id: 'social', name: 'Stullers Social', description: 'Stories, carousel a mockupy z ilustrácie', frame: 'apps/social/', audience: ['parent'] },
-  { id: 'ucitel', name: 'Učiteľ', description: 'Učenie pre deti (pripravujeme)', audience: ['parent', 'child'] },
+  { id: 'ucitel', name: 'Učiteľ 2.0', description: 'Diktáty z vybraných slov (bez prihlásenia)', frame: 'apps/ucitel/', public: true, audience: ['parent', 'child', 'other'] },
   { id: 'hudy', name: 'Hudy Packaging', description: 'Generátor obalov', frame: 'apps/hudy/', audience: ['parent'] },
 ]

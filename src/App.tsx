@@ -70,6 +70,19 @@ export default function App() {
     return () => data.subscription.unsubscribe()
   }, [])
 
+  // Apps marked public (Učiteľ) open without logging in.
+  const publicApp = APPS.find((a) => a.public && a.frame && a.id === current)
+  if (publicApp && !session) {
+    return (
+      <div className="hub-module">
+        <header className="hub-bar no-print">
+          <a href="#/" className="hub-back">‹ Studio</a>
+          <span className="hub-bar-title">{publicApp.name}</span>
+        </header>
+        <iframe className="hub-frame" src={`${import.meta.env.BASE_URL}${publicApp.frame}?v=${__BUILD__}`} title={publicApp.name} allow="clipboard-write; fullscreen" />
+      </div>
+    )
+  }
   if (session === undefined) return <main className="hub-center"><div className="hub-spinner" /></main>
   if (!session) {
     return (
@@ -77,7 +90,10 @@ export default function App() {
         {emailMode
           ? <EmailLogin onBack={() => setEmailMode(false)} />
           : <Login supabase={supabase} label="Creative Studio"
-              extra={<button className="link-btn" onClick={() => setEmailMode(true)}>Prihlásiť sa e-mailom</button>} />}
+              extra={<>
+                <button className="link-btn" onClick={() => setEmailMode(true)}>Prihlásiť sa e-mailom</button>
+                {APPS.filter((a) => a.public).map((a) => <a key={a.id} className="link-btn" href={`#/${a.id}`}>{a.name} – bez prihlásenia</a>)}
+              </>} />}
       </div>
     )
   }
