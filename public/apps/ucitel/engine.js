@@ -74,6 +74,7 @@ window.UCITEL_ENGINE = (() => {
     }
     if ('dtnl'.includes(p.prev)) {
       if (isY(p.c)) return { kind: 'tvrdá', text: `Lebo ${p.prev}${ch} vyslovujeme tvrdo. Keď d, t, n, l znie tvrdo, píšeme tvrdé ${ch}.` };
+      if (B.EXC[w]) return { kind: 'výnimka', text: `Lebo je to cudzie slovo. V cudzích slovách vyslovujeme di, ti, ni, li tvrdo, a predsa píšeme mäkké ${ch}.` };
       return { kind: 'mäkké i', text: `Lebo to vyslovujeme mäkko, ako ${SOFTEN[p.prev]}${ch}. Keď d, t, n, l znie mäkko, píšeme mäkké ${ch}. Mäkčeň nad ${p.prev} vtedy nepíšeme, i ho zmäkčí samo.` };
     }
     if (isY(p.c)) return { kind: 'tvrdá', text: `Lebo pred ním je ${p.prev} a to je tvrdá spoluhláska. Po tvrdých spoluhláskach (h, ch, k, g, d, t, n, l) píšeme tvrdé ${ch}.` };
@@ -82,7 +83,7 @@ window.UCITEL_ENGINE = (() => {
 
   function fromCode(code, w, p, ch) {
     const l = p.prev;
-    if (!code || code === 'auto') return { kind: 'pravidlo', text: `Lebo po ${l} píšeme tvrdé y iba vo vybraných slovách. Inak mäkké i.` };
+    if (!code || code === 'auto') return { kind: 'pravidlo', text: `Lebo po ${l} píšeme tvrdé y len vo vybraných slovách a v slovách s nimi príbuzných. Ostatné slová majú mäkké i.` };
     if (code === 'vy') return { kind: 'vybrané', letter: 'v', text: `Lebo slovo začína predponou vy- (alebo vý-), ako vyskočiť alebo výlet. Táto predpona patrí medzi vybrané slová po V, preto je v nej vždy tvrdé ${ch}.` };
     if (code === 'pri') return { kind: 'mäkké i', text: `Lebo pri (alebo prí-) nie je vybrané slovo. Po r píšeme tvrdé y iba vo vybraných slovách ako ryba alebo rýchly, inak mäkké ${ch}.` };
     if (code === 'exc') return { kind: 'výnimka', text: B.EXC[w] || 'Toto je výnimka v cudzom slove.' };
@@ -96,7 +97,7 @@ window.UCITEL_ENGINE = (() => {
     if (code.startsWith('end:')) return { kind: 'koncovka', text: B.ENDINGS[code.slice(4)] || 'Lebo je to koncovka slova.' };
     if (code.startsWith('not')) {
       const hint = code.slice(4);
-      return { kind: 'mäkké i', text: `Lebo ${quote(w)} nie je vybrané slovo ani z rodiny vybraných slov. Po ${l} píšeme tvrdé y iba vo vybraných slovách, všade inde mäkké ${ch}.${hint ? ' Pozor: ' + hint + '.' : ''}` };
+      return { kind: 'mäkké i', text: `Lebo ${quote(w)} nie je vybrané slovo ani z rodiny vybraných slov. Po ${l} píšeme tvrdé y len vo vybraných slovách a v slovách s nimi príbuzných. Ostatné slová majú mäkké ${ch}.${hint ? ' Pozor: ' + hint + '.' : ''}` };
     }
     return { kind: 'pravidlo', text: '' };
   }
