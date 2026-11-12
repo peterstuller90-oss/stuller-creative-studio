@@ -66,37 +66,37 @@ window.UCITEL_ENGINE = (() => {
       return fromCode(code, w, p, ch);
     }
     if (excApplies(w, p)) return { kind: 'výnimka', text: B.EXC[w] };
-    if (p.cat === 'start') return { kind: 'pravidlo', text: `Na začiatku slova je ${ch}.` };
-    if (p.cat === 'vowel') return { kind: 'pravidlo', text: `Po samohláske ide mäkké ${ch}.` };
+    if (p.cat === 'start') return { kind: 'pravidlo', text: `Lebo na začiatku slova píšeme ${ch}.` };
+    if (p.cat === 'vowel') return { kind: 'pravidlo', text: `Lebo po samohláske píšeme mäkké ${ch}.` };
     if (p.cat === 'soft') {
-      if (isY(p.c)) return { kind: 'výnimka', text: `Toto je cudzie slovo a tu je to naopak: po mäkkom c sa píše tvrdé ${ch}. Ako bicykel alebo cyklista.` };
-      return { kind: 'mäkká', text: `Pred ním je ${p.prev} a to je mäkká spoluhláska. Po mäkkých (ž, š, č, c, j, ď, ť, ň, ľ, dz, dž) ide vždy mäkké ${ch}.` };
+      if (isY(p.c)) return { kind: 'výnimka', text: `Lebo je to cudzie slovo a v ňom sa po mäkkom c píše tvrdé ${ch}. Je to výnimka, ako bicykel alebo cyklista.` };
+      return { kind: 'mäkká', text: `Lebo pred ním je ${p.prev} a to je mäkká spoluhláska. Po mäkkých spoluhláskach (ž, š, č, c, j, ď, ť, ň, ľ, dz, dž) píšeme vždy mäkké ${ch}.` };
     }
     if ('dtnl'.includes(p.prev)) {
-      if (isY(p.c)) return { kind: 'tvrdá', text: `Počúvaj: ${p.prev}${ch} znie tvrdo. Tvrdé ${p.prev} = tvrdé ${ch}.` };
-      return { kind: 'mäkké i', text: `Počúvaj: znie to mäkko, ako ${SOFTEN[p.prev]}${ch}. Vtedy píšeš mäkké ${ch} a mäkčeň nad ${p.prev} netreba, to i ho už zmäkčí.` };
+      if (isY(p.c)) return { kind: 'tvrdá', text: `Lebo ${p.prev}${ch} vyslovujeme tvrdo. Keď d, t, n, l znie tvrdo, píšeme tvrdé ${ch}.` };
+      return { kind: 'mäkké i', text: `Lebo to vyslovujeme mäkko, ako ${SOFTEN[p.prev]}${ch}. Keď d, t, n, l znie mäkko, píšeme mäkké ${ch}. Mäkčeň nad ${p.prev} vtedy nepíšeme, i ho zmäkčí samo.` };
     }
-    if (isY(p.c)) return { kind: 'tvrdá', text: `Pred ním je ${p.prev} a to je tvrdá spoluhláska. Po tvrdých (h, ch, k, g, d, t, n, l) ide tvrdé ${ch}.` };
-    return { kind: 'výnimka', text: `Toto je cudzie slovo a tie sú trochu rebeli: aj po tvrdom ${p.prev} sa tu píše mäkké ${ch}. Ako kino alebo gitara.` };
+    if (isY(p.c)) return { kind: 'tvrdá', text: `Lebo pred ním je ${p.prev} a to je tvrdá spoluhláska. Po tvrdých spoluhláskach (h, ch, k, g, d, t, n, l) píšeme tvrdé ${ch}.` };
+    return { kind: 'výnimka', text: `Lebo je to cudzie slovo. V cudzích slovách sa píše mäkké ${ch} aj po tvrdom ${p.prev}. Je to výnimka, ako kino alebo gitara.` };
   }
 
   function fromCode(code, w, p, ch) {
     const l = p.prev;
-    if (!code || code === 'auto') return { kind: 'pravidlo', text: `Po ${l} píšeme tvrdé y iba vo vybraných slovách. Inak mäkké i.` };
-    if (code === 'vy') return { kind: 'vybrané', letter: 'v', text: `Vy- alebo vý- na začiatku slova (vyskočiť, výlet) patrí medzi vybrané slová po V. Preto tvrdé ${ch}.` };
-    if (code === 'pri') return { kind: 'mäkké i', text: `Pri- (alebo prí-) nie je vybrané slovo, takže tu ide mäkké ${ch}.` };
+    if (!code || code === 'auto') return { kind: 'pravidlo', text: `Lebo po ${l} píšeme tvrdé y iba vo vybraných slovách. Inak mäkké i.` };
+    if (code === 'vy') return { kind: 'vybrané', letter: 'v', text: `Lebo slovo začína predponou vy- (alebo vý-), ako vyskočiť alebo výlet. Táto predpona patrí medzi vybrané slová po V, preto je v nej vždy tvrdé ${ch}.` };
+    if (code === 'pri') return { kind: 'mäkké i', text: `Lebo pri (alebo prí-) nie je vybrané slovo. Po r píšeme tvrdé y iba vo vybraných slovách ako ryba alebo rýchly, inak mäkké ${ch}.` };
     if (code === 'exc') return { kind: 'výnimka', text: B.EXC[w] || 'Toto je výnimka v cudzom slove.' };
     if (code.startsWith('vs:')) {
       const [, L, base] = code.split(':');
       const same = base.split(/[ ,(]/)[0].toLowerCase() === w;
       return { kind: 'vybrané', letter: L, text: same
-        ? `${quote(w)} je vybrané slovo po ${L.toUpperCase()}. Vybrané slová sa píšu s tvrdým y, takže ${ch}.`
-        : `${quote(w)} je z rodiny vybraného slova ${base} (po ${L.toUpperCase()}). Celá rodina sa píše s tvrdým y, takže ${ch}.` };
+        ? `Lebo ${quote(w)} je vybrané slovo po ${L.toUpperCase()}. Vo vybraných slovách píšeme vždy tvrdé y, preto ${ch}.`
+        : `Lebo ${quote(w)} patrí do rodiny vybraného slova ${base} (po ${L.toUpperCase()}). Vybrané slová aj celá ich rodina sa píšu s tvrdým y, preto ${ch}.` };
     }
-    if (code.startsWith('end:')) return { kind: 'koncovka', text: B.ENDINGS[code.slice(4)] || 'To je koncovka slova.' };
+    if (code.startsWith('end:')) return { kind: 'koncovka', text: B.ENDINGS[code.slice(4)] || 'Lebo je to koncovka slova.' };
     if (code.startsWith('not')) {
       const hint = code.slice(4);
-      return { kind: 'mäkké i', text: `${quote(w)} nie je vybrané slovo ani z ich rodiny. Po ${l} je tvrdé y iba vo vybraných slovách, inak vždy mäkké ${ch}.${hint ? ' Pozor: ' + hint + '.' : ''}` };
+      return { kind: 'mäkké i', text: `Lebo ${quote(w)} nie je vybrané slovo ani z rodiny vybraných slov. Po ${l} píšeme tvrdé y iba vo vybraných slovách, všade inde mäkké ${ch}.${hint ? ' Pozor: ' + hint + '.' : ''}` };
     }
     return { kind: 'pravidlo', text: '' };
   }
@@ -372,5 +372,14 @@ window.UCITEL_ENGINE = (() => {
     return { items, mistakes, iy, words: items.length, found: items.filter((x) => x.got).length };
   }
 
-  return { LETTERS, LENGTHS, TAGGED, positions, explain, tagSentence, generate, chunks, grade, gapPlan, gradeGaps, tokenize, WORD_RE };
+  /** Všetky miesta i/y v slove s vysvetlením (na klikanie v správnom texte). */
+  function wordInfo(word) {
+    const lw = word.toLowerCase();
+    const list = positions(lw).map((p) => ({ ...p, ch: word[p.i], ...explain(lw, p.i) }));
+    const rank = { 'vybrané': 3, 'výnimka': 2 };
+    const top = list.reduce((a, x) => Math.max(a, rank[x.kind] || 1), 0);
+    return { list, cls: top === 3 ? 'vs' : top === 2 ? 'exc' : list.length ? 'iy' : '' };
+  }
+
+  return { wordInfo, LETTERS, LENGTHS, TAGGED, positions, explain, tagSentence, generate, chunks, grade, gapPlan, gradeGaps, tokenize, WORD_RE };
 })();

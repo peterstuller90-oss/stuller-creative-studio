@@ -204,33 +204,33 @@ window.UCITEL_BANK = (() => {
     'fialkami': 'end:mi', 'hry': 'end:zena', 'hudby': 'end:zena', 'rýchlosti': 'vs:r:rýchly', 'malina': 'auto', 'štípe': 'auto', 'mamina': 'not', 'jabĺk': 'auto',
   };
 
-  const K = 'je cudzie slovo a cudzie slová sú trochu rebeli: aj po tvrdom'
-  const T = 'je cudzie slovo. Počuješ to tvrdo, ale aj tak sa píše mäkké i.'
-  const C = 'je cudzie slovo a tu je to naopak: po mäkkom c sa píše tvrdé y. Zapamätaj si: bicykel, cyklista, Cyril.'
+  const K = 'je cudzie slovo. V cudzích slovách sa píše mäkké i aj po tvrdom'
+  const T = 'je cudzie slovo. Vyslovuješ to tvrdo, ale v cudzích slovách sa aj tak píše mäkké i. Je to výnimka.'
+  const C = 'je cudzie slovo a v ňom sa po mäkkom c píše tvrdé y. Je to výnimka, zapamätaj si: bicykel, cyklista, Cyril.'
   const EXC = {
-    'kina': `Kino ${K} k sa tu píše mäkké i. Zapamätaj si: kino, kilo, gitara.`,
-    'kino': `Kino ${K} k sa tu píše mäkké i. Zapamätaj si: kino, kilo, gitara.`,
-    'kine': `Kino ${K} k sa tu píše mäkké i. Zapamätaj si: kino, kilo, gitara.`,
-    'gitare': `Gitara ${K} g sa tu píše mäkké i.`,
-    'kilo': `Kilo ${K} k sa tu píše mäkké i.`,
-    'kilogram': `Kilogram ${K} k sa tu píše mäkké i.`,
-    'zoologickej': `Zoologický ${K} g sa tu píše mäkké i.`,
-    'bicykli': `Bicykel ${C}`, 'bicykel': `Bicykel ${C}`,
-    'cyklista': `Cyklista ${C}`, 'cyklisti': `Cyklista ${C}`, 'cyril': `Cyril ${C}`,
-    'diktát': `Diktát ${T} Takto aj rádio, tiger, technika.`,
-    'tigra': `Tiger ${T}`, 'tiger': `Tiger ${T}`,
-    'rádio': `Rádio ${T}`,
-    'matematiky': `Matematika ${T}`,
-    'techniku': `Technika ${T}`,
-    'dinosaura': `Dinosaurus ${T}`,
+    'kina': `Lebo kino ${K} k. Je to výnimka, zapamätaj si: kino, kilo, gitara.`,
+    'kino': `Lebo kino ${K} k. Je to výnimka, zapamätaj si: kino, kilo, gitara.`,
+    'kine': `Lebo kino ${K} k. Je to výnimka, zapamätaj si: kino, kilo, gitara.`,
+    'gitare': `Lebo gitara ${K} g. Je to výnimka.`,
+    'kilo': `Lebo kilo ${K} k. Je to výnimka.`,
+    'kilogram': `Lebo kilogram ${K} k. Je to výnimka.`,
+    'zoologickej': `Lebo zoologický ${K} g. Je to výnimka.`,
+    'bicykli': `Lebo bicykel ${C}`, 'bicykel': `Lebo bicykel ${C}`,
+    'cyklista': `Lebo cyklista ${C}`, 'cyklisti': `Lebo cyklista ${C}`, 'cyril': `Lebo cyril ${C}`,
+    'diktát': `Lebo diktát ${T} Takto aj rádio, tiger, technika.`,
+    'tigra': `Lebo tiger ${T}`, 'tiger': `Lebo tiger ${T}`,
+    'rádio': `Lebo rádio ${T}`,
+    'matematiky': `Lebo matematika ${T}`,
+    'techniku': `Lebo technika ${T}`,
+    'dinosaura': `Lebo dinosaurus ${T}`,
   };
 
   const ENDINGS = {
-    dub: 'To je koncovka. Mužský rod ako dub má v množnom čísle tvrdé -y: duby, stromy, zuby.',
-    zena: 'To je koncovka. Ženský rod ako žena má tu tvrdé -y: ženy, ryby, do hry.',
-    pekny: 'To je koncovka prídavného mena ako pekný: pekný, dobrý, starý, nový. Na konci je tvrdé -ý.',
-    pekni: 'To je koncovka prídavného mena, keď hovoríme o viacerých ľuďoch (mužský rod): pekní, starí, noví susedia. Tu je mäkké -í.',
-    mi: 'To je koncovka -mi (s kým? s čím?): s deťmi, so svojimi, s fialkami. Tá je vždy s mäkkým i.',
+    dub: 'Lebo je to koncovka, nie koreň slova. Mužský rod ako dub má v množnom čísle tvrdé -y: duby, stromy, zuby.',
+    zena: 'Lebo je to koncovka, nie koreň slova. Ženský rod ako žena má tu tvrdé -y: ženy, ryby, do hry.',
+    pekny: 'Lebo je to koncovka prídavného mena ako pekný: pekný, dobrý, starý, nový. Na konci je tvrdé -ý.',
+    pekni: 'Lebo je to koncovka prídavného mena, keď hovoríme o viacerých ľuďoch (mužský rod): pekní, starí, noví susedia. Tu je mäkké -í.',
+    mi: 'Lebo je to koncovka -mi (s kým? s čím?): s deťmi, so svojimi, s fialkami. Tá je vždy s mäkkým i.',
   };
 
   return { SENTENCES: S, LEX, EXC, ENDINGS };
