@@ -84,7 +84,7 @@ window.UCITEL_ENGINE = (() => {
   function fromCode(code, w, p, ch) {
     const l = p.prev;
     if (!code || code === 'auto') return { kind: 'pravidlo', text: `Lebo po ${l} píšeme tvrdé y len vo vybraných slovách a v slovách s nimi príbuzných. Ostatné slová majú mäkké i.` };
-    if (code === 'vy') return { kind: 'vybrané', letter: 'v', text: `Lebo slovo začína predponou vy- (alebo vý-), ako vyskočiť alebo výlet. Táto predpona patrí medzi vybrané slová po V, preto je v nej vždy tvrdé ${ch}.` };
+    if (code === 'vy') return { kind: 'vybrané', letter: 'v', text: `Lebo v slove je predpona vy- (alebo vý-), ako vyskočiť alebo výlet. Táto predpona patrí medzi vybrané slová po V, preto je v nej vždy tvrdé ${ch}.` };
     if (code === 'pri') return { kind: 'mäkké i', text: `Lebo pri (alebo prí-) nie je vybrané slovo. Po r píšeme tvrdé y iba vo vybraných slovách ako ryba alebo rýchly, inak mäkké ${ch}.` };
     if (code === 'exc') return { kind: 'výnimka', text: B.EXC[w] || 'Toto je výnimka v cudzom slove.' };
     if (code.startsWith('vs:')) {
@@ -117,7 +117,10 @@ window.UCITEL_ENGINE = (() => {
     return { letters: [...letters], exc, excType, softI };
   }
 
-  const TAGGED = B.SENTENCES.map((text, id) => ({ id, text, ...tagSentence(text) }));
+  const TAGGED = [
+    ...B.SENTENCES.map((text, id) => ({ id, text, hard: false, ...tagSentence(text) })),
+    ...B.HARD.map((text, k) => ({ id: 1000 + k, text, hard: true, ...tagSentence(text) })),
+  ];
 
   function shuffle(a) {
     const r = a.slice();
@@ -126,8 +129,9 @@ window.UCITEL_ENGINE = (() => {
   }
 
   /** Vygeneruje diktát. recent = id viet, ktoré boli nedávno (dajú sa až nakoniec). */
-  function generate(lengthKey, letters, recent = []) {
+  function generate(lengthKey, letters, recent = [], hardMode = false) {
     const cfg = LENGTHS[lengthKey];
+    const POOL = TAGGED.filter((t) => !t.hard);
     const sel = new Set(letters.length ? letters : LETTERS);
     const rec = new Set(recent);
     const order = (arr) => { const s = shuffle(arr); return [...s.filter((x) => !rec.has(x.id)), ...s.filter((x) => rec.has(x.id))]; };
@@ -136,18 +140,24 @@ window.UCITEL_ENGINE = (() => {
     const pick = (cands) => { const t = cands.find((x) => !used.has(x.id)); if (t) used.add(t.id); return t; };
 
     const out = [];
+    // náročný diktát: polovica viet sú chytáky a ťažké slová, plus jedna výnimka navyše
+    if (hardMode) {
+      const hardPool = order(TAGGED.filter((t) => t.hard));
+      const fits = [...hardPool.filter(subset), ...hardPool.filter((t) => !subset(t))];
+      for (let k = 0; k < Math.ceil(cfg.sentences / 2); k++) { const t = pick(fits); if (t) out.push(t); }
+    }
     // výnimky (pri dlhom jedna s k/g a jedna s c, ak sa dá)
-    const excPool = order(TAGGED.filter((t) => t.exc && subset(t)));
-    for (let k = 0; k < cfg.exc; k++) {
-      const want = k === 1 ? (out[0]?.excType === 'c' ? 'k' : 'c') : null;
+    const excPool = order(POOL.filter((t) => t.exc && subset(t)));
+    for (let k = 0; k < cfg.exc + (hardMode ? 1 : 0) && out.length < cfg.sentences; k++) {
+      const want = k === 1 ? (out.find((x) => x.exc)?.excType === 'c' ? 'k' : 'c') : null;
       const t = pick(want ? [...excPool.filter((x) => x.excType === want), ...excPool] : excPool);
       if (t) out.push(t);
     }
     // iné slová s mäkkým i
-    const softPool = order(TAGGED.filter((t) => !t.exc && !t.letters.length && t.softI));
-    for (let k = 0; k < cfg.soft; k++) { const t = pick(softPool); if (t) out.push(t); }
+    const softPool = order(POOL.filter((t) => !t.exc && !t.letters.length && t.softI));
+    for (let k = 0; k < (hardMode ? 0 : cfg.soft); k++) { const t = pick(softPool); if (t) out.push(t); }
     // vybrané slová – striedanie zvolených písmen
-    const vsPool = order(TAGGED.filter((t) => !t.exc && t.letters.some((l) => sel.has(l))));
+    const vsPool = order(POOL.filter((t) => !t.exc && t.letters.some((l) => sel.has(l))));
     const strict = vsPool.filter(subset);
     const loose = vsPool.filter((t) => !subset(t));
     const selList = shuffle([...sel]);
@@ -167,6 +177,7 @@ window.UCITEL_ENGINE = (() => {
     if (res.length > 1 && res[0].exc) res.push(res.shift());
     return {
       length: lengthKey,
+      hard: hardMode,
       letters: [...sel].sort((a, b) => LETTERS.indexOf(a) - LETTERS.indexOf(b)),
       sentences: res.map((t) => t.text),
       ids: res.map((t) => t.id),
@@ -376,7 +387,7 @@ window.UCITEL_ENGINE = (() => {
   /** Všetky miesta i/y v slove s vysvetlením (na klikanie v správnom texte). */
   function wordInfo(word) {
     const lw = word.toLowerCase();
-    const list = positions(lw).map((p) => ({ ...p, ch: word[p.i], ...explain(lw, p.i) }));
+    const list = positions(lw).map((p) => { const x = explain(lw, p.i); return { ...p, ch: word[p.i], ...x, text: x.text.replace(`„${lw}“`, `„${word}“`) }; });
     const rank = { 'vybrané': 3, 'výnimka': 2 };
     const top = list.reduce((a, x) => Math.max(a, rank[x.kind] || 1), 0);
     return { list, cls: top === 3 ? 'vs' : top === 2 ? 'exc' : list.length ? 'iy' : '' };
