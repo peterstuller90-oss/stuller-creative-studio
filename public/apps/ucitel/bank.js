@@ -1,0 +1,237 @@
+/* Učiteľ 2.0 – banka viet pre diktáty z vybraných slov.
+   Každé i/í/y/ý po obojakej spoluhláske (b, m, p, r, s, v, z, f) musí mať v LEX vysvetlenie
+   (kontroluje to tools/check-bank.mjs). Po tvrdých a mäkkých spoluhláskach sa pravidlo dopočíta samo,
+   výnimky (kino, diktát, bicykel...) sú v EXC.
+
+   Kódy v LEX (jeden kód pre všetky obojaké miesta v slove, alebo pole – jeden kód pre každé miesto po poradí):
+     'vs:<písmeno>:<vybrané slovo>'  vybrané slovo alebo slovo príbuzné
+     'vy'                             predpona vy-/vý- (vybrané slovo po v)
+     'pri'                            predpona pri-/prí-
+     'not' alebo 'not:<poznámka>'     nie je vybrané slovo → mäkké i
+     'end:<vzor>'                     koncovka podľa vzoru (pozri ENDINGS)
+     'exc'                            cudzie slovo (výnimka) – vysvetlenie z EXC
+*/
+window.UCITEL_BANK = (() => {
+  const S = [
+    // ---------- B ----------
+    'Naša rodina býva v novom byte na sídlisku.',
+    'Obyvatelia Bystrice majú krásny park.',
+    'Starý otec zbiera liečivé byliny.',
+    'Na lúke sa pasie veľký býk.',
+    'Kobyla stojí v maštali pri žriebätku.',
+    'Dedko chová na gazdovstve dobytok.',
+    'Keby pršalo, zostali by sme doma.',
+    'Chcel by som byť taký bystrý ako ty.',
+    'V Bytči bývajú moji starí rodičia.',
+    'Babka si kúpila nový nábytok.',
+    'Bylinkový čaj je dobrý na kašeľ.',
+    'Zajac má svoj príbytok pod kríkom.',
+    'Býval raz jeden bystrý chlapec.',
+    'Biely býk a biela kobyla bežia po lúke.',
+    'Aby sme stihli vlak, musíme ísť hneď.',
+    'Moje bydlisko je v malej dedine.',
+    // ---------- M ----------
+    'My sme si umyli ruky mydlom.',
+    'Myška sa skryla do diery.',
+    'Mama myslí na nás celý deň.',
+    'Okolo kvetov bzučí hmyz.',
+    'Nemýľ sa, prosím ťa.',
+    'Myš sa šmýkala po ľade.',
+    'Mamička žmýka mokrú bielizeň.',
+    'Na Myjave je veľký priemysel.',
+    'Po obede umývame riad.',
+    'Mysleli sme, že bude pršať.',
+    'Myslím si, že sa mýliš.',
+    'Nové mydlo vonia ako ruža.',
+    'Na lúke sme pozorovali hmyz a motýle.',
+    'Môj brat si večer umýva zuby.',
+    'Tvoja myšlienka sa mi páči.',
+    // ---------- P ----------
+    'Ondrej sa pýta, kedy pôjdeme na výlet.',
+    'Kôň má na nohách tvrdé kopytá.',
+    'Za zlý skutok bude pykať.',
+    'Kôň má mäkký pysk.',
+    'Pytliak sa skrýval v hustom lese.',
+    'Starká uvarila zemiakové pyré.',
+    'V záhrade rastie burina a pýr.',
+    'Kráľ žil v obrovskom prepychu.',
+    'Mama sa pýši svojimi deťmi.',
+    'Pýtala som sa, či môžem ísť von.',
+    'Nepýtaj sa toľko a pomôž mi.',
+    'Hrdý kohút sa pýšil novým perím.',
+    'Pýcha predchádza pád.',
+    // ---------- R ----------
+    'V rybníku plávajú ryby.',
+    'Rýchly rys beží lesom.',
+    'Dedko ryje záhradu rýľom.',
+    'Ryšavá líška sa skryla v nore.',
+    'Na obed bude ryža s mäsom.',
+    'Rytier mal veľký meč.',
+    'Korytnačka lezie pomaly.',
+    'Pes hryzie kosť.',
+    'Žiak pekne rysuje trojuholník.',
+    'Koza pije vodu z koryta.',
+    'Rýpali sme v záhrade.',
+    'Mama prikryla dieťa perinou.',
+    'Sestra si rýchlo zakryla oči.',
+    'Kocúr chytil malú rybku.',
+    'Rieka Torysa tečie na východe Slovenska.',
+    // ---------- S ----------
+    'Môj syn rád jedáva syr.',
+    'Po dobrom obede som bol sýty.',
+    'Na kŕmidlo priletela sýkorka.',
+    'Had syčí v tráve.',
+    'Sypali sme vtákom zrno.',
+    'Vonku je sychravé počasie.',
+    'Syseľ si vyhrabal noru.',
+    'V sýpke je veľa obilia.',
+    'Babka sype soľ do polievky.',
+    'Syn a dcéra sa hrajú spolu.',
+    'Otec nasypal piesok do pieskoviska.',
+    'Mačka zasyčala na psa.',
+    'Sýty pes spokojne spí.',
+    'Syseľ sa skrýva v diere.',
+    // ---------- V ----------
+    'Vy ste naši noví susedia.',
+    'Na vysokom strome sedí výr.',
+    'Vlk v noci vyje na mesiac.',
+    'Vydra pláva v rieke.',
+    'Deti výskali od radosti.',
+    'Zvykli sme si vstávať skoro.',
+    'Brat žvýka žuvačku.',
+    'Vyskočil som vysoko do vzduchu.',
+    'Výlet do hôr sa vydaril.',
+    'Pani učiteľka nám vysvetlila úlohu.',
+    'Kováč pracoval vo vyhni.',
+    'Mám zvyk čítať večer knihy.',
+    'Starším ľuďom vykáme.',
+    'Vymysleli sme novú hru.',
+    'Výborne, vyhral si!',
+    // ---------- Z ----------
+    'Jazyk nám pomáha pri reči.',
+    'Ako sa nazýva tvoj pes?',
+    'Z lesa sa ozýva kukučka.',
+    'Mama nás vyzýva k poriadku.',
+    'Lekár mi pozrel jazyk.',
+    'Na jar sa ozývali vtáky.',
+    'Cudzí jazyk sa učíme v škole.',
+    'Sestru sme prizývali do hry.',
+    'Pes vyplazil jazyk.',
+    'Z hôr sa ozývala ozvena.',
+    'Mačka si olizuje jazykom labku.',
+    // ---------- výnimky ----------
+    'V sobotu pôjdeme do kina.',
+    'Brat hrá na gitare.',
+    'Kúpili sme kilo jabĺk.',
+    'Na bicykli jazdím každý deň.',
+    'Cyklista mal na hlave prilbu.',
+    'Dnes píšeme diktát zo slovenčiny.',
+    'V zoologickej záhrade sme videli tigra.',
+    'Starý otec počúva rádio.',
+    'Z matematiky som dostal jednotku.',
+    'Ocko opravuje techniku.',
+    'Malý Cyril dostal nový bicykel.',
+    'V múzeu sme videli kostru dinosaura.',
+    'Kino je hneď vedľa školy.',
+    'Na hodine hudby sme hrali na gitare.',
+    'Tiger má pruhovaný kožuch.',
+    'Kilogram múky stojí jedno euro.',
+    'Cyklisti súťažili v rýchlosti.',
+    // ---------- iné slová s mäkkým i ----------
+    'Deti sa hrali na ihrisku.',
+    'Čierna mačka pije mlieko.',
+    'Ráno svieti slnko.',
+    'Žiaci píšu úlohu.',
+    'Cez prázdniny pôjdeme k babičke.',
+    'Jožko si čistí topánky.',
+    'Ježko sa schoval pod list.',
+    'Večer čítam knihu o zvieratách.',
+    'Na stole stojí váza s fialkami.',
+    'Dievčatá si kreslia obrázky.',
+    'Malina je sladké ovocie.',
+    'Šimon rád jazdí na koni.',
+    'Cibuľa štípe v očiach.',
+    'Mamina polievka je teplá.',
+  ];
+
+  const LEX = {
+    // B
+    'býva': 'vs:b:bývať', 'byte': 'vs:b:byt', 'sídlisku': 'not', 'obyvatelia': 'vs:b:obyvateľ (bývať)',
+    'bystrice': 'vs:b:Bystrica', 'starý': 'end:pekny', 'byliny': 'vs:b:bylina', 'býk': 'vs:b:býk',
+    'kobyla': 'vs:b:kobyla', 'pri': 'pri', 'dobytok': 'vs:b:dobytok', 'keby': 'vs:b:by, aby, keby', 'by': 'vs:b:by, aby, keby',
+    'byť': 'vs:b:byť', 'bystrý': 'vs:b:bystrý', 'bytči': 'vs:b:Bytča', 'bývajú': 'vs:b:bývať', 'starí': 'end:pekni',
+    'si': 'not', 'kúpila': 'not', 'nový': 'end:pekny', 'nábytok': 'vs:b:nábytok', 'bylinkový': ['vs:b:bylina', 'end:pekny'],
+    'dobrý': 'end:pekny', 'príbytok': ['pri', 'vs:b:príbytok (bývať)'], 'kríkom': 'not', 'býval': 'vs:b:bývať',
+    'biely': 'not:biely je farba, nie je príbuzné so slovom býk', 'biela': 'not:biela je farba, nie je príbuzné so slovom býk',
+    'aby': 'vs:b:by, aby, keby', 'musíme': 'not', 'bydlisko': 'vs:b:bydlisko', 'veľký': 'auto',
+    // M
+    'my': 'vs:m:my', 'umyli': 'vs:m:umývať (umyť)', 'mydlom': 'vs:m:mydlo', 'myška': 'vs:m:myš', 'skryla': 'vs:r:kryť (skrývať)',
+    'diery': 'end:zena', 'myslí': 'vs:m:myslieť', 'hmyz': 'vs:m:hmyz', 'nemýľ': 'vs:m:mýliť sa', 'prosím': 'not',
+    'myš': 'vs:m:myš', 'šmýkala': 'vs:m:šmýkať sa', 'mamička': 'not', 'žmýka': 'vs:m:žmýkať', 'myjave': 'vs:m:Myjava',
+    'priemysel': 'vs:m:priemysel', 'umývame': 'vs:m:umývať', 'mysleli': 'vs:m:myslieť', 'myslím': 'vs:m:myslieť',
+    'mýliš': 'vs:m:mýliť sa', 'mydlo': 'vs:m:mydlo', 'umýva': 'vs:m:umývať', 'myšlienka': 'vs:m:myslieť (myšlienka)',
+    'mi': 'not:mi je zámeno (mne), nie je vybrané slovo', 'zuby': 'end:dub', 'motýle': 'auto', 'nové': 'auto',
+    // P
+    'pýta': 'vs:p:pýtať sa', 'výlet': 'vy', 'kopytá': 'vs:p:kopyto', 'pykať': 'vs:p:pykať', 'pysk': 'vs:p:pysk',
+    'pytliak': 'vs:p:pytliak', 'skrýval': 'vs:r:kryť (skrývať)', 'uvarila': 'not', 'pyré': 'vs:p:pyré', 'burina': 'not',
+    'pýr': 'vs:p:pýr', 'prepychu': 'vs:p:prepych', 'pýši': 'vs:p:pýcha (pýšiť sa)', 'svojimi': 'end:mi', 'deťmi': 'end:mi',
+    'pýtala': 'vs:p:pýtať sa', 'nepýtaj': 'vs:p:pýtať sa', 'pýšil': 'vs:p:pýcha (pýšiť sa)', 'novým': 'end:pekny',
+    'perím': 'not', 'pýcha': 'vs:p:pýcha', 'obrovskom': 'auto',
+    // R
+    'rybníku': 'vs:r:rybník (ryba)', 'ryby': ['vs:r:ryba', 'end:zena'], 'rýchly': 'vs:r:rýchly', 'rys': 'vs:r:rys',
+    'ryje': 'vs:r:ryť', 'rýľom': 'vs:r:rýľ', 'ryšavá': 'vs:r:ryšavý', 'líška': 'auto', 'ryža': 'vs:r:ryža',
+    'rytier': 'vs:r:rytier', 'korytnačka': 'vs:r:korytnačka', 'hryzie': 'vs:r:hrýzť', 'rysuje': 'vs:r:rysovať',
+    'pije': 'not', 'koryta': 'vs:r:koryto', 'rýpali': 'vs:r:rýpať', 'prikryla': ['pri', 'vs:r:kryť (prikryť)'],
+    'perinou': 'not', 'rýchlo': 'vs:r:rýchly', 'zakryla': 'vs:r:kryť (zakryť)', 'rybku': 'vs:r:ryba',
+    'torysa': 'vs:r:Torysa', 'východe': 'vy', 'chytil': 'auto',
+    // S
+    'syn': 'vs:s:syn', 'syr': 'vs:s:syr', 'sýty': 'vs:s:sýty', 'kŕmidlo': 'not', 'priletela': 'pri',
+    'sýkorka': 'vs:s:sýkorka', 'syčí': 'vs:s:syčať', 'sypali': 'vs:s:sypať', 'sychravé': 'vs:s:sychravý',
+    'syseľ': 'vs:s:syseľ', 'vyhrabal': 'vy', 'sýpke': 'vs:s:sýpka', 'obilia': 'not', 'sype': 'vs:s:sypať',
+    'nasypal': 'vs:s:sypať', 'pieskoviska': 'not', 'zasyčala': 'vs:s:syčať', 'spí': 'not', 'skrýva': 'vs:r:kryť (skrývať)',
+    // V
+    'vy': 'vs:v:vy', 'noví': 'end:pekni', 'vysokom': 'vs:v:vysoký', 'výr': 'vs:v:výr', 'vyje': 'vs:v:vyť (vlk vyje)',
+    'vydra': 'vs:v:vydra', 'výskali': 'vs:v:výskať', 'zvykli': 'vs:v:zvyk (zvyknúť)', 'žvýka': 'vs:v:žvýkať',
+    'vyskočil': 'vy', 'vysoko': 'vs:v:vysoký', 'vydaril': ['vy', 'not'], 'vysvetlila': 'vy', 'vyhni': 'vs:v:vyhňa',
+    'zvyk': 'vs:v:zvyk', 'vykáme': 'vs:v:vykať', 'vymysleli': ['vy', 'vs:m:myslieť'], 'výborne': 'vy', 'vyhral': 'vy',
+    // Z
+    'jazyk': 'vs:z:jazyk', 'nazýva': 'vs:z:nazývať', 'ozýva': 'vs:z:ozývať sa', 'vyzýva': ['vy', 'vs:z:vyzývať (nazývať)'],
+    'ozývali': 'vs:z:ozývať sa', 'učíme': 'auto', 'prizývali': ['pri', 'vs:z:prizývať (nazývať)'], 'vyplazil': ['vy', 'not'],
+    'ozývala': 'vs:z:ozývať sa', 'jazykom': 'vs:z:jazyk', 'olizuje': 'auto',
+    // výnimky a iné
+    'kúpili': 'not', 'bicykli': 'not', 'bicykel': 'not', 'prilbu': 'not', 'píšeme': 'not',
+    'videli': 'not', 'cyril': 'not', 'hrali': 'auto', 'ihrisku': 'not', 'píšu': 'not', 'babičke': 'not',
+    'fialkami': 'end:mi', 'hry': 'end:zena', 'hudby': 'end:zena', 'rýchlosti': 'vs:r:rýchly', 'malina': 'auto', 'štípe': 'auto', 'mamina': 'not', 'jabĺk': 'auto',
+  };
+
+  const K = 'je cudzie slovo a cudzie slová sú trochu rebeli: aj po tvrdom'
+  const T = 'je cudzie slovo. Počuješ to tvrdo, ale aj tak sa píše mäkké i.'
+  const C = 'je cudzie slovo a tu je to naopak: po mäkkom c sa píše tvrdé y. Zapamätaj si: bicykel, cyklista, Cyril.'
+  const EXC = {
+    'kina': `Kino ${K} k sa tu píše mäkké i. Zapamätaj si: kino, kilo, gitara.`,
+    'kino': `Kino ${K} k sa tu píše mäkké i. Zapamätaj si: kino, kilo, gitara.`,
+    'kine': `Kino ${K} k sa tu píše mäkké i. Zapamätaj si: kino, kilo, gitara.`,
+    'gitare': `Gitara ${K} g sa tu píše mäkké i.`,
+    'kilo': `Kilo ${K} k sa tu píše mäkké i.`,
+    'kilogram': `Kilogram ${K} k sa tu píše mäkké i.`,
+    'zoologickej': `Zoologický ${K} g sa tu píše mäkké i.`,
+    'bicykli': `Bicykel ${C}`, 'bicykel': `Bicykel ${C}`,
+    'cyklista': `Cyklista ${C}`, 'cyklisti': `Cyklista ${C}`, 'cyril': `Cyril ${C}`,
+    'diktát': `Diktát ${T} Takto aj rádio, tiger, technika.`,
+    'tigra': `Tiger ${T}`, 'tiger': `Tiger ${T}`,
+    'rádio': `Rádio ${T}`,
+    'matematiky': `Matematika ${T}`,
+    'techniku': `Technika ${T}`,
+    'dinosaura': `Dinosaurus ${T}`,
+  };
+
+  const ENDINGS = {
+    dub: 'To je koncovka. Mužský rod ako dub má v množnom čísle tvrdé -y: duby, stromy, zuby.',
+    zena: 'To je koncovka. Ženský rod ako žena má tu tvrdé -y: ženy, ryby, do hry.',
+    pekny: 'To je koncovka prídavného mena ako pekný: pekný, dobrý, starý, nový. Na konci je tvrdé -ý.',
+    pekni: 'To je koncovka prídavného mena, keď hovoríme o viacerých ľuďoch (mužský rod): pekní, starí, noví susedia. Tu je mäkké -í.',
+    mi: 'To je koncovka -mi (s kým? s čím?): s deťmi, so svojimi, s fialkami. Tá je vždy s mäkkým i.',
+  };
+
+  return { SENTENCES: S, LEX, EXC, ENDINGS };
+})();
