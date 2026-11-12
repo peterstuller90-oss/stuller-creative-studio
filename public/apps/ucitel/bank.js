@@ -154,6 +154,35 @@ window.UCITEL_BANK = (() => {
     'Mamina polievka je teplá.',
   ];
 
+
+  // ---------- náročné: chytáky (biť/byť, výr/vír…), ťažké slová a cudzie slová ----------
+  const HARD = [
+    'Chlapci sa nesmú biť, musia byť kamaráti.',
+    'Vo vode sa točil vír a na strome húkal výr.',
+    'Vlk vyje a babka vije veniec.',
+    'Papagáj sedí na bidle pri našom bydlisku.',
+    'Rytieri chceli dobyť hrad.',
+    'Ocko musí dobiť batériu v mobile.',
+    'Básnik hľadal rým a potom odcestoval do Ríma.',
+    'Hus sipí a had syčí.',
+    'Obyčajný deň sa zmenil na veľké dobrodružstvo.',
+    'Mys je výbežok pevniny do mora.',
+    'Na hodine fyziky sme robili pokusy.',
+    'Chirurg operoval pacienta v nemocnici.',
+    'Nevyspatý brat zíval celé ráno.',
+    'Babka preosiala múku cez sito.',
+    'Vysypali sme odpadky do kontajnera.',
+    'Na informatike sme programovali hru.',
+    'Hokejisti sa tešili z výhry.',
+    'Dyňa a mandarínka sú sladké.',
+    'Moja sesternica sa šmýka na sánkach.',
+    'Synovec si kúpil nový bicykel.',
+    'Pyšný páv ukazoval svoje perie.',
+    'Kobylka poskakovala v tráve.',
+    'Malý Peter si pomýlil cestu.',
+    'Výťahom sme sa vyviezli na desiate poschodie.',
+  ];
+
   const LEX = {
     // B
     'býva': 'vs:b:bývať', 'byte': 'vs:b:byt', 'sídlisku': 'not', 'obyvatelia': 'vs:b:obyvateľ (bývať)',
@@ -198,6 +227,16 @@ window.UCITEL_BANK = (() => {
     'jazyk': 'vs:z:jazyk', 'nazýva': 'vs:z:nazývať', 'ozýva': 'vs:z:ozývať sa', 'vyzýva': ['vy', 'vs:z:vyzývať (nazývať)'],
     'ozývali': 'vs:z:ozývať sa', 'učíme': 'auto', 'prizývali': ['pri', 'vs:z:prizývať (nazývať)'], 'vyplazil': ['vy', 'not'],
     'ozývala': 'vs:z:ozývať sa', 'jazykom': 'vs:z:jazyk', 'olizuje': 'auto',
+    // náročné
+    'biť': 'not:biť znamená udierať, byť znamená existovať', 'vír': 'not:vír je vo vode alebo vo vzduchu, výr je sova',
+    'vije': 'not:viť znamená pliesť, napríklad veniec. Vlk vyje je od slova vyť', 'bidle': 'not:bidlo je tyč, na ktorej sedí vták. Bydlisko je od slova bývať',
+    'bydlisku': 'vs:b:bydlisko (bývať)', 'rytieri': ['vs:r:rytier', 'end:chlap'], 'dobyť': 'vs:b:dobyť (zmocniť sa, dobyť hrad)',
+    'dobiť': 'not:dobiť batériu je od slova biť (nabiť). Dobyť hrad je vybrané slovo', 'rým': 'vs:r:rým', 'ríma': 'not:Rím je mesto. Rým v básni je vybrané slovo',
+    'sipí': ['not:sipieť robí hus, syčať robí had', 'not'], 'obyčajný': 'vs:b:obyčajný', 'mys': 'vs:m:mys (výbežok pevniny do mora)', 'výbežok': 'vy',
+    'fyziky': ['exc', 'not'], 'robili': 'not', 'pokusy': 'end:dub', 'nevyspatý': 'vy', 'zíval': 'not:zívať nie je príbuzné so slovom nazývať',
+    'sito': 'not:sito nie je príbuzné so slovom syr ani sypať', 'vysypali': ['vy', 'vs:s:sypať'], 'výhry': ['vy', 'end:zena'],
+    'mandarínka': 'not', 'musí': 'not', 'mobile': 'not', 'šmýka': 'vs:m:šmýkať sa', 'synovec': 'vs:s:syn (synovec)', 'kúpil': 'not', 'pyšný': 'vs:p:pýcha (pyšný)',
+    'kobylka': 'vs:b:kobyla (kobylka)', 'pomýlil': 'vs:m:mýliť sa', 'výťahom': 'vy', 'vyviezli': 'vy',
     // výnimky a iné
     'kúpili': 'not', 'bicykli': 'not', 'bicykel': 'not', 'prilbu': 'not', 'píšeme': 'not',
     'videli': 'not', 'cyril': 'not', 'hrali': 'auto', 'ihrisku': 'not', 'píšu': 'not', 'babičke': 'not',
@@ -208,6 +247,10 @@ window.UCITEL_BANK = (() => {
   const T = 'je cudzie slovo. Vyslovuješ to tvrdo, ale v cudzích slovách sa aj tak píše mäkké i. Je to výnimka.'
   const C = 'je cudzie slovo a v ňom sa po mäkkom c píše tvrdé y. Je to výnimka, zapamätaj si: bicykel, cyklista, Cyril.'
   const EXC = {
+    'fyziky': 'Lebo fyzika je cudzie slovo. V cudzích slovách sa po f niekedy píše tvrdé y. Je to výnimka, zapamätaj si: fyzika.',
+    'chirurg': `Lebo chirurg ${K} ch. Je to výnimka.`,
+    'informatike': `Lebo informatika ${T}`,
+    'hokejisti': `Lebo hokejista ${T}`,
     'kina': `Lebo kino ${K} k. Je to výnimka, zapamätaj si: kino, kilo, gitara.`,
     'kino': `Lebo kino ${K} k. Je to výnimka, zapamätaj si: kino, kilo, gitara.`,
     'kine': `Lebo kino ${K} k. Je to výnimka, zapamätaj si: kino, kilo, gitara.`,
@@ -230,8 +273,9 @@ window.UCITEL_BANK = (() => {
     zena: 'Lebo je to koncovka, nie koreň slova. Ženský rod ako žena má tu tvrdé -y: ženy, ryby, do hry.',
     pekny: 'Lebo je to koncovka prídavného mena ako pekný: pekný, dobrý, starý, nový. Na konci je tvrdé -ý.',
     pekni: 'Lebo je to koncovka prídavného mena, keď hovoríme o viacerých ľuďoch (mužský rod): pekní, starí, noví susedia. Tu je mäkké -í.',
+    chlap: 'Lebo je to koncovka. Mužský rod pri ľuďoch (vzor chlap) má v množnom čísle mäkké -i: chlapi, rytieri.',
     mi: 'Lebo je to koncovka -mi (s kým? s čím?): s deťmi, so svojimi, s fialkami. Tá je vždy s mäkkým i.',
   };
 
-  return { SENTENCES: S, LEX, EXC, ENDINGS };
+  return { SENTENCES: S, HARD, LEX, EXC, ENDINGS };
 })();

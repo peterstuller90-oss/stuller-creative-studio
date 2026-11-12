@@ -255,3 +255,46 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
   .why-item p { font-size: 18px; }
   .paper-hint img { width: 64px; height: 64px; }
 }
+
+/* ---------- v3: chyby, vypočuté, čaká na ocka, hotové ---------- */
+.w.iy { border-bottom: 3px dotted var(--ink-soft); }
+.w.marked { background: var(--coral-soft); border-bottom: 3px solid var(--coral); color: var(--coral-dark); }
+.w.marked.heard { background: var(--good-soft); border-bottom-color: var(--good); color: var(--good); }
+.mistake-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.mchip { font-family: var(--head); font-size: 22px; font-weight: 600; color: var(--coral-dark); background: var(--coral-soft); border: 2px solid var(--coral); border-radius: 999px; padding: 6px 16px; box-shadow: 0 3px 0 var(--coral); }
+.mchip.ok { color: var(--good); background: var(--good-soft); border-color: var(--good); box-shadow: 0 3px 0 var(--good); }
+.mchip:active { transform: translateY(2px); box-shadow: none; }
+.progress-line { margin: 0; font-size: 18px; }
+.why.heard { background: var(--good); }
+.btn.mark { background: var(--coral-soft); border-color: var(--coral); color: var(--coral-dark); }
+.sheet-status { margin: 0; color: var(--good); font-weight: 700; font-size: 18px; }
+.mark-slot:empty { display: none; }
+.hint.center { text-align: center; }
+.top .pill { padding-left: 14px; }
+.top .pill .coin { margin-left: -6px; }
+.wait { background: #FFF6E2; border-color: var(--sun-dark); }
+.wait-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 2px dashed var(--line); padding-top: 12px; font-size: 18px; }
+.wait-row span { flex: 1 1 200px; }
+.wait-row b { font-family: var(--head); font-size: 24px; }
+.done-list { display: flex; flex-direction: column; gap: 12px; }
+.done-item { padding: 0; overflow: hidden; gap: 0; }
+.done-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; width: 100%; text-align: left; background: none; border: 0; padding: 16px 20px; color: var(--ink); font: inherit; cursor: pointer; }
+.done-date { font-family: var(--head); font-size: 18px; color: var(--muted); text-transform: uppercase; }
+.done-name { font-family: var(--head); font-size: 23px; font-weight: 600; }
+.done-res { font-size: 15px; font-weight: 700; color: var(--good); background: var(--good-soft); border-radius: 999px; padding: 4px 12px; white-space: nowrap; }
+.done-item .correct { padding: 0 20px 18px; }
+.correct.small { font-size: 21px; line-height: 1.8; }
+@media (max-width: 600px) {
+  .done-head { grid-template-columns: 1fr auto; }
+  .done-date { grid-column: 1 / -1; }
+  .correct { font-size: 22px; }
+  .top .pill { font-size: 18px; }
+}
+@media (max-width: 600px) {
+  .top { flex-wrap: nowrap; gap: 8px; }
+  .brand small { display: none; }
+  .brand b { font-size: 21px; }
+  .brand img { width: 40px; height: 40px; }
+  .top .pill { font-size: 17px; padding: 5px 10px; gap: 6px; }
+  .top .pill .coin { margin-left: -4px; }
+}

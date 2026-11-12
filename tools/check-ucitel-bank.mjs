@@ -7,7 +7,7 @@ eval(fs.readFileSync(new URL('engine.js', dir), 'utf8'))
 const B = window.UCITEL_BANK, E = window.UCITEL_ENGINE
 const missing = new Map(), dtnl = new Set(), hardI = new Set()
 let bad = 0
-for (const s of B.SENTENCES) for (const m of s.matchAll(E.WORD_RE)) {
+for (const s of [...B.SENTENCES, ...B.HARD]) for (const m of s.matchAll(E.WORD_RE)) {
   const w = m[0].toLowerCase(), pos = E.positions(w)
   const obo = pos.filter(p => p.cat === 'obo')
   const code = B.LEX[w]
@@ -26,5 +26,5 @@ console.log('d/t/n/l + i (skontroluj tvrdú výslovnosť):', [...dtnl].join(', '
 const t = E.TAGGED
 for (const l of E.LETTERS) console.log(l, t.filter(x => x.letters.includes(l)).length, 'čisto', t.filter(x => x.letters.length === 1 && x.letters[0] === l && !x.exc).length)
 console.log('výnimky', t.filter(x => x.exc).length, 'mäkké', t.filter(x => !x.exc && !x.letters.length && x.softI).length, 'bez kategórie:', t.filter(x => !x.exc && !x.letters.length && !x.softI).map(x => x.text))
-for (const k of ['kratky','stredny','dlhy']) { const g = E.generate(k, ['b','r']); console.log(k, g.sentences) }
+for (const k of ['kratky','stredny','dlhy']) { const g = E.generate(k, ['b','r']); console.log(k, g.sentences); console.log(k, 'HARD', E.generate(k, ['b','r'], [], true).sentences) }
 process.exit(missing.size + bad ? 1 : 0)
