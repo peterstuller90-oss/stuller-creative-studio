@@ -60,9 +60,9 @@ h1, h2, h3 { font-family: var(--head); font-weight: 800; margin: 0; line-height:
 h1 { font-size: 40px; }
 h2 { font-size: 28px; }
 h3 { font-size: 22px; }
-.out { color: #fff; -webkit-text-stroke: 1px var(--ink); text-shadow: 0 3px 0 var(--ink); }
-.panel .out { color: var(--ink); -webkit-text-stroke: 0; text-shadow: none; }
-.panel .lvl .out, .panel .badge .out { color: #fff; -webkit-text-stroke: 1px var(--ink); text-shadow: 0 2px 0 var(--ink); }
+.out { color: #fff; text-shadow: -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink), 1px 1px 0 var(--ink), 0 3px 0 var(--ink); }
+.panel .out { color: var(--ink); text-shadow: none; }
+.panel .lvl .out, .panel .badge .out { color: #fff; text-shadow: -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink), 1px 1px 0 var(--ink), 0 2px 0 var(--ink); }
 p { margin: 0; line-height: 1.4; }
 button { font: inherit; color: inherit; cursor: pointer; }
 button:focus-visible, input:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }

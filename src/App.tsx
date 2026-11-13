@@ -92,7 +92,9 @@ export default function App() {
           : <Login supabase={supabase} label="Creative Studio"
               extra={<>
                 <button className="link-btn" onClick={() => setEmailMode(true)}>Prihlásiť sa e-mailom</button>
-                {APPS.filter((a) => a.public).map((a) => <a key={a.id} className="link-btn" href={`#/${a.id}`}>{a.name} – bez prihlásenia</a>)}
+                {APPS.filter((a) => a.public).map((a) => a.link
+                  ? <a key={a.id} className={`link-btn${a.highlight ? ' hub-blink' : ''}`} href={a.link} target="_blank" rel="noopener noreferrer">{a.name}</a>
+                  : <a key={a.id} className="link-btn" href={`#/${a.id}`}>{a.name} – bez prihlásenia</a>)}
               </>} />}
       </div>
     )
@@ -144,6 +146,7 @@ function Launcher({ apps, session }: { apps: HubApp[]; session: Session }) {
       <FaceIdSetup email={session.user.email ?? ''} />
       <nav className="hub-list">
         {apps.map((a) => {
+          if (a.link) return <a key={a.id} className={`hub-item${a.highlight ? ' hub-blink' : ''}`} href={a.link} target="_blank" rel="noopener noreferrer">{a.name}<small>nové ✨</small></a>
           const soon = !a.module && !a.frame
           if (soon) return <span key={a.id} className="hub-item soon">{a.name}<small>čoskoro</small></span>
           return (
