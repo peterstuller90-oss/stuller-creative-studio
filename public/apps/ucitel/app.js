@@ -350,7 +350,13 @@
   }
 
   function tabBar() {
-    const tabs = [['setup', 'Hrať', '▶'], ['calendar', 'Kalendár', '▦'], ['done', 'Uložené', '★'], ['level', 'Level', '▲']];
+    const svg = (d) => `<svg viewBox="0 0 24 24">${d}</svg>`;
+    const tabs = [
+      ['setup', 'Hrať', svg('<path d="M7 4.5v15l12.5-7.5z"/>')],
+      ['calendar', 'Kalendár', svg('<rect x="3" y="5" width="18" height="16" rx="3"/><rect x="3" y="5" width="18" height="5" rx="2" style="fill:var(--ink);stroke:none;opacity:.35"/><path d="M8 2.5v5M16 2.5v5" style="fill:none;stroke-width:2.4;stroke-linecap:round"/>')],
+      ['done', 'Uložené', svg('<path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/>')],
+      ['level', 'Level', svg('<path d="M12 2.5l9 9.5-9 9.5-9-9.5z"/>')],
+    ];
     return `<nav class="tabs" aria-label="Menu">${tabs.map(([v, t, ic]) => `<button data-act="tab" data-v="${v}" aria-current="${S.view === v ? 'page' : 'false'}"><span class="ic" aria-hidden="true">${ic}</span>${t}</button>`).join('')}</nav>`;
   }
 
