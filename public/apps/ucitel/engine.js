@@ -8,9 +8,9 @@ window.UCITEL_ENGINE = (() => {
   const LETTERS = ['b', 'm', 'p', 'r', 's', 'v', 'z'];
 
   const LENGTHS = {
-    kratky: { label: 'Krátky', sentences: 3, exc: 1, soft: 0, cents: 25 },
-    stredny: { label: 'Stredný', sentences: 6, exc: 1, soft: 1, cents: 50 },
-    dlhy: { label: 'Dlhý', sentences: 10, exc: 2, soft: 2, cents: 100 },
+    kratky: { label: 'Krátky', sentences: 3, exc: 1, soft: 0, cents: 25, xp: 10 },
+    stredny: { label: 'Stredný', sentences: 6, exc: 1, soft: 1, cents: 50, xp: 20 },
+    dlhy: { label: 'Dlhý', sentences: 10, exc: 2, soft: 2, cents: 100, xp: 40 },
   };
 
   const WORD_RE = /[\p{L}]+(?:-[\p{L}]+)*/gu;
@@ -520,9 +520,18 @@ window.UCITEL_ENGINE = (() => {
     if (!list.length) list = [spellItem(word)];
     return { list, cls };
   }
+  /** Vysvetlenie jednej chyby: i = miesto v slove (okienko), -1 = celé slovo (diktát na papier). */
+  function itemsFor(word, i) {
+    if (i === undefined || i < 0) return wordInfo(word).list;
+    const lw = word.toLowerCase();
+    const iy = positions(lw).find((p) => p.i === i);
+    if (iy) return [iyFeature(word, iy)];
+    const f = otherFeatures(word).find((x) => x.i === i);
+    return f ? [f] : wordInfo(word).list;
+  }
   function spellItem(word) {
     return { i: -1, len: 0, type: 'spell', tag: 'pravopis', head: 'Ako sa píše?', say: '', text: `Toto slovo píšeme presne takto: ${[...word.toLowerCase()].join(', ')}.` };
   }
 
-  return { GAP_TYPES, otherFeatures, wordInfo, LETTERS, LENGTHS, TAGGED, positions, explain, tagSentence, generate, chunks, grade, gapPlan, gradeGaps, tokenize, WORD_RE };
+  return { GAP_TYPES, otherFeatures, itemsFor, wordInfo, LETTERS, LENGTHS, TAGGED, positions, explain, tagSentence, generate, chunks, grade, gapPlan, gradeGaps, tokenize, WORD_RE };
 })();
