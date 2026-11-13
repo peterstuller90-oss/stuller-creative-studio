@@ -1,4 +1,4 @@
-// Učiteľ 2.0: zoznam všetkého, čo appka hovorí (vety, kúsky na diktovanie, pokyny, vysvetlivky).
+// Slovina: zoznam všetkého, čo appka hovorí (vety, kúsky na diktovanie, pokyny, vysvetlivky).
 // Zapíše public/apps/ucitel/audio/texts.json ({kľúč: text}) a audio/clips.js so zoznamom kľúčov,
 // pre ktoré už existuje nahrávka audio/<kľúč>.m4a. Appka hrá len nahrávky zo zoznamu, inak použije hlas prehliadača.
 // Použitie: node tools/ucitel-speech-list.mjs

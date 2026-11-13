@@ -21,6 +21,6 @@ export const APPS: HubApp[] = [
   { id: 'handrbolka', name: 'Handrbolka Studio', description: 'Posty, plagáty a intro videá', frame: 'apps/handrbolka/', audience: ['parent', 'other'] },
   { id: 'atelier', name: 'Atelier Studio', description: 'Grafika pre Atelier Handrbolka', frame: 'apps/atelier/', audience: ['parent', 'other'] },
   { id: 'social', name: 'Stullers Social', description: 'Stories, carousel a mockupy z ilustrácie', frame: 'apps/social/', audience: ['parent'] },
-  { id: 'ucitel', name: 'Učiteľ 2.0', description: 'Diktáty z vybraných slov pre Ota (bez prihlásenia)', frame: 'apps/ucitel/', public: true, audience: ['parent', 'child', 'other'] },
+  { id: 'ucitel', name: 'Slovina', description: 'Diktáty zo slovenčiny pre Ota: levely, kalendár, týždenná výzva (bez prihlásenia)', frame: 'apps/ucitel/', public: true, audience: ['parent', 'child', 'other'] },
   { id: 'hudy', name: 'Hudy Packaging', description: 'Generátor obalov', frame: 'apps/hudy/', audience: ['parent'] },
 ]

@@ -1,4 +1,4 @@
-/* Učiteľ 2.0 – všetko, čo appka hovorí (okrem viet diktátu a vysvetliviek).
+/* Slovina – všetko, čo appka hovorí (okrem viet diktátu a vysvetliviek).
    Tieto texty sú dopredu nahraté hlasom Laura (priečinok audio/), preto ich meň spolu s nahrávkami:
    po úprave spusti `node tools/ucitel-speech-list.mjs` a nahraj chýbajúce zvuky. */
 window.UCITEL_LINES = {
@@ -16,11 +16,13 @@ window.UCITEL_LINES = {
   oops: ['Pár okienok bolo zle. Ťukni na otáznik pri červenom okienku a poviem ti prečo.', 'Niečo bolo zle, ale nevadí. Ťukni na otáznik a vysvetlím ti to.'],
   mistakesPaper: ['Nevadí, z chýb sa človek učí. Ťukni na každú chybu a vypočuj si prečo.'],
   saved: ['Uložené. Ocko to skontroluje a potvrdí kódom.', 'Super, diktát čaká na ocka.'],
-  win: ['Paráda! Peniaze sú pripísané a diktát je medzi hotovými cvičeniami.', 'Hotovo! Zarobil si peniaze. Si šikovný, Oto!'],
-  noMoney: ['Ocko to potvrdil. Tentoraz bez peňazí, ale nabudúce to dáš!', 'Diktát je uložený medzi hotovými. Nabudúce to bude bez chyby, uvidíš.'],
+  win: ['Paráda! Body sú pripísané a diktát je medzi hotovými.', 'Hotovo! Získal si body. Si šikovný, Oto!'],
+  noMoney: ['Ocko to potvrdil. Za chyby je menej bodov, ale nabudúce to dáš!', 'Diktát je uložený. Nabudúce to bude bez chyby, uvidíš.'],
+  levelUp: ['Wau, nový level! Len tak ďalej, Oto!'],
+  explained: ['Super, všetky chyby máš vysvetlené.'],
+  challenge: ['Výzva splnená! Vyber si zážitok, kam chceš ísť.'],
   sample: ['Ahoj Oto! Ja ti budem diktovať. Takto rýchlo:'],
   sampleSentence: ['Rýchly rys beží lesom.'],
-  payout: ['Hotovo. Oto, užívaj si zarobené peniaze!'],
 };
 window.UCITEL_PUNCT = { ',': 'čiarka', '.': 'bodka', '?': 'otáznik', '!': 'výkričník' };
 /** Kľúč nahrávky pre text (rovnaký v appke aj v nástroji, ktorý nahrávky pripravuje). */
