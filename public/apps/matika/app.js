@@ -524,6 +524,19 @@
     }
   }
   function closeWhy() { document.querySelector('.sheet-wrap')?.remove(); }
+  /** Otázka v appke (namiesto confirm, ktorý niektoré okná blokujú). */
+  function ask(text, yes, no = 'Späť') {
+    return new Promise((resolve) => {
+      const w = document.createElement('div');
+      w.className = 'sheet-wrap ask';
+      w.innerHTML = `<div class="sheet" role="alertdialog" aria-modal="true"><p class="sheet-q">${esc(text)}</p><div class="row"><button class="btn dark" data-a="0">${esc(no)}</button><button class="btn yellow" data-a="1">${esc(yes)}</button></div></div>`;
+      w.addEventListener('click', (ev) => {
+        const b = ev.target.closest('[data-a]');
+        if (b || ev.target === w) { w.remove(); resolve(!!b && b.dataset.a === '1'); }
+      });
+      document.body.appendChild(w);
+    });
+  }
 
   // ---------------- oslava ----------------
   function fireworks() {
@@ -625,8 +638,8 @@
       case 'start': start(); break;
       case 'again': S.view = 'home'; S.tab = 'play'; start(); break;
       case 'quit':
-        if (S.view === 'tablet' && S.answers.some((x) => x !== '') && !confirm('Naozaj skončiť? Rozpočítané príklady sa neuložia.')) break;
-        if (S.view === 'check' && !confirm('Naozaj skončiť? Cvičenie sa neuloží.')) break;
+        if (S.view === 'tablet' && S.answers.some((x) => x !== '') && !(await ask('Naozaj skončiť? Rozpočítané príklady sa neuložia.', 'Skončiť'))) break;
+        if (S.view === 'check' && !(await ask('Naozaj skončiť? Cvičenie sa neuloží.', 'Skončiť'))) break;
         S.view = 'home'; render(); window.scrollTo(0, 0); break;
       case 'home': S.view = 'home'; S.tab = 'play'; render(); window.scrollTo(0, 0); break;
       case 'back': S.view = 'home'; S.tab = 'saved'; render(); break;
@@ -635,7 +648,7 @@
       case 'toggleMark': { const i = +b.dataset.i; if (S.marks.has(i)) S.marks.delete(i); else S.marks.add(i); render(); break; }
       case 'paperSave': {
         const n = S.marks.size;
-        if (!confirm(`Uložiť s výsledkom: ${n ? chyb(n) : 'bez chyby'}? Potom sa to už nedá zmeniť.`)) break;
+        if (!(await ask(`Uložiť s výsledkom: ${n ? chyb(n) : 'bez chyby'}? Potom sa to už nedá zmeniť.`, 'Uložiť'))) break;
         saveDone('papier', [...S.marks].sort((x, y) => x - y), null);
         S.view = 'result'; render(); window.scrollTo(0, 0);
         break;
@@ -703,7 +716,7 @@
   });
   // Fyzická klávesnica (iPad s klávesnicou / počítač) pri počítaní na tablete.
   document.addEventListener('keydown', (ev) => {
-    if (S.view !== 'tablet' || document.querySelector('.sheet-wrap')) return;
+    if (S.view !== 'tablet' || document.querySelector('.sheet-wrap, .lvlup')) return;
     if (/^[0-9]$/.test(ev.key)) { document.querySelector(`.key[data-k="${ev.key}"]`)?.click(); ev.preventDefault(); }
     else if (ev.key === 'Backspace') { document.querySelector('.key[data-k="del"]')?.click(); ev.preventDefault(); }
     else if (ev.key === 'Enter' || ev.key === 'Tab') { (document.querySelector('.key.go') || document.querySelector('.key[data-k="next"]'))?.click(); ev.preventDefault(); }

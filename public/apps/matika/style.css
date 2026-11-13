@@ -375,3 +375,6 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
   .task { font-size: 22px; padding: 10px 0; }
 }
 .sheet > .row { position: sticky; bottom: -20px; background: var(--paper); padding: 8px 0 4px; margin-bottom: -4px; }
+.sheet-q { font-size: 22px; line-height: 1.35; text-align: center; font-weight: 800; }
+.ask { align-items: center; }
+.ask .sheet { max-width: 480px; }
