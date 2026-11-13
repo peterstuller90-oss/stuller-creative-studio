@@ -13,6 +13,9 @@ ${read('style.css')}
 </style>
 <main class="wrap" id="app"></main>
 <script>
+${read('lines.js')}
+</script>
+<script>
 ${read('bank.js')}
 </script>
 <script>

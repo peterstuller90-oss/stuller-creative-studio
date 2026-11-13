@@ -186,9 +186,9 @@ window.UCITEL_BANK = (() => {
   const LEX = {
     // B
     'býva': 'vs:b:bývať', 'byte': 'vs:b:byt', 'sídlisku': 'not', 'obyvatelia': 'vs:b:obyvateľ (bývať)',
-    'bystrice': 'vs:b:Bystrica', 'starý': 'end:pekny', 'byliny': 'vs:b:bylina', 'býk': 'vs:b:býk',
+    'bystrice': ['vs:b:Bystrica', 'txt:Lebo po r píšeme tvrdé y len vo vybraných slovách ako ryba, rýchly alebo ryť a v slovách s nimi príbuzných. Toto ri k nim nepatrí, preto píšeme mäkké i.'], 'starý': 'end:pekny', 'byliny': 'vs:b:bylina', 'býk': 'vs:b:býk',
     'kobyla': 'vs:b:kobyla', 'pri': 'pri', 'dobytok': 'vs:b:dobytok', 'keby': 'vs:b:by, aby, keby', 'by': 'vs:b:by, aby, keby',
-    'byť': 'vs:b:byť', 'bystrý': 'vs:b:bystrý', 'bytči': 'vs:b:Bytča', 'bývajú': 'vs:b:bývať', 'starí': 'end:pekni',
+    'byť': 'vs:b:byť', 'bystrý': ['vs:b:bystrý', 'end:pekny'], 'bytči': 'vs:b:Bytča', 'bývajú': 'vs:b:bývať', 'starí': 'end:pekni',
     'si': 'not', 'kúpila': 'not', 'nový': 'end:pekny', 'nábytok': 'vs:b:nábytok', 'bylinkový': ['vs:b:bylina', 'end:pekny'],
     'dobrý': 'end:pekny', 'príbytok': ['pri', 'vs:b:príbytok (bývať)'], 'kríkom': 'not', 'býval': 'vs:b:bývať',
     'biely': 'not:biely je farba, nie je príbuzné so slovom býk', 'biela': 'not:biela je farba, nie je príbuzné so slovom býk',

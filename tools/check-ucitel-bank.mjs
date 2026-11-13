@@ -12,6 +12,7 @@ for (const s of [...B.SENTENCES, ...B.HARD]) for (const m of s.matchAll(E.WORD_R
   const obo = pos.filter(p => p.cat === 'obo')
   const code = B.LEX[w]
   if (obo.length && (!code || code === 'auto')) missing.set(w, s)
+  if (!Array.isArray(code) && code && obo.length > 1) { console.log('JEDEN KÓD PRE VIAC MIEST', w, code); bad++ }
   if (Array.isArray(code) && code.length !== obo.length) { console.log('ZLÝ POČET KÓDOV', w, code, obo.length); bad++ }
   for (const p of obo) if ((p.c === 'y' || p.c === 'ý') && code && !Array.isArray(code) && code.startsWith('not')) { console.log('Y ale not:', w); bad++ }
   for (const p of pos) {

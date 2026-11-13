@@ -1,9 +1,10 @@
-/* Učiteľ 2.0 – diktáty z vybraných slov pre Ota. Bez prihlásenia; výsledky a peniaze sa ukladajú do Supabase
+/* Učiteľ 2.0 – diktáty pre Ota. Bez prihlásenia; výsledky a peniaze sa ukladajú do Supabase
    (projekt „stullers home“ ako celé Creative Studio, tabuľky diktat_results a diktat_payouts),
    a keď cloud nie je dostupný, do tohto zariadenia.
-   Režimy: diktát na papier (potom správny text s klikateľnými slovami) a doplňovačka na tablete.
-   Každý dokončený diktát sa uloží. Peniaze sa pripíšu, keď je diktát bez chyby alebo keď si Oto vypočuje
-   vysvetlenie každej svojej chyby (oprava), a rodič to potvrdí kódom. Potom ide diktát do „Hotové cvičenia“. */
+   Režimy: diktát na papier (diktuje hlas, potom správny text s klikateľnými slovami)
+   a doplňovačka na tablete (bez diktovania, len vysvetlivky po kontrole).
+   Peniaze sú len za diktát bez chyby na prvý raz a rodič to potvrdí kódom. Chyby sa neopravujú, iba vysvetlia.
+   Každý diktát sa dá uložiť na kontrolu („Čaká na ocka“), po potvrdení ide do „Hotové cvičenia“. */
 (() => {
   const E = window.UCITEL_ENGINE;
   const $app = document.getElementById('app');
@@ -34,7 +35,9 @@
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* bez úložiska */ } };
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => (Math.random() * 16 | 0).toString(16)));
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
-  const okienok = (n) => (n === 1 ? 'okienko' : n >= 2 && n <= 4 ? 'okienka' : 'okienok');
+
+  const plural = (n, one, few, many) => (n === 1 ? one : n >= 2 && n <= 4 ? few : many);
+  const chyb = (n) => `${n} ${plural(n, 'chyba', 'chyby', 'chýb')}`;
 
   // ---------------- stav ----------------
   const prefs = lsGet('ucitel2-prefs', {});
@@ -47,11 +50,13 @@
     sayPunct: prefs.sayPunct ?? false,
     voiceURI: prefs.voiceURI || '',
     hard: !!prefs.hard,
-    dict: null, plan: null, gaps: {}, checked: null, gate: null, rewarded: false, attempts: 0, celebrate: false,
-    marked: new Set(), heard: new Set(), wrongGaps: new Set(), doneSaved: false, openDone: null,
+    gapTypes: new Set((prefs.gapTypes || E.GAP_TYPES).filter((t) => E.GAP_TYPES.includes(t))),
+    dict: null, plan: null, gaps: {}, checked: null, gate: null, rewarded: false, celebrate: false, notice: '',
+    marked: new Set(), heard: new Set(), wrongGaps: new Set(), doneSaved: false, openDone: null, focusGap: 0,
     pending: lsGet('ucitel2-pending', []),
   };
-  const savePrefs = () => lsSet('ucitel2-prefs', { hard: S.hard, length: S.length, letters: [...S.letters], mode: S.mode, speed: S.speed, sayPunct: S.sayPunct, voiceURI: S.voiceURI });
+  if (!S.gapTypes.size) S.gapTypes = new Set(E.GAP_TYPES);
+  const savePrefs = () => lsSet('ucitel2-prefs', { hard: S.hard, length: S.length, letters: [...S.letters], mode: S.mode, speed: S.speed, sayPunct: S.sayPunct, voiceURI: S.voiceURI, gapTypes: [...S.gapTypes] });
 
   // ---------------- úložisko (Supabase + zariadenie) ----------------
   const Store = {
@@ -105,9 +110,15 @@
   };
 
   // ---------------- hlas ----------------
+  // Prednostne nahrávky hlasom Laura (audio/<kľúč>.m4a, zoznam v audio/clips.js), inak hlas prehliadača.
+  const CLIPS = new Set(String(window.UCITEL_CLIPS || '').split(',').filter(Boolean));
+  const KEY = window.UCITEL_KEY;
+  const LINES = window.UCITEL_LINES;
   const Voice = {
     voices: [],
     ok: 'speechSynthesis' in window,
+    clips: CLIPS.size > 0,
+    audio: typeof Audio !== 'undefined' ? new Audio() : null,
     load() {
       if (!this.ok) return;
       const score = (v) => (/premium|enhanced|vylepš|neural|natural|online/i.test(v.name) ? 4 : 0) + (/google|microsoft/i.test(v.name) ? 2 : 0) + (/laura/i.test(v.name) ? 1 : 0);
@@ -115,57 +126,71 @@
     },
     current() { return this.voices.find((v) => v.voiceURI === S.voiceURI) || this.voices[0] || null; },
     token: 0,
-    stop() { this.token++; if (this.ok) speechSynthesis.cancel(); },
-    /** Povie text; Promise sa splní po dohovorení (aj keď prehliadač zabudne poslať „end“). */
+    stop() {
+      this.token++;
+      if (this.audio) { try { this.audio.pause(); } catch { /* nič */ } }
+      if (this.ok) speechSynthesis.cancel();
+    },
+    /** Povie text; Promise sa splní po dohovorení. rate: 1 = normálna reč. */
     say(text, rate = TALK, talk = true) {
+      if (!text) return Promise.resolve();
+      const k = KEY(text);
+      if (CLIPS.has(k) && this.audio) return this.play(k, text, rate, talk);
+      return this.synth(text, rate, talk);
+    },
+    play(k, text, rate, talk) {
+      const tok = this.token;
+      return new Promise((resolve) => {
+        const a = this.audio;
+        let done = false;
+        const finish = () => { if (!done) { done = true; clearTimeout(t); a.onended = null; a.onerror = null; resolve(); } };
+        const fallback = () => { if (done) return; done = true; clearTimeout(t); if (tok === this.token) this.synth(text, rate, talk).then(resolve); else resolve(); };
+        const t = setTimeout(finish, 40000);
+        a.onended = finish;
+        a.onerror = fallback;
+        a.src = `audio/${k}.m4a`;
+        a.preservesPitch = true;
+        a.playbackRate = talk ? 1 : Math.max(0.6, Math.min(1.3, rate));
+        a.play().catch(fallback);
+      });
+    },
+    synth(text, rate, talk) {
       return new Promise((resolve) => {
         if (!this.ok) { setTimeout(resolve, 400); return; }
         const u = new SpeechSynthesisUtterance(text);
         const v = this.current();
         if (v) u.voice = v;
-        u.lang = 'sk-SK'; u.rate = rate; u.pitch = talk ? 1.12 : 1.02;
+        u.lang = 'sk-SK'; u.rate = talk ? TALK : rate; u.pitch = talk ? 1.12 : 1.02;
         let done = false;
         const finish = () => { if (!done) { done = true; clearTimeout(t); resolve(); } };
-        const t = setTimeout(finish, 1800 + text.length * 95 / rate);
+        const t = setTimeout(finish, 1800 + text.length * 95 / u.rate);
         u.onend = finish; u.onerror = finish;
         this.keep = u; // Safari zahodí neodkázané vety
         speechSynthesis.speak(u);
       });
+    },
+    /** Povie viac textov po sebe; vráti true, ak sa nič neprerušilo. */
+    async seq(texts) {
+      const tok = this.token;
+      for (const t of texts) {
+        if (tok !== this.token) return false;
+        await this.say(t, TALK, true);
+      }
+      return tok === this.token;
     },
     chat(text) { this.stop(); return this.say(text, TALK, true); },
   };
   if (Voice.ok) { Voice.load(); speechSynthesis.addEventListener?.('voiceschanged', () => { Voice.load(); if (S.view === 'setup') render(); }); }
   const wait = (ms, tok) => new Promise((r) => setTimeout(() => r(tok === Voice.token), ms));
 
-  // kamarátske vety (striedajú sa, aby hlas neznel stále rovnako)
-  const LINES = {
-    hello: ['Ahoj Oto! Tak čo, ideme na to?', 'Čau Oto! Poďme na diktát.', 'Ahoj Oto! Dnes to dáme, uvidíš.'],
-    helloHard: ['Ahoj Oto! Dnes je to náročný diktát, plný chytákov. Dávaj dobrý pozor!', 'Čau Oto! Pozor, toto je náročný diktát. Ale ty to zvládneš.'],
-    paper: ['Priprav si papier a pero.', 'Zober si papier a pero, nech môžeš písať.'],
-    gaps: ['Budeš dopĺňať i alebo y do okienok.', 'Text vidíš na tablete, ty len doplníš i alebo y.'],
-    listenFirst: ['Najprv ti ho celý prečítam. Ty len počúvaj, ešte nepíš.', 'Najprv si ho celý vypočuj. Zatiaľ nič nepíš.'],
-    nowWrite: ['Tak, a teraz píš. Budem diktovať po kúskoch.', 'Super. Teraz začni písať, ja idem pomaly po kúskoch.'],
-    between: ['Super, ide ti to.', 'Výborne, pokračujeme.', 'Dobre, ďalšia veta.', 'Paráda, ideme ďalej.', 'Pekne. Tak ďalej.'],
-    last: ['A posledná veta.', 'Už len posledná veta.'],
-    recheck: ['A teraz ti to prečítam ešte raz celé. Skontroluj si, či ti nič nechýba.', 'Ešte raz celý diktát. Pozri sa, či máš všetko.'],
-    endPaper: ['Hotovo! Ťukni na Ukázať správny diktát a porovnaj si to.', 'Máme to! Teraz si pozri správny diktát.'],
-    endGaps: ['Hotovo! Keď budeš mať všetky okienka, ťukni na Skontrolovať.', 'Máme to! Skontroluj okienka a ťukni na Skontrolovať.'],
-    perfect: ['Paráda, Oto! Bez jedinej chyby! Zavolaj ocka, nech to potvrdí.', 'Wau, bez chyby! Si borec! Teraz zavolaj ocka.'],
-    oops: ['Skoro! Pár okienok je ešte zle. Ťukni na otáznik a poviem ti prečo.', 'Ešte to nie je ono. Ťukni na otáznik pri červenom okienku a oprav ho.'],
-    review: ['Tu je správny diktát. Porovnaj ho so svojím papierom. Keď nájdeš chybu, ťukni na to slovo a vysvetlím ti ju.'],
-    fixed: ['Výborne! Všetky chyby máš vysvetlené. Zavolaj ocka, nech to potvrdí kódom.', 'Super, opravené! Teraz už len ocko zadá kód.'],
-    win: ['Paráda! Peniaze sú pripísané a diktát je medzi hotovými cvičeniami.', 'Hotovo! Zarobil si peniaze. Si šikovný, Oto!'],
-  };
-
-  // ---------------- diktovanie ----------------
-  const PUNCT_WORDS = { ',': 'čiarka', '.': 'bodka', '?': 'otáznik', '!': 'výkričník' };
+  // ---------------- diktovanie (len diktát na papier) ----------------
+  const PUNCT_WORDS = window.UCITEL_PUNCT;
   function buildScript() {
     const sp = SPEEDS[S.speed];
-    const gapMode = S.mode === 'doplnanie';
     const steps = [];
     const sentences = S.dict.sentences;
     let chunkNo = 0;
-    steps.push({ kind: 'intro', say: `${pick(S.dict.hard ? LINES.helloHard : LINES.hello)} ${pick(gapMode ? LINES.gaps : LINES.paper)} ${pick(LINES.listenFirst)}`, rate: TALK, talk: true, pause: 500 });
+    for (const t of [pick(S.dict.hard ? LINES.helloHard : LINES.hello), pick(LINES.paper), pick(LINES.listenFirst)]) steps.push({ kind: 'intro', say: t, rate: TALK, talk: true, pause: 250 });
     sentences.forEach((s) => steps.push({ kind: 'listen', say: s, rate: sp.rate, pause: 600 }));
     steps.push({ kind: 'intro2', say: pick(LINES.nowWrite), rate: TALK, talk: true, pause: 800 });
     sentences.forEach((s, si) => {
@@ -174,13 +199,12 @@
       for (const c of E.chunks(s)) {
         const last = c.slice(-1);
         const text = S.sayPunct && PUNCT_WORDS[last] ? `${c.replace(/[.,?!]$/, '')}, ${PUNCT_WORDS[last]}` : c;
-        const pause = gapMode ? 900 + c.length * sp.perChar * 0.3 : 1000 + c.length * sp.perChar;
-        steps.push({ kind: 'chunk', say: text, rate: sp.rate * 0.95, pause, chunk: chunkNo++, si });
+        steps.push({ kind: 'chunk', say: text, rate: sp.rate * 0.95, pause: 1000 + c.length * sp.perChar, chunk: chunkNo++, si });
       }
     });
     steps.push({ kind: 'check', say: pick(LINES.recheck), rate: TALK, talk: true, pause: 500 });
-    sentences.forEach((s) => steps.push({ kind: 'recheck', say: s, rate: sp.rate, pause: gapMode ? 1200 : 2600 }));
-    steps.push({ kind: 'end', say: pick(gapMode ? LINES.endGaps : LINES.endPaper), rate: TALK, talk: true, pause: 0 });
+    sentences.forEach((s) => steps.push({ kind: 'recheck', say: s, rate: sp.rate, pause: 2600 }));
+    steps.push({ kind: 'end', say: pick(LINES.endPaper), rate: TALK, talk: true, pause: 0 });
     return { steps, chunks: chunkNo };
   }
 
@@ -296,15 +320,17 @@
     return t ? `<p class="cloud">${t}</p>` : '';
   }
 
-  const lengthLabel = (d) => `${E.LENGTHS[d.length]?.label || ''}${d.hard ? ', náročný' : ''}`;
+  const lengthLabel = (d) => `${d.mode === 'doplnanie' ? 'Doplňovačka' : d.mode === 'papier' ? 'Diktát na papier' : ''}${d.mode ? ' · ' : ''}${E.LENGTHS[d.length]?.label || ''}${d.hard ? ', náročný' : ''}`;
+  const rewardOf = (p) => (p.mistakes === 0 ? E.LENGTHS[p.length].cents : 0);
+  const GAP_LABEL = { iy: 'i / y', dlzen: 'dĺžne', makcen: 'mäkčene', ine: 'ä, ô, ie, ia, iu' };
 
   function pendingCard() {
     if (!S.pending.length) return '';
     return `<section class="card wait">
       <h2>Čaká na ocka</h2>
-      <p class="hint">Tieto diktáty sú hotové a opravené. Ocko ich potvrdí kódom a pripíšu sa peniaze.</p>
-      ${S.pending.map((p, n) => `<div class="wait-row"><span>${esc(lengthLabel(p))} · ${p.mistakes ? `${p.mistakes} ${p.mistakes === 1 ? 'chyba' : p.mistakes <= 4 ? 'chyby' : 'chýb'}, opravené` : 'bez chyby'}</span>
-        <b>${euro(E.LENGTHS[p.length].cents)}</b><button class="btn small" data-act="confirmPending" data-n="${n}">Potvrdiť kódom</button></div>`).join('')}
+      <p class="hint">Ocko, skontroluj diktát a potvrď ho kódom. Peniaze sú len za diktát bez chyby.</p>
+      ${S.pending.map((p, n) => `<div class="wait-row"><span>${esc(lengthLabel(p))} · ${p.mistakes ? chyb(p.mistakes) : 'bez chyby'}${p.mistakes ? ` <small>(${esc(p.wrong.join(', '))})</small>` : ''}</span>
+        <b>${rewardOf(p) ? euro(rewardOf(p)) : 'bez odmeny'}</b><button class="btn small" data-act="confirmPending" data-n="${n}">Potvrdiť kódom</button></div>`).join('')}
       ${S.gate && S.gate.kind === 'pending' ? gateBox() : ''}
     </section>`;
   }
@@ -312,50 +338,57 @@
   function viewSetup() {
     const allOn = S.letters.size === E.LETTERS.length;
     const voices = Voice.voices;
+    const gap = S.mode === 'doplnanie';
+    let n = 0;
+    const head = (t) => `<div class="step-head"><span class="num">${++n}</span><h2>${t}</h2></div>`;
     return `${topBar()}
     ${pendingCard()}
     <section class="card">
-      <div class="step-head"><span class="num">1</span><h2>Ako budeš písať?</h2></div>
+      ${head('Ako budeš písať?')}
       <div class="choices two">
-        <button class="choice" data-act="mode" data-v="papier" aria-pressed="${S.mode === 'papier'}"><b>Diktát na papier</b><span>Počúvaš a píšeš perom na papier. Potom si pozrieš správny diktát.</span></button>
-        <button class="choice" data-act="mode" data-v="doplnanie" aria-pressed="${S.mode === 'doplnanie'}"><b>Doplňovačka na tablete</b><span>Text vidíš a perom dopĺňaš i, í, y, ý do okienok.</span></button>
+        <button class="choice" data-act="mode" data-v="papier" aria-pressed="${!gap}"><b>Diktát na papier</b><span>Počúvaš a píšeš perom na papier. Potom si pozrieš správny diktát.</span></button>
+        <button class="choice" data-act="mode" data-v="doplnanie" aria-pressed="${gap}"><b>Doplňovačka na tablete</b><span>Text vidíš na tablete a dopĺňaš chýbajúce písmenká. Bez diktovania.</span></button>
       </div>
     </section>
+    ${gap ? `<section class="card">
+      ${head('Čo budeš dopĺňať?')}
+      <div class="letters">${E.GAP_TYPES.map((t) => `<button class="letter wide" data-act="gapType" data-v="${t}" aria-pressed="${S.gapTypes.has(t)}">${GAP_LABEL[t]}</button>`).join('')}</div>
+      <p class="hint">Okienka môžu byť pri i a y, pri dĺžňoch (á, é, í, ó, ú), pri mäkčeňoch (ď, ť, ň, ľ, č, š, ž), pri ä, pri ô a pri ie, ia, iu.</p>
+    </section>` : ''}
     <section class="card">
-      <div class="step-head"><span class="num">2</span><h2>Aký dlhý?</h2></div>
+      ${head('Aký dlhý?')}
       <div class="choices">${Object.entries(E.LENGTHS).map(([key, c]) => `<button class="choice" data-act="length" data-v="${key}" aria-pressed="${S.length === key}">
         <b>${c.label}</b><span>${c.sentences} ${c.sentences < 5 ? 'vety' : 'viet'}</span><span class="money"><span class="coin"></span>${euro(c.cents)}</span></button>`).join('')}</div>
     </section>
     <section class="card">
-      <div class="step-head"><span class="num">3</span><h2>Aký náročný?</h2></div>
+      ${head('Aký náročný?')}
       <div class="choices two">
         <button class="choice" data-act="hard" data-v="0" aria-pressed="${!S.hard}"><b>Bežný</b><span>Vybrané slová, iné slová s mäkkým i a pár výnimiek.</span></button>
         <button class="choice" data-act="hard" data-v="1" aria-pressed="${S.hard}"><b>Náročný</b><span>Veľa výnimiek, ťažké slová a chytáky ako biť a byť alebo výr a vír.</span></button>
       </div>
     </section>
     <section class="card">
-      <div class="step-head"><span class="num">4</span><h2>Ktoré vybrané slová?</h2></div>
+      ${head('Ktoré vybrané slová?')}
       <div class="letters">
         ${E.LETTERS.map((l) => `<button class="letter" data-act="letter" data-v="${l}" aria-pressed="${S.letters.has(l)}" aria-label="Vybrané slová po ${l.toUpperCase()}">${l.toUpperCase()}</button>`).join('')}
         <button class="letter all" data-act="allLetters" aria-pressed="${allOn}">Všetky</button>
       </div>
       <p class="hint">Vždy tam budú aj iné slová s mäkkým i a výnimky, napríklad kino, diktát, bicykel.</p>
     </section>
-    <section class="card">
-      <div class="step-head"><span class="num">5</span><h2>Ako rýchlo diktovať?</h2></div>
+    ${gap ? '' : `<section class="card">
+      ${head('Ako rýchlo diktovať?')}
       <div class="row">
         <div class="seg" role="group" aria-label="Rýchlosť">${Object.entries(SPEEDS).map(([k, v]) => `<button data-act="speed" data-v="${k}" aria-pressed="${S.speed === k}">${v.label}</button>`).join('')}</div>
         <button class="btn small" data-act="sample">${ICON.speaker} Vypočuť hlas</button>
       </div>
       <div class="row">
         <label class="switch"><input type="checkbox" id="sayPunct" ${S.sayPunct ? 'checked' : ''}> Diktovať aj čiarky a bodky</label>
-        ${voices.length > 1 ? `<label class="switch">Hlas <select id="voice">${voices.map((v) => `<option value="${esc(v.voiceURI)}" ${Voice.current() === v ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>` : ''}
+        ${!Voice.clips && voices.length > 1 ? `<label class="switch">Hlas <select id="voice">${voices.map((v) => `<option value="${esc(v.voiceURI)}" ${Voice.current() === v ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>` : ''}
       </div>
-      ${Voice.ok && !voices.length ? '<p class="notice">Na tomto zariadení chýba slovenský hlas. Na iPade ho pridáš v Nastaveniach: Prístupnosť → Hovorený obsah → Hlasy → Slovenčina → Laura (Vylepšená).</p>' : ''}
-      ${!Voice.ok ? '<p class="notice">Tento prehliadač nevie čítať nahlas. Skús Safari na iPade.</p>' : ''}
-    </section>
-    <p class="hint center">Peniaze dostaneš, keď máš diktát bez chyby, alebo keď si opravíš chyby tak, že si vypočuješ vysvetlenie ku každej. Potom ocko potvrdí kódom.</p>
-    <button class="btn primary big" data-act="generate" ${S.letters.size ? '' : 'disabled'}>Vygenerovať diktát</button>
+      ${!Voice.clips && Voice.ok && !voices.length ? '<p class="notice">Na tomto zariadení chýba slovenský hlas. Na iPade ho pridáš v Nastaveniach: Prístupnosť → Hovorený obsah → Hlasy → Slovenčina → Laura (Vylepšená).</p>' : ''}
+    </section>`}
+    <p class="hint center">Peniaze dostaneš len za diktát bez chyby na prvý raz. Ocko to potvrdí kódom.</p>
+    <button class="btn primary big" data-act="generate" ${S.letters.size && (!gap || S.gapTypes.size) ? '' : 'disabled'}>Vygenerovať diktát</button>
     ${cloudLine()}`;
   }
 
@@ -363,20 +396,22 @@
     const d = S.dict;
     const words = E.tokenize(d.text).length;
     const exc = d.sentences.map((s) => E.tagSentence(s)).filter((t) => t.exc).length;
+    const gap = S.mode === 'doplnanie';
     return `${topBar()}
     <section class="card ready">
       <img src="${MASCOT}" alt="">
       <h1>Diktát je pripravený</h1>
       <div class="chips">
-        <span class="chip sun">${S.mode === 'papier' ? 'Na papier' : 'Doplňovačka'}</span>
+        <span class="chip sun">${gap ? 'Doplňovačka' : 'Na papier'}</span>
         ${d.hard ? '<span class="chip pink">Náročný</span>' : ''}
         <span class="chip">${d.sentences.length} ${d.sentences.length < 5 ? 'vety' : 'viet'} · ${words} slov</span>
         <span class="chip">Po ${d.letters.map((l) => l.toUpperCase()).join(', ')}</span>
         <span class="chip pink">Výnimky: ${exc}</span>
+        ${gap ? `<span class="chip">${[...S.gapTypes].map((t) => GAP_LABEL[t]).join(' · ')}</span>` : ''}
         <span class="chip sun">${euro(E.LENGTHS[d.length].cents)}</span>
       </div>
-      <p>${S.mode === 'papier' ? 'Priprav si papier a pero.' : 'Budeš dopĺňať okienka perom.'} Najprv si diktát celý vypočuješ, potom ho budeš písať po kúskoch.</p>
-      <button class="btn primary big" data-act="start">Začať diktát</button>
+      <p>${gap ? 'Doplň všetky okienka a potom ťukni na Skontrolovať. Kontroluje sa iba raz, tak si to dobre premysli.' : 'Priprav si papier a pero. Najprv si diktát celý vypočuješ, potom ho budeš písať po kúskoch.'}</p>
+      <button class="btn primary big" data-act="start">${gap ? 'Začať dopĺňať' : 'Začať diktát'}</button>
       <button class="btn" data-act="regen">Iné zadanie</button>
       <details class="peek"><summary>Pre rodiča: ukázať text diktátu</summary><p>${esc(d.text)}</p></details>
     </section>
@@ -407,42 +442,54 @@
     </div>`;
   }
 
-  /** Text, v ktorom sa dá ťuknúť na každé slovo s i/y. Slová označené ako chyba sú červené. */
-  function clickableText(text) {
+  /** Text, v ktorom sa dá ťuknúť na každé slovo. Slová označené ako chyba sú červené. */
+  function clickableText(text, markable = false) {
     let out = ''; let last = 0;
     for (const m of text.matchAll(E.WORD_RE)) {
       out += esc(text.slice(last, m.index));
       const info = E.wordInfo(m[0]);
       const key = `${m.index}`;
-      const mk = S.marked.has(key) ? ` marked${S.heard.has(key) ? ' heard' : ''}` : '';
-      out += info.cls ? `<button class="w ${info.cls}${mk}" data-act="word" data-w="${esc(m[0])}" data-k="${key}">${esc(m[0])}</button>` : esc(m[0]);
+      const mk = markable && S.marked.has(key) ? ` marked${S.heard.has(key) ? ' heard' : ''}` : '';
+      out += `<button class="w ${info.cls}${mk}" data-act="word" data-w="${esc(m[0])}" data-k="${markable ? key : ''}">${esc(m[0])}</button>`;
       last = m.index + m[0].length;
     }
     return out + esc(text.slice(last));
   }
 
-  const paperReady = () => [...S.marked].every((k) => S.heard.has(k));
+  const legend = '<div class="legend"><span class="w vs">vybrané slovo</span><span class="w exc">výnimka</span><span class="w iy">iné i/y</span><span class="w ot">dĺžeň, mäkčeň, ä, ô, ie</span></div>';
+
+  /** Spodná karta s výsledkom: bez chyby = zavolaj ocka; s chybou = vysvetlenia a uloženie na kontrolu. */
+  function resultCard(mistakes, keys, wordOf) {
+    if (S.rewarded) return successCard();
+    const heard = keys.filter((k) => S.heard.has(k)).length;
+    const gate = S.gate && S.gate.kind === 'confirm' ? gateBox() : '';
+    if (!mistakes) {
+      return `<section class="card result good">
+        <h2>${S.mode === 'papier' ? 'Mal si všetko správne?' : 'Bez chyby!'}</h2>
+        <p>${S.mode === 'papier' ? 'Ak máš na papieri chybu, ťukni na to slovo v texte a označ ho. Ak je všetko správne, zavolaj ocka. Za tento diktát dostaneš' : 'Paráda, všetko správne na prvý raz! Zavolaj ocka, nech to potvrdí. Dostaneš'} <b>${euro(E.LENGTHS[S.dict.length].cents)}</b>.</p>
+        ${gate || `<div class="row"><button class="btn primary big" data-act="callParent">Zavolaj ocka</button><button class="btn" data-act="later">Uložiť na kontrolu</button></div>`}
+      </section>`;
+    }
+    return `<section class="card result">
+      <h2>${S.mode === 'papier' ? 'Moje chyby' : `Mal si ${chyb(mistakes)}`}</h2>
+      ${S.mode === 'papier' ? `<div class="mistake-chips">${keys.map((k) => `<button class="mchip ${S.heard.has(k) ? 'ok' : ''}" data-act="${S.mode === 'papier' ? 'word' : 'gapWhy'}" data-w="${esc(wordOf(k))}" data-k="${k}">${S.heard.has(k) ? '✓ ' : ''}${esc(wordOf(k))}</button>`).join('')}</div>` : ''}
+      <p>Peniaze sú len za diktát bez chyby na prvý raz. Nevadí, z chýb sa človek učí. Ťukni na ${S.mode === 'papier' ? 'každú chybu' : 'otáznik pri každom červenom okienku'} a vypočuj si, prečo je to tak.</p>
+      <p class="progress-line">Vypočuté vysvetlenia: <b>${heard} z ${keys.length}</b></p>
+      ${gate || `<div class="row"><button class="btn primary big" data-act="later">Uložiť na kontrolu</button><button class="btn" data-act="callParent">Ocko je tu, potvrdiť hneď</button></div>`}
+    </section>`;
+  }
 
   function viewReview() {
-    const n = S.marked.size;
-    const heard = [...S.marked].filter((k) => S.heard.has(k)).length;
-    const words = [...S.marked].map((k) => ({ k, w: S.dict.text.slice(+k).match(E.WORD_RE)[0] }));
+    const keys = [...S.marked].sort((a, b) => a - b);
+    const wordOf = (k) => S.dict.text.slice(+k).match(E.WORD_RE)[0];
     return `${topBar()}
     <section class="card">
       <h1>Správny diktát</h1>
-      <p class="hint">Porovnaj ho so svojím papierom. Ťukni na slovo a dozvieš sa, prečo je tam i alebo y. Keď si ho mal zle, v okne ťukni na „Toto som mal zle“.</p>
-      <div class="legend"><span class="w vs">vybrané slovo</span><span class="w exc">výnimka</span><span class="w iy">iné i/y</span><span class="w iy marked">moja chyba</span></div>
-      <p class="correct">${clickableText(S.dict.text)}</p>
+      <p class="hint">Porovnaj ho so svojím papierom. Ťukni na hociktoré slovo a dozvieš sa, prečo sa tak píše. Keď ho máš na papieri zle, v okne ťukni na „Toto mám zle“.</p>
+      ${legend}
+      <p class="correct">${clickableText(S.dict.text, !S.rewarded)}</p>
     </section>
-    ${S.rewarded ? successCard() : `<section class="card">
-      <h2>${n ? 'Moje chyby' : 'Mal si všetko správne?'}</h2>
-      ${n ? `<div class="mistake-chips">${words.map((x) => `<button class="mchip ${S.heard.has(x.k) ? 'ok' : ''}" data-act="word" data-w="${esc(x.w)}" data-k="${x.k}">${S.heard.has(x.k) ? '✓ ' : ''}${esc(x.w)}</button>`).join('')}</div>
-        <p class="progress-line">Vypočuté vysvetlenia: <b>${heard} z ${n}</b>${paperReady() ? ' · všetko opravené!' : '. Ťukni na každú chybu a vypočuj si prečo.'}</p>`
-        : '<p>Ak máš na papieri všetko správne, zavolaj ocka. Ak máš chybu, ťukni na to slovo v texte a označ ho.</p>'}
-      <button class="btn primary big" data-act="callParent" ${paperReady() ? '' : 'disabled'}>${n ? 'Opravené, zavolaj ocka' : 'Bez chyby, zavolaj ocka'}</button>
-      ${S.gate && S.gate.kind === 'confirm' ? gateBox() : ''}
-      ${paperReady() && !S.gate ? '<button class="btn ghost" data-act="later">Ocko potvrdí neskôr</button>' : ''}
-    </section>`}
+    ${resultCard(keys.length, keys, wordOf)}
     <button class="btn ghost back" data-act="setup">‹ Nový diktát</button>
     ${cloudLine()}`;
   }
@@ -454,46 +501,51 @@
   }
 
   function successCard() {
-    const c = E.LENGTHS[S.dict.length].cents;
-    return `<section class="card win">
-      <div class="stars">${[1, 2, 3].map((k) => ICON.star(k <= (S.lastMistakes === 0 ? 3 : 2))).join('')}</div>
-      <h1>${S.lastMistakes === 0 ? 'Bez chyby!' : 'Opravené!'}</h1>
-      <div class="earned"><span class="coin"></span>+${euro(c)}</div>
+    const c = S.lastReward;
+    return `<section class="card win ${c ? '' : 'plain'}">
+      <div class="stars">${[1, 2, 3].map((k) => ICON.star(k <= (c ? 3 : 1))).join('')}</div>
+      <h1>${c ? 'Bez chyby!' : 'Uložené'}</h1>
+      ${c ? `<div class="earned"><span class="coin"></span>+${euro(c)}</div>` : '<p>Ocko to potvrdil. Tentoraz bez peňazí, ale nabudúce to dáš!</p>'}
       <p>Diktát je uložený v Hotových cvičeniach. V peňaženke máš ${euro(Store.balance())}.</p>
       <button class="btn primary big" data-act="setup">Ďalší diktát</button>
     </section>`;
   }
 
-  const gapsReady = () => S.checked && Object.values(S.checked).every((x) => x === true) && [...S.wrongGaps].every((g) => S.heard.has(`g${g}`));
+  const capFor = (opt, ans) => (ans[0] !== ans[0].toLowerCase() ? opt[0].toUpperCase() + opt.slice(1) : opt);
+  const gapAt = (n) => S.plan.find((x) => x.gap === n);
+
+  function keysHtml() {
+    const p = gapAt(S.focusGap) || S.plan.find((x) => x.gap !== undefined);
+    if (!p) return '';
+    return p.options.map((o) => { const c = capFor(o, p.answer); return `<button data-key="${esc(c)}" aria-label="Doplniť ${esc(c)}">${esc(c)}</button>`; }).join('');
+  }
 
   function viewGaps() {
     const ck = S.checked;
     const text = S.plan.map((p) => {
       if (p.gap === undefined) return esc(p.t);
-      const st = ck ? ck[p.gap] : null;
-      const val = S.gaps[p.gap] || '';
-      const cls = st === true ? 'ok' : st === false ? 'bad' : '';
-      const showWhy = S.wrongGaps.has(p.gap);
-      return `<input class="gap ${cls}" id="g${p.gap}" data-gap="${p.gap}" value="${esc(val)}" maxlength="2" ${st === true ? 'readonly' : ''} autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Doplň i alebo y v slove ${esc(p.word.slice(0, p.idx))}_${esc(p.word.slice(p.idx + 1))}">${showWhy ? `<button class="why ${S.heard.has(`g${p.gap}`) ? 'heard' : ''}" data-act="gapWhy" data-gap="${p.gap}" aria-label="Prečo?">${S.heard.has(`g${p.gap}`) ? '✓' : '?'}</button>` : ''}`;
+      const wide = p.options.some((o) => o.length > 1) ? ' wide' : '';
+      if (!ck) {
+        const val = S.gaps[p.gap] || '';
+        return `<input class="gap${wide}" id="g${p.gap}" data-gap="${p.gap}" value="${esc(val)}" maxlength="2" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Doplň písmeno v slove ${esc(p.word.slice(0, p.idx))}_${esc(p.word.slice(p.idx + p.len))}">`;
+      }
+      if (ck[p.gap]) return `<span class="gap ok${wide}">${esc(p.answer)}</span>`;
+      const heard = S.heard.has(`g${p.gap}`);
+      return `<span class="gap bad${wide}"><s>${esc(S.gaps[p.gap] || '·')}</s>${esc(p.answer)}</span><button class="why ${heard ? 'heard' : ''}" data-act="gapWhy" data-k="g${p.gap}" aria-label="Prečo?">${heard ? '✓' : '?'}</button>`;
     }).join('');
-    const bad = ck ? Object.values(ck).filter((x) => x === false).length : 0;
-    const unheard = [...S.wrongGaps].filter((g) => !S.heard.has(`g${g}`)).length;
-    let note = '';
-    if (ck && bad) note = `<p class="notice bad-note">${bad} ${okienok(bad)} ${bad >= 2 && bad <= 4 ? 'sú' : 'je'} ešte zle. Ťukni na otáznik, vypočuj si prečo, oprav okienko a skontroluj znova.</p>`;
-    else if (ck && unheard) note = `<p class="notice">Okienka sú správne. Ešte si vypočuj vysvetlenie pri každom otázniku (zostáva ${unheard}).</p>`;
-    return `${S.rewarded ? topBar() : playerCard()}
-    ${note}
-    ${S.rewarded ? successCard() : ''}
+    const total = S.plan.filter((p) => p.gap !== undefined).length;
+    const filled = S.plan.filter((p) => p.gap !== undefined && (S.gaps[p.gap] || '').trim()).length;
+    const wrongKeys = [...S.wrongGaps].sort((a, b) => a - b).map((g) => `g${g}`);
+    return `${topBar()}
+    ${ck ? '' : `<section class="card gap-head"><h2>Doplň okienka</h2><p class="hint">Ťukni do okienka a vyber písmeno dole, alebo ho napíš perom. Kontroluje sa iba raz. <b id="filled">${filled} z ${total}</b></p></section>`}
+    ${S.notice ? `<p class="notice bad-note">${esc(S.notice)}</p>` : ''}
     <div class="paper nolines"><div class="gaptext" id="gaptext">${S.rewarded ? clickableText(S.dict.text) : text}</div></div>
-    ${S.rewarded ? '' : gapsReady() ? `<section class="card"><h2>${S.wrongGaps.size ? 'Všetko opravené!' : 'Bez chyby!'}</h2>
-        <button class="btn primary big" data-act="callParent">Zavolaj ocka</button>${S.gate && S.gate.kind === 'confirm' ? gateBox() : ''}</section>
-      <button class="btn ghost back" data-act="later">‹ Ocko potvrdí neskôr</button>`
-      : `<div class="keys" id="keys">${['i', 'í', 'y', 'ý'].map((c) => `<button data-key="${c}" aria-label="Doplniť ${c}">${c}</button>`).join('')}</div>
+    ${ck ? resultCard(S.wrongGaps.size, wrongKeys, (k) => gapAt(+k.slice(1)).word) : `<div class="keys" id="keys">${keysHtml()}</div>
     <div class="row" style="justify-content:space-between">
       <button class="btn ghost" data-act="quit">‹ Zrušiť</button>
-      <button class="btn small mobile-only" data-act="repeat">Zopakuj</button>
       <button class="btn primary" data-act="checkGaps">Skontrolovať</button>
     </div>`}
+    ${ck && !S.rewarded ? '<button class="btn ghost back" data-act="setup">‹ Nový diktát</button>' : ''}
     ${cloudLine()}`;
   }
 
@@ -507,11 +559,11 @@
     ${rows.length ? `<div class="done-list">${rows.map((r) => `<section class="card done-item">
       <button class="done-head" data-act="toggleDone" data-id="${esc(r.id)}">
         <span class="done-date">${date(r.created_at)}</span>
-        <span class="done-name">${r.mode === 'doplnanie' ? 'Doplňovačka' : 'Diktát na papier'} · ${esc(lengthLabel({ length: r.length, hard: r.details?.hard }))}</span>
-        <span class="done-res">${r.mistakes ? `${r.mistakes} ${r.mistakes === 1 ? 'chyba' : r.mistakes <= 4 ? 'chyby' : 'chýb'}, opravené` : 'bez chyby'}</span>
-        <b>+${euro(r.reward_cents)}</b>
+        <span class="done-name">${esc(lengthLabel({ mode: r.mode === 'doplnanie' ? 'doplnanie' : 'papier', length: r.length, hard: r.details?.hard }))}</span>
+        <span class="done-res ${r.mistakes ? 'bad' : ''}">${r.mistakes ? chyb(r.mistakes) : 'bez chyby'}</span>
+        <b>${r.reward_cents ? `+${euro(r.reward_cents)}` : 'bez odmeny'}</b>
       </button>
-      ${S.openDone === r.id && r.text ? `<p class="correct small">${clickableText(r.text)}</p>` : ''}
+      ${S.openDone === r.id && r.text ? `<p class="correct small">${clickableText(r.text)}</p>${r.details?.wrong?.length ? `<p class="hint">Chyby: ${esc(r.details.wrong.join(', '))}</p>` : ''}` : ''}
     </section>`).join('')}</div>` : '<section class="card"><p>Zatiaľ tu nič nie je. Prvý hotový diktát sa objaví tu.</p></section>'}
     ${cloudLine()}`;
   }
@@ -529,7 +581,7 @@
     <section class="card purse">
       <h1>Otova peňaženka</h1>
       <div class="amount"><span class="coin"></span>${euro(bal)}</div>
-      <p class="hint">Za diktát: krátky 0,25 €, stredný 0,50 €, dlhý 1 €.</p>
+      <p class="hint">Za diktát bez chyby na prvý raz: krátky 0,25 €, stredný 0,50 €, dlhý 1 €.</p>
       ${g ? (g.kind === 'payOk' ? `<div class="gate"><p>Odovzdal si Otovi ${euro(bal)}?</p><div class="row"><button class="btn primary" data-act="payConfirm">Áno, odovzdal som</button><button class="btn ghost" data-act="gateCancel">Nie</button></div></div>` : gateBox())
         : `<button class="btn ${bal > 0 ? 'primary' : ''}" data-act="pay" ${bal > 0 ? '' : 'disabled'}>Vyplatiť ${euro(bal)}</button>`}
       <div class="history">${rows.map((r) => `<div class="hrow ${r.c < 0 ? 'pay' : ''}"><span>${date(r.t)}</span><span>${esc(r.txt)}</span><b>${r.c > 0 ? '+' : '−'}${euro(Math.abs(r.c))}</b></div>`).join('') || '<p class="hint">Zatiaľ žiadne zarobené peniaze.</p>'}</div>
@@ -537,46 +589,39 @@
     ${cloudLine()}`;
   }
 
-  // vysvetlenie slova (spodná karta); key = miesto v texte (na značenie chýb), gap = okienko doplňovačky
+  // vysvetlenie (spodná karta). opts.key = miesto v texte (značenie chýb na papieri), opts.gap = okienko doplňovačky
   function openWhy(word, opts = {}) {
-    const info = E.wordInfo(word);
-    const list = opts.idx === undefined ? info.list : info.list.filter((x) => x.i === opts.idx);
+    const list = opts.items || E.wordInfo(word).list;
     if (!list.length) return;
-    const heardKey = opts.gap !== undefined ? `g${opts.gap}` : opts.key;
-    const markable = S.view === 'review' && !S.rewarded && opts.key !== undefined;
+    const heardKey = opts.gap !== undefined ? `g${opts.gap}` : opts.key || '';
+    const markable = S.view === 'review' && !S.rewarded && !!opts.key && !(S.gate && S.gate.kind === 'confirm');
     const marked = () => S.marked.has(opts.key);
-    const letters = [...word].map((ch, i) => (list.some((x) => x.i === i) ? `<mark>${esc(ch)}</mark>` : esc(ch))).join('');
-    const label = { 'vybrané': 'vybrané slovo', 'výnimka': 'výnimka', 'koncovka': 'koncovka', 'mäkká': 'mäkká spoluhláska', 'tvrdá': 'tvrdá spoluhláska' };
-    const items = list.map((x) => {
-      const y = 'yý'.includes(x.ch.toLowerCase());
-      return `<div class="why-item"><h3>Prečo ${y ? 'tvrdé' : 'mäkké'} ${esc(x.ch.toLowerCase())}?</h3><span class="tag ${esc(x.kind.split(' ')[0])}">${esc(label[x.kind] || x.kind)}</span><p>${esc(x.text)}</p></div>`;
-    }).join('');
+    const letters = [...word].map((ch, i) => (list.some((x) => i >= x.i && i < x.i + x.len) ? `<mark>${esc(ch)}</mark>` : esc(ch))).join('');
+    const items = list.map((x) => `<div class="why-item"><h3>${esc(x.head)}</h3><span class="tag ${esc(String(x.kind || x.tag).split(' ')[0])}">${esc(x.tag)}</span><p>${esc(x.text)}</p></div>`).join('');
     closeWhy();
     const el = document.createElement('div');
     el.className = 'sheet-wrap';
-    const markBtn = () => (markable ? `<button class="btn ${marked() ? '' : 'mark'}" data-sheet="mark">${marked() ? 'Mal som to dobre' : 'Toto som mal zle'}</button>` : '');
+    const markBtn = () => (markable ? `<button class="btn ${marked() ? '' : 'mark'}" data-sheet="mark">${marked() ? 'Mám to dobre' : 'Toto mám zle'}</button>` : '');
     el.innerHTML = `<div class="sheet" role="dialog" aria-label="Vysvetlenie">
       <div class="sheet-word">${letters}</div>${items}
       <p class="sheet-status" hidden></p>
       <div class="row"><button class="btn small" data-sheet="say">${ICON.speaker} Prečítaj znova</button><span class="mark-slot">${markBtn()}</span><button class="btn primary" data-sheet="close">Rozumiem</button></div></div>`;
     document.body.appendChild(el);
     const status = el.querySelector('.sheet-status');
+    const showHeard = () => { if (heardKey && S.heard.has(heardKey) && (!markable || marked())) { status.hidden = false; status.textContent = 'Vypočuté ✓'; } else status.hidden = true; };
     const speak = () => {
       Voice.stop();
-      const tok = Voice.token;
-      Voice.say(`${word}. ${list.map((x) => `Prečo ${'yý'.includes(x.ch.toLowerCase()) ? 'tvrdé ypsilon' : 'mäkké i'}? ${x.text}`).join(' ')}`, TALK, true)
-        .then(() => {
-          if (tok !== Voice.token || !heardKey) return;
-          S.heard.add(heardKey);
-          if (!markable || marked()) { status.hidden = false; status.textContent = 'Vypočuté ✓'; }
-        });
+      Voice.seq([word, ...list.flatMap((x) => [x.say, x.text])].filter(Boolean)).then((ok) => {
+        if (!ok || !heardKey) return;
+        S.heard.add(heardKey); showHeard();
+      });
     };
     el.addEventListener('click', (e) => {
       const a = e.target.closest('[data-sheet]')?.dataset.sheet;
       if (a === 'say') speak();
       if (a === 'mark') {
-        if (marked()) S.marked.delete(opts.key); else { S.marked.add(opts.key); if (!S.heard.has(opts.key)) speak(); }
-        status.hidden = !(marked() && S.heard.has(opts.key)); status.textContent = 'Vypočuté ✓';
+        if (marked()) S.marked.delete(opts.key); else S.marked.add(opts.key);
+        showHeard();
         el.querySelector('.mark-slot').innerHTML = markBtn();
       }
       if (a === 'close' || e.target === el) { Voice.stop(); closeWhy(); render(); }
@@ -590,7 +635,7 @@
     const y = window.scrollY;
     $app.innerHTML = v();
     const changed = render.last !== S.view; render.last = S.view;
-    if (S.view === 'paper' || (S.view === 'gaps' && !S.rewarded)) updatePlayer();
+    if (S.view === 'paper') updatePlayer();
     window.scrollTo({ top: changed ? 0 : y });
     if (S.celebrate) { S.celebrate = false; fireworks(); }
   }
@@ -600,19 +645,25 @@
     const recent = lsGet('ucitel2-recent', []);
     S.dict = { ...E.generate(S.length, [...S.letters], recent, S.hard), id: uid() };
     lsSet('ucitel2-recent', [...S.dict.ids, ...recent].slice(0, 45));
-    S.rewarded = false; S.attempts = 0;
+    S.rewarded = false;
     S.view = 'ready'; render();
   }
 
   function startDictation() {
-    S.plan = S.mode === 'doplnanie' ? E.gapPlan(S.dict.text) : null;
-    S.gaps = {}; S.checked = null; S.gate = null;
-    S.marked = new Set(); S.heard = new Set(); S.wrongGaps = new Set(); S.doneSaved = false;
+    S.gaps = {}; S.checked = null; S.gate = null; S.notice = '';
+    S.marked = new Set(); S.heard = new Set(); S.wrongGaps = new Set(); S.doneSaved = false; S.saved = false;
+    if (S.mode === 'doplnanie') {
+      S.plan = E.gapPlan(S.dict.text, [...S.gapTypes], S.dict.id);
+      S.focusGap = 0;
+      S.view = 'gaps'; render();
+      document.getElementById('g0')?.focus({ preventScroll: true });
+      return;
+    }
+    S.plan = null;
     const sc = buildScript();
     Object.assign(P, { steps: sc.steps, chunks: sc.chunks, i: 0, playing: false, started: false, finished: false });
-    S.view = S.mode === 'papier' ? 'paper' : 'gaps'; render();
+    S.view = 'paper'; render();
     runPlayer(); // spustené ťuknutím, takže iPad dovolí zvuk
-    if (S.mode === 'doplnanie') document.getElementById('g0')?.focus({ preventScroll: true });
   }
 
   const modeDb = (m) => (m === 'papier' ? 'pisanie' : 'doplnanie');
@@ -622,34 +673,36 @@
     if (S.doneSaved) return;
     S.doneSaved = true;
     const d = S.dict; const id = uid();
+    const details = { kind: 'done', dict: d.id, hard: !!d.hard, types: S.mode === 'doplnanie' ? [...S.gapTypes] : undefined };
     Store.add('diktat_results', {
       id, child: CHILD, length: d.length, letters: d.letters.join(''), mode: modeDb(S.mode), speed: S.speed, text: d.text,
-      answer: (answer || '').slice(0, 6000), words, mistakes, iy_mistakes: iy, stars: 0, reward_cents: 0,
-      details: { kind: 'done', dict: d.id, hard: !!d.hard },
-    }, { id, created_at: new Date().toISOString(), child: CHILD, length: d.length, mode: modeDb(S.mode), mistakes, reward_cents: 0, text: d.text, details: { kind: 'done', dict: d.id, hard: !!d.hard } });
+      answer: (answer || '').slice(0, 6000), words, mistakes, iy_mistakes: iy, stars: 0, reward_cents: 0, details,
+    }, { id, created_at: new Date().toISOString(), child: CHILD, length: d.length, mode: modeDb(S.mode), mistakes, reward_cents: 0, text: d.text, details });
   }
 
-  /** Rodič potvrdil kódom: pripíšu sa peniaze a diktát ide do Hotových cvičení. */
+  /** Rodič potvrdil kódom: diktát ide do Hotových cvičení, peniaze len keď je bez chyby. */
   function confirmDict(p) {
     const id = uid();
-    const cents = E.LENGTHS[p.length].cents;
-    const details = { kind: 'confirmed', dict: p.dictId, hard: !!p.hard, fixed: p.mistakes > 0, wrong: p.wrong || [] };
+    const cents = rewardOf(p);
+    const details = { kind: 'confirmed', dict: p.dictId, hard: !!p.hard, wrong: p.wrong || [], heard: p.heard || 0 };
     Store.add('diktat_results', {
       id, child: CHILD, length: p.length, letters: p.letters || '', mode: modeDb(p.mode), speed: S.speed, text: p.text,
-      words: E.tokenize(p.text).length, mistakes: p.mistakes, iy_mistakes: p.mistakes, stars: p.mistakes === 0 ? 3 : 2, reward_cents: cents, details,
+      words: E.tokenize(p.text).length, mistakes: p.mistakes, iy_mistakes: p.mistakes, stars: p.mistakes === 0 ? 3 : 1, reward_cents: cents, details,
     }, { id, created_at: new Date().toISOString(), child: CHILD, length: p.length, mode: modeDb(p.mode), mistakes: p.mistakes, reward_cents: cents, text: p.text, details })
       .then(() => { const c = document.querySelector('.cloud'); if (c) c.outerHTML = cloudLine() || '<span></span>'; });
     S.pending = S.pending.filter((x) => x.dictId !== p.dictId);
     lsSet('ucitel2-pending', S.pending);
+    return cents;
   }
 
-  /** Aktuálny diktát pripravený na potvrdenie (aj keď ocko príde neskôr, ostane v „Čaká na ocka“). */
+  /** Aktuálny diktát pripravený na potvrdenie. */
   function currentPending() {
     const d = S.dict;
+    const keys = S.mode === 'papier' ? [...S.marked] : [...S.wrongGaps].map((g) => `g${g}`);
     const wrong = S.mode === 'papier'
-      ? [...S.marked].map((k) => d.text.slice(+k).match(E.WORD_RE)[0])
-      : [...S.wrongGaps].map((g) => S.plan.find((x) => x.gap === g).word);
-    return { dictId: d.id, length: d.length, hard: !!d.hard, letters: d.letters.join(''), mode: S.mode, text: d.text, mistakes: wrong.length, wrong };
+      ? [...S.marked].sort((a, b) => a - b).map((k) => d.text.slice(+k).match(E.WORD_RE)[0])
+      : [...S.wrongGaps].sort((a, b) => a - b).map((g) => gapAt(g).word);
+    return { dictId: d.id, length: d.length, hard: !!d.hard, letters: d.letters.join(''), mode: S.mode, text: d.text, mistakes: wrong.length, wrong, heard: keys.filter((k) => S.heard.has(k)).length };
   }
   function rememberPending() {
     const p = currentPending();
@@ -658,17 +711,21 @@
   }
 
   function checkGaps() {
-    document.querySelectorAll('.gap').forEach((g) => { S.gaps[g.dataset.gap] = g.value; });
+    document.querySelectorAll('.gap[data-gap]').forEach((g) => { S.gaps[g.dataset.gap] = g.value.trim(); });
+    const empty = S.plan.filter((p) => p.gap !== undefined && !(S.gaps[p.gap] || '').trim());
+    if (empty.length) {
+      S.notice = `Ešte ${plural(empty.length, 'ti chýba 1 okienko', `ti chýbajú ${empty.length} okienka`, `ti chýba ${empty.length} okienok`)}. Kontroluje sa iba raz, tak najprv doplň všetko.`;
+      S.focusGap = empty[0].gap; render(); document.getElementById(`g${empty[0].gap}`)?.focus();
+      return;
+    }
+    S.notice = '';
     const r = E.gradeGaps(S.plan, S.gaps);
     S.checked = Object.fromEntries(r.items.map((x) => [x.gap, x.ok]));
     r.items.filter((x) => !x.ok).forEach((x) => S.wrongGaps.add(x.gap));
-    Voice.stop(); P.playing = false;
     const answer = S.plan.map((p) => (p.gap === undefined ? p.t : (S.gaps[p.gap] || '_'))).join('');
     saveDone(r.mistakes, r.iy, r.words, answer);
     render();
-    if (r.mistakes === 0 && !S.wrongGaps.size) Voice.chat(pick(LINES.perfect));
-    else if (r.mistakes === 0) Voice.chat(gapsReady() ? pick(LINES.fixed) : 'Okienka sú správne. Ešte si vypočuj vysvetlenia pri otáznikoch.');
-    else { Voice.chat(pick(LINES.oops)); document.querySelector('.gap.bad')?.focus({ preventScroll: false }); }
+    Voice.chat(pick(r.mistakes === 0 ? LINES.perfect : LINES.oops));
   }
 
   async function gateCheck() {
@@ -676,14 +733,14 @@
     if (!(await codeOk(v))) { S.gate.wrong = true; render(); document.getElementById('gateIn')?.focus(); return; }
     const g = S.gate; S.gate = null;
     if (g.kind === 'confirm') {
-      const p = currentPending();
-      S.lastMistakes = p.mistakes;
-      confirmDict(p);
-      S.rewarded = true; S.celebrate = true; render(); Voice.chat(pick(LINES.win));
+      const c = confirmDict(currentPending());
+      S.lastReward = c; S.rewarded = true; S.celebrate = c > 0;
+      render(); Voice.chat(pick(c ? LINES.win : LINES.noMoney));
     } else if (g.kind === 'pending') {
       const p = S.pending[g.n];
-      if (p) { confirmDict(p); S.celebrate = true; }
-      render(); Voice.chat(pick(LINES.win));
+      let c = 0;
+      if (p) { c = confirmDict(p); S.celebrate = c > 0; }
+      render(); Voice.chat(pick(c ? LINES.win : LINES.noMoney));
     } else if (g.kind === 'pay') { S.gate = { kind: 'payOk' }; render(); }
   }
 
@@ -698,19 +755,20 @@
       case 'hard': S.hard = v === '1'; savePrefs(); render(); break;
       case 'letter': S.letters.has(v) ? S.letters.delete(v) : S.letters.add(v); savePrefs(); render(); break;
       case 'allLetters': S.letters = S.letters.size === E.LETTERS.length ? new Set() : new Set(E.LETTERS); savePrefs(); render(); break;
+      case 'gapType': S.gapTypes.has(v) ? S.gapTypes.delete(v) : S.gapTypes.add(v); savePrefs(); render(); break;
       case 'mode': S.mode = v; savePrefs(); render(); break;
       case 'speed': S.speed = v; savePrefs(); render(); break;
-      case 'sample': Voice.stop(); Voice.say('Ahoj Oto! Ja ti budem diktovať. Takto rýchlo:', TALK, true).then(() => Voice.say('Rýchly rys beží lesom.', SPEEDS[S.speed].rate, false)); break;
+      case 'sample': Voice.stop(); Voice.say(LINES.sample[0], TALK, true).then(() => Voice.say(LINES.sampleSentence[0], SPEEDS[S.speed].rate, false)); break;
       case 'generate': case 'regen': generate(); break;
       case 'start': startDictation(); break;
       case 'play': if (P.playing) pausePlayer(); else { if (P.finished) { P.i = 0; P.finished = false; } runPlayer(); } break;
       case 'repeat': repeatChunk(); break;
       case 'skip': skipIntro(); break;
       case 'showCorrect': Voice.stop(); P.playing = false; saveDone(0, 0, E.tokenize(S.dict.text).length, ''); S.view = 'review'; render(); Voice.chat(pick(LINES.review)); break;
-      case 'word': openWhy(b.dataset.w, { key: b.dataset.k }); break;
-      case 'gapWhy': { const p = S.plan.find((x) => x.gap === +b.dataset.gap); openWhy(p.word, { idx: p.idx, gap: p.gap }); break; }
+      case 'word': openWhy(b.dataset.w, { key: b.dataset.k || undefined }); break;
+      case 'gapWhy': { const p = gapAt(+b.dataset.k.slice(1)); openWhy(p.word, { items: [p], gap: p.gap }); break; }
       case 'checkGaps': checkGaps(); break;
-      case 'later': rememberPending(); Voice.stop(); S.gate = null; S.view = 'setup'; render(); break;
+      case 'later': rememberPending(); Voice.stop(); S.gate = null; S.view = 'setup'; render(); Voice.chat(pick(LINES.saved)); break;
       case 'callParent': rememberPending(); openGate({ kind: 'confirm' }); break;
       case 'confirmPending': openGate({ kind: 'pending', n: +b.dataset.n }); break;
       case 'gateCheck': gateCheck(); break;
@@ -727,7 +785,7 @@
           const id = uid();
           Store.add('diktat_payouts', { id, child: CHILD, amount_cents: amount }, { id, created_at: new Date().toISOString(), child: CHILD, amount_cents: amount }).then(() => S.view === 'wallet' && render());
         }
-        S.gate = null; render(); Voice.chat('Hotovo. Oto, užívaj si zarobené peniaze!'); break;
+        S.gate = null; render(); Voice.chat(LINES.payout[0]); break;
       }
       default: break;
     }
@@ -738,25 +796,42 @@
   });
   $app.addEventListener('keydown', (e) => { if (e.target.id === 'gateIn' && e.key === 'Enter') gateCheck(); });
 
-  // doplňovačka: po napísaní písmena skok na ďalšie voľné okienko
-  let lastGap = null;
-  $app.addEventListener('focusin', (e) => { if (e.target.classList?.contains('gap')) lastGap = e.target; });
+  // doplňovačka: klávesy pod textom ukazujú možnosti pre okienko, v ktorom práve si
+  $app.addEventListener('focusin', (e) => {
+    if (!e.target.classList?.contains('gap') || e.target.dataset.gap === undefined) return;
+    S.focusGap = +e.target.dataset.gap;
+    const k = document.getElementById('keys');
+    if (k) k.innerHTML = keysHtml();
+  });
   $app.addEventListener('input', (e) => {
     const g = e.target;
-    if (!g.classList?.contains('gap')) return;
-    const ch = [...g.value.toLowerCase()].filter((c) => 'iíyý'.includes(c)).pop() || '';
-    g.value = ch; S.gaps[g.dataset.gap] = ch;
-    if (ch) focusNext(g);
+    if (!g.classList?.contains('gap') || g.dataset.gap === undefined) return;
+    const p = gapAt(+g.dataset.gap);
+    const raw = g.value.replace(/\s/g, '');
+    const low = raw.toLowerCase();
+    const opt = p.options.find((o) => low.endsWith(o) && o.length === 2) || p.options.find((o) => low.slice(-1) === o);
+    const val = opt ? capFor(opt, p.answer) : raw.slice(-2);
+    g.value = val; S.gaps[p.gap] = val;
+    updateFilled();
+    if (opt && (opt.length === 2 || !p.options.some((o) => o.length === 2 && o[0] === opt))) focusNext(g);
   });
+  function updateFilled() {
+    const el = document.getElementById('filled');
+    if (!el) return;
+    const total = S.plan.filter((p) => p.gap !== undefined).length;
+    const filled = S.plan.filter((p) => p.gap !== undefined && (S.gaps[p.gap] || '').trim()).length;
+    el.textContent = `${filled} z ${total}`;
+    if (filled === total && S.notice) { S.notice = ''; document.querySelector('.notice.bad-note')?.remove(); }
+  }
   function fillGap(c) {
-    const g = lastGap && document.body.contains(lastGap) && !lastGap.readOnly ? lastGap : document.querySelector('.gap:not([readonly])');
+    const g = document.getElementById(`g${S.focusGap}`) || document.querySelector('.gap[data-gap]');
     if (!g) return;
-    g.value = c; S.gaps[g.dataset.gap] = c; focusNext(g);
+    g.value = c; S.gaps[g.dataset.gap] = c; updateFilled(); focusNext(g);
   }
   function focusNext(g) {
-    const all = [...document.querySelectorAll('.gap:not([readonly])')];
-    const next = all[all.indexOf(g) + 1];
-    if (next) { next.focus({ preventScroll: false }); lastGap = next; }
+    const all = [...document.querySelectorAll('input.gap')];
+    const next = all.slice(all.indexOf(g) + 1).find((x) => !x.value) || all.slice(all.indexOf(g) + 1)[0];
+    if (next) next.focus({ preventScroll: false });
   }
 
   render();
