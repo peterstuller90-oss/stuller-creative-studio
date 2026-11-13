@@ -94,6 +94,7 @@ window.UCITEL_ENGINE = (() => {
         ? `Lebo ${quote(w)} je vybrané slovo po ${L.toUpperCase()}. Vo vybraných slovách píšeme vždy tvrdé y, preto ${ch}.`
         : `Lebo ${quote(w)} patrí do rodiny vybraného slova ${base} (po ${L.toUpperCase()}). Vybrané slová aj celá ich rodina sa píšu s tvrdým y, preto ${ch}.` };
     }
+    if (code.startsWith('txt:')) return { kind: 'mäkké i', text: code.slice(4) };
     if (code.startsWith('end:')) return { kind: 'koncovka', text: B.ENDINGS[code.slice(4)] || 'Lebo je to koncovka slova.' };
     if (code.startsWith('not')) {
       const hint = code.slice(4);
@@ -345,22 +346,151 @@ window.UCITEL_ENGINE = (() => {
     return { items, mistakes, iy, words: A.length, found };
   }
 
-  /** Miesta na doplnenie (i/í/y/ý po obojakých, tvrdých h, ch, k, g, po c a vo výnimkách). */
-  function gapPlan(text) {
-    const parts = []; let last = 0; let gid = 0;
-    for (const m of text.matchAll(WORD_RE)) {
-      const w = m[0]; const lw = w.toLowerCase();
-      const gaps = positions(lw).filter((p) => p.cat === 'obo' || ['h', 'ch', 'k', 'g', 'c'].includes(p.prev) || excApplies(lw, p));
-      if (!gaps.length) continue;
-      parts.push({ t: text.slice(last, m.index) });
-      let wl = 0;
-      for (const g of gaps) {
-        parts.push({ t: w.slice(wl, g.i) });
-        parts.push({ gap: gid++, answer: w[g.i], word: w, idx: g.i });
-        wl = g.i + 1;
+  // ---------------- ďalšie javy: dĺžne, mäkčene, ä, ô, dvojhlásky ----------------
+  const VOW_SHORT = 'aeou';
+  const LONG_OF = { a: 'á', e: 'é', o: 'ó', u: 'ú', i: 'í' };
+  const SHORT_OF = { á: 'a', é: 'e', ó: 'o', ú: 'u', í: 'i' };
+  const VOWELS = 'aáäeéiíoóôuúyý';
+  const SONOR = 'lľmnňrjv';
+  const HARD_OF = { ď: 'd', ť: 't', ň: 'n', ľ: 'l', č: 'c', š: 's', ž: 'z' };
+  const SOFT_OF = { d: 'ď', t: 'ť', n: 'ň', l: 'ľ', c: 'č', s: 'š', z: 'ž' };
+  // cudzie slová, v ktorých ia, ie, iu nie je dvojhláska (ba-té-ri-u, pa-ci-en-ta)
+  const NOT_DIPH = new Set(['batériu', 'batéria', 'batérie', 'pacienta', 'pacient', 'rádio', 'rádiu', 'mária', 'márie', 'akvárium', 'štúdium', 'gymnázium', 'piano', 'klavír']);
+
+  /** Vysvetlenie javu (vždy platné pravidlo, bez slova v texte, aby sa dalo nahrať dopredu). */
+  function featText(f) {
+    const a = f.answer.toLowerCase();
+    switch (f.sub) {
+      case 'long': return { tag: 'dĺžeň', head: 'Prečo dĺžeň?', say: 'Prečo dĺžeň?', text: `Lebo ${a} tu vyslovujeme dlho. Dlhá samohláska sa píše s dĺžňom.` };
+      case 'short': return { tag: 'dĺžeň', head: 'Prečo bez dĺžňa?', say: 'Prečo bez dĺžňa?', text: `Lebo ${a} tu vyslovujeme krátko, preto ho píšeme bez dĺžňa.` };
+      case 'soft': return { tag: 'mäkčeň', head: 'Prečo mäkčeň?', say: 'Prečo mäkčeň?', text: `Lebo ${a} tu vyslovujeme mäkko, a tak ho píšeme s mäkčeňom.` };
+      case 'csz': return { tag: 'mäkčeň', head: 'Prečo mäkčeň?', say: 'Prečo mäkčeň?', text: `Lebo tu počuješ ${a}, a to sa píše s mäkčeňom.` };
+      case 'hard': return { tag: 'mäkčeň', head: 'Prečo bez mäkčeňa?', say: 'Prečo bez mäkčeňa?', text: `Lebo ${a} tu vyslovujeme tvrdo, preto ho píšeme bez mäkčeňa.` };
+      case 'csz0': return { tag: 'mäkčeň', head: 'Prečo bez mäkčeňa?', say: 'Prečo bez mäkčeňa?', text: `Lebo tu počuješ ${a}, nie ${SOFT_OF[a]}, preto ho píšeme bez mäkčeňa.` };
+      case 'dei': return { tag: 'mäkčeň', head: 'Prečo bez mäkčeňa?', say: 'Prečo bez mäkčeňa?', text: 'Lebo pred e a pred i sa mäkčeň nad d, t, n, l nepíše.' };
+      case 'ae': return { tag: 'široké e', head: 'Prečo ä?', say: 'Prečo široké e?', text: 'Lebo v tomto slove sa píše ä, takzvané široké e. Ä sa píše len po b, m, p, v, napríklad mäso, päť, deväť.' };
+      case 'uo': return { tag: 'vokáň', head: 'Prečo ô?', say: 'Prečo o s vokáňom?', text: 'Lebo tu vyslovujeme uo, a to sa píše ako ô s vokáňom. Napríklad kôň, stôl, môj.' };
+      case 'diph': return { tag: 'dvojhláska', head: `Prečo ${a}?`, say: 'Prečo je tu dvojhláska?', text: `Lebo je to dvojhláska ${a}. Vyslovujeme ju podobne ako j${a[1]}, ale píšeme ${a}.` };
+      default: return { tag: '', head: '', say: '', text: '' };
+    }
+  }
+
+  const DIPH_OPTS = { ie: ['ie', 'é', 'je'], ia: ['ia', 'á', 'ja'], iu: ['iu', 'ú', 'ju'] };
+
+  /** Javy v slove okrem i/y: [{i, len, type, sub, answer, options}]. */
+  function otherFeatures(word) {
+    const w = word; const lw = word.toLowerCase(); const out = [];
+    const iyPos = new Set(positions(lw).map((p) => p.i));
+    const foreign = !!B.EXC[lw] || NOT_DIPH.has(lw);
+    for (let i = 0; i < lw.length; i++) {
+      const c = lw[i]; const nx = lw[i + 1] || ''; const pv = lw[i - 1] || '';
+      const add = (type, sub, len, options) => out.push({ i, len, type, sub, answer: w.slice(i, i + len), options });
+      if (c === 'i' && 'aeu'.includes(nx) && nx && i > 0 && !VOWELS.includes(pv)) {
+        if (!foreign) add('ine', 'diph', 2, DIPH_OPTS[c + nx]);
+        i++; continue;
       }
-      parts.push({ t: w.slice(wl) });
-      last = m.index + w.length;
+      if (c === 'ô') { add('ine', 'uo', 1, ['ô', 'o', 'uo']); continue; }
+      if (c === 'ä') { add('ine', 'ae', 1, ['ä', 'e', 'a']); continue; }
+      if (SHORT_OF[c] && !iyPos.has(i)) { add('dlzen', 'long', 1, [c, SHORT_OF[c]]); continue; }
+      if (c === 'i' && !iyPos.has(i)) continue;
+      if (c === 'i' && iyPos.has(i)) {
+        const p = positions(lw).find((x) => x.i === i);
+        if (lw.length > 1 && ['start', 'vowel', 'soft'].includes(p.cat)) add('dlzen', 'short', 1, ['i', 'í']);
+        continue;
+      }
+      if (c === 'í' && iyPos.has(i)) {
+        const p = positions(lw).find((x) => x.i === i);
+        if (['start', 'vowel', 'soft'].includes(p.cat)) add('dlzen', 'long', 1, ['í', 'i']);
+        continue;
+      }
+      if (VOW_SHORT.includes(c)) {
+        if (lw.length < 2) continue;
+        if (c === 'u' && pv === 'o') continue; // -ou
+        if (c === 'o' && nx === 'u') continue;
+        add('dlzen', 'short', 1, [c, LONG_OF[c]]);
+        continue;
+      }
+      if ('ňľ'.includes(c) || (c === 'ť' && (!nx || VOWELS.includes(nx) || SONOR.includes(nx))) || (c === 'ď' && nx && (VOWELS.includes(nx) || SONOR.includes(nx)))) {
+        add('makcen', 'soft', 1, [c, HARD_OF[c]]); continue;
+      }
+      if ('čšž'.includes(c) && VOWELS.includes(nx) && nx && !(c === 'ž' && pv === 'd')) { add('makcen', 'csz', 1, [c, HARD_OF[c]]); continue; }
+      if ('dtnl'.includes(c) && nx) {
+        if ('aáoóuúä'.includes(nx)) add('makcen', 'hard', 1, [c, SOFT_OF[c]]);
+        else if ('eéií'.includes(nx)) add('makcen', 'dei', 1, [c, SOFT_OF[c]]);
+        continue;
+      }
+      if ('csz'.includes(c) && nx && 'aáeéoóuúiíä'.includes(nx) && !(c === 'z' && pv === 'd') && !(c === 'c' && nx === 'h')) { add('makcen', 'csz0', 1, [c, SOFT_OF[c]]); continue; }
+    }
+    return out.map((f) => ({ ...f, ...featText(f) }));
+  }
+
+  /** i/y miesto ako jav (s nadpisom a vysvetlením). */
+  function iyFeature(word, p) {
+    const lw = word.toLowerCase();
+    const x = explain(lw, p.i);
+    const ch = word[p.i];
+    const y = isY(p.c);
+    const label = { 'vybrané': 'vybrané slovo', 'výnimka': 'výnimka', 'koncovka': 'koncovka', 'mäkká': 'mäkká spoluhláska', 'tvrdá': 'tvrdá spoluhláska' };
+    return {
+      i: p.i, len: 1, type: 'iy', sub: x.kind, answer: ch, options: ['i', 'í', 'y', 'ý'], kind: x.kind, letter: x.letter,
+      tag: label[x.kind] || x.kind, head: `Prečo ${y ? 'tvrdé' : 'mäkké'} ${ch.toLowerCase()}?`, say: `Prečo ${y ? 'tvrdé ypsilon' : 'mäkké i'}?`,
+      text: x.text.replace(`„${lw}“`, `„${word}“`),
+    };
+  }
+
+  // jednoduchý náhodný generátor so semienkom (rovnaký diktát = rovnaké okienka)
+  function rng(seedStr) {
+    let h = 2166136261;
+    for (const ch of String(seedStr)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+    return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 100000) / 100000; };
+  }
+
+  const GAP_TYPES = ['iy', 'dlzen', 'makcen', 'ine'];
+
+  /** Miesta na doplnenie. types = ktoré javy (iy, dlzen, makcen, ine); seed = id diktátu. */
+  function gapPlan(text, types = ['iy'], seed = text) {
+    const on = new Set(types.length ? types : ['iy']);
+    const rand = rng(seed);
+    const nS = Math.max(1, (text.match(/[.!?]/g) || []).length);
+    const words = [...text.matchAll(WORD_RE)].map((m) => ({ w: m[0], at: m.index, gaps: [] }));
+    const taken = (wd, i, len) => wd.gaps.some((g) => i < g.i + g.len + 1 && g.i < i + len + 1);
+    if (on.has('iy')) {
+      for (const wd of words) {
+        const lw = wd.w.toLowerCase();
+        for (const p of positions(lw)) {
+          if (p.cat === 'obo' || ['h', 'ch', 'k', 'g', 'c'].includes(p.prev) || excApplies(lw, p)) wd.gaps.push(iyFeature(wd.w, p));
+        }
+      }
+    }
+    const cands = [];
+    for (const wd of words) for (const f of otherFeatures(wd.w)) if (on.has(f.type)) cands.push({ wd, f, r: rand() });
+    cands.sort((a, b) => a.r - b.r);
+    const quota = { dlzen: Math.ceil(nS * 1.6), makcen: Math.ceil(nS * 1.3), ine: Math.ceil(nS * 0.9) };
+    // pomer: dlhé/krátke a s mäkčeňom/bez neho, nech odpoveď nie je vždy rovnaká
+    const want = { long: Math.ceil(quota.dlzen * 0.6), short: Math.floor(quota.dlzen * 0.4), soft: Math.ceil(quota.makcen * 0.6), plain: Math.floor(quota.makcen * 0.4), ine: quota.ine };
+    const bucket = (f) => (f.type === 'dlzen' ? f.sub : f.type === 'makcen' ? (['soft', 'csz'].includes(f.sub) ? 'soft' : 'plain') : 'ine');
+    for (const { wd, f } of cands) {
+      const b = bucket(f);
+      if (want[b] <= 0 || taken(wd, f.i, f.len)) continue;
+      if (wd.gaps.filter((g) => g.type !== 'iy').length >= 1 && wd.w.length < 7) continue;
+      const options = f.type === 'ine'
+        ? f.options.map((o) => [rand(), o]).sort((x, y) => x[0] - y[0]).map((x) => x[1])
+        : f.options.slice().sort((x, y) => x.normalize('NFD').length - y.normalize('NFD').length);
+      wd.gaps.push({ ...f, options }); want[b]--;
+    }
+    const parts = []; let last = 0; let gid = 0;
+    for (const wd of words) {
+      if (!wd.gaps.length) continue;
+      wd.gaps.sort((a, b) => a.i - b.i);
+      parts.push({ t: text.slice(last, wd.at) });
+      let wl = 0;
+      for (const g of wd.gaps) {
+        parts.push({ t: wd.w.slice(wl, g.i) });
+        parts.push({ ...g, gap: gid++, word: wd.w, idx: g.i });
+        wl = g.i + g.len;
+      }
+      parts.push({ t: wd.w.slice(wl) });
+      last = wd.at + wd.w.length;
     }
     parts.push({ t: text.slice(last) });
     return parts.filter((p) => p.gap !== undefined || p.t);
@@ -370,28 +500,29 @@ window.UCITEL_ENGINE = (() => {
     const items = []; let mistakes = 0; let iy = 0;
     for (const p of plan) {
       if (p.gap === undefined) continue;
-      const got = (answers[p.gap] || '').trim().toLowerCase().slice(0, 1);
+      const got = (answers[p.gap] || '').trim().toLowerCase();
       const ok = got === p.answer.toLowerCase();
-      let tip = '';
-      let kind = '';
-      if (!ok) {
-        mistakes++;
-        if (got && IY.includes(got) && isY(got) === isY(p.answer.toLowerCase())) { kind = 'dĺžeň'; tip = long(p.answer) ? `Tu je dlhé ${p.answer}.` : `Tu je krátke ${p.answer}, bez dĺžňa.`; }
-        else { const e = explain(p.word, p.idx); kind = e.kind === 'pravidlo' ? 'i/y' : e.kind; iy++; tip = e.text; }
-      }
-      items.push({ ...p, got, ok, kind, tip });
+      if (!ok) { mistakes++; if (p.type === 'iy') iy++; }
+      items.push({ ...p, got, ok, kind: ok ? '' : p.tag, tip: ok ? '' : p.text });
     }
     return { items, mistakes, iy, words: items.length, found: items.filter((x) => x.got).length };
   }
 
-  /** Všetky miesta i/y v slove s vysvetlením (na klikanie v správnom texte). */
+  /** Všetko, čo sa dá v slove vysvetliť (na klikanie v správnom texte). */
   function wordInfo(word) {
     const lw = word.toLowerCase();
-    const list = positions(lw).map((p) => { const x = explain(lw, p.i); return { ...p, ch: word[p.i], ...x, text: x.text.replace(`„${lw}“`, `„${word}“`) }; });
+    const iy = positions(lw).map((p) => iyFeature(word, p));
+    const other = otherFeatures(word).filter((f) => ['long', 'soft', 'csz', 'ae', 'uo', 'diph'].includes(f.sub) && !iy.some((x) => x.i === f.i));
+    let list = [...iy, ...other].sort((a, b) => a.i - b.i);
     const rank = { 'vybrané': 3, 'výnimka': 2 };
-    const top = list.reduce((a, x) => Math.max(a, rank[x.kind] || 1), 0);
-    return { list, cls: top === 3 ? 'vs' : top === 2 ? 'exc' : list.length ? 'iy' : '' };
+    const top = iy.reduce((a, x) => Math.max(a, rank[x.kind] || 1), 0);
+    const cls = top === 3 ? 'vs' : top === 2 ? 'exc' : iy.length ? 'iy' : other.length ? 'ot' : 'pl';
+    if (!list.length) list = [spellItem(word)];
+    return { list, cls };
+  }
+  function spellItem(word) {
+    return { i: -1, len: 0, type: 'spell', tag: 'pravopis', head: 'Ako sa píše?', say: '', text: `Toto slovo píšeme presne takto: ${[...word.toLowerCase()].join(', ')}.` };
   }
 
-  return { wordInfo, LETTERS, LENGTHS, TAGGED, positions, explain, tagSentence, generate, chunks, grade, gapPlan, gradeGaps, tokenize, WORD_RE };
+  return { GAP_TYPES, otherFeatures, wordInfo, LETTERS, LENGTHS, TAGGED, positions, explain, tagSentence, generate, chunks, grade, gapPlan, gradeGaps, tokenize, WORD_RE };
 })();
