@@ -5,9 +5,9 @@ const dir = new URL('../public/apps/ucitel/', import.meta.url)
 const read = (f) => fs.readFileSync(new URL(f, dir), 'utf8')
 const mascot = 'data:image/png;base64,' + fs.readFileSync(new URL('mascot.png', dir)).toString('base64')
 const app = read('app.js').replace("const MASCOT = 'mascot.png';", `const MASCOT = '${mascot}';`)
-const html = `<title>Učiteľ 2.0</title>
+const html = `<title>Slovina</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Nunito:wght@700;900&display=swap">
 <style>
 ${read('style.css')}
 </style>
