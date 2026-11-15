@@ -606,6 +606,7 @@
 
   // ---------------- oslava ----------------
   function fireworks() {
+    window.Panacik?.cheer();
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const c = document.createElement('canvas'); c.className = 'fx'; document.body.appendChild(c);
     const dpr = Math.min(2, devicePixelRatio || 1);
@@ -730,12 +731,16 @@
           S.sel = j;
         } else if (k === ',') { const cur = String(S.answers[S.sel] || ''); if (cur && !cur.includes(',')) S.answers[S.sel] = cur + ','; }
         else if (String(S.answers[S.sel] || '').length < 7) S.answers[S.sel] = String(S.answers[S.sel] || '') + k;
+        // panáčik donesie číslicu do vybraného príkladu
+        if (/^[0-9,]$/.test(k)) { const at = S.sel; window.Panacik?.carry(k, b, () => document.querySelector(`[data-act="sel"][data-i="${at}"] .slot`)); }
         render(); if (k === 'next') scrollSel();
         break;
       }
       case 'tabletCheck': {
         if (S.answers.some((x) => x === '')) break;
+        window.Panacik?.flush();
         const wrong = S.items.map((it, i) => (E.check(it, S.answers[i]) ? -1 : i)).filter((i) => i >= 0);
+        if (wrong.length) window.Panacik?.sad();
         saveDone('tablet', wrong, S.answers.slice());
         S.view = 'result'; render(); window.scrollTo(0, 0);
         if (!wrong.length) fireworks();
