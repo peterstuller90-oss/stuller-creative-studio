@@ -379,3 +379,13 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
 
 .tabs .ic { display: grid; place-items: center; height: 26px; }
 .tabs .ic svg { width: 24px; height: 24px; fill: currentColor; stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; }
+
+/* Výber: nevybrané stlmené, vybrané výrazné (Peter 2026-11-15) */
+.choice[aria-pressed="false"], .letter[aria-pressed="false"] { opacity: .5; filter: saturate(.3); box-shadow: 0 2px 0 var(--ink); transform: none; }
+.choice[aria-pressed="false"] b, .letter[aria-pressed="false"] { color: var(--muted); }
+.choice[aria-pressed="true"], .letter[aria-pressed="true"] { position: relative; outline: 4px solid #FFF3A6; outline-offset: 2px; transform: translateY(-3px) scale(1.03); box-shadow: 0 7px 0 var(--ink), 0 0 22px rgba(255, 214, 0, .7); z-index: 1; }
+.choice[aria-pressed="true"]::after { content: '✓'; position: absolute; top: -10px; right: -10px; width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: #fff; border: 3px solid var(--ink); display: grid; place-items: center; font: 900 16px/1 Nunito, sans-serif; text-shadow: none; }
+.letter[aria-pressed="true"] { transform: translateY(-3px); outline-width: 3px; box-shadow: 0 7px 0 var(--ink), 0 0 12px rgba(255, 214, 0, .6); }
+.seg button[aria-pressed="false"] { opacity: .45; }
+.seg button[aria-pressed="true"] { opacity: 1; box-shadow: inset 0 -4px 0 rgba(13, 22, 64, .35); }
+.seg button[aria-pressed="true"]::before { content: '✓ '; }
