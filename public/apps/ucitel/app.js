@@ -191,19 +191,19 @@
     const sentences = S.dict.sentences;
     let chunkNo = 0;
     for (const t of [pick(S.dict.hard ? LINES.helloHard : LINES.hello), pick(LINES.paper), pick(LINES.listenFirst)]) steps.push({ kind: 'intro', say: t, rate: TALK, talk: true, pause: 250 });
-    sentences.forEach((s) => steps.push({ kind: 'listen', say: s, rate: sp.rate, pause: 600 }));
+    sentences.forEach((s) => steps.push({ kind: 'listen', say: E.speakForm(s), rate: sp.rate, pause: 600 }));
     steps.push({ kind: 'intro2', say: pick(LINES.nowWrite), rate: TALK, talk: true, pause: 800 });
     sentences.forEach((s, si) => {
       if (si > 0) steps.push({ kind: 'cheer', say: si === sentences.length - 1 && sentences.length > 2 ? pick(LINES.last) : pick(LINES.between), rate: TALK, talk: true, pause: 400, si });
-      steps.push({ kind: 'sentence', say: s, rate: sp.rate, pause: 900, si });
+      steps.push({ kind: 'sentence', say: E.speakForm(s), rate: sp.rate, pause: 900, si });
       for (const c of E.chunks(s)) {
         const last = c.slice(-1);
-        const text = S.sayPunct && PUNCT_WORDS[last] ? `${c.replace(/[.,?!]$/, '')}, ${PUNCT_WORDS[last]}` : c;
+        const text = E.speakForm(S.sayPunct && PUNCT_WORDS[last] ? `${c.replace(/[.,?!]$/, '')}, ${PUNCT_WORDS[last]}` : c);
         steps.push({ kind: 'chunk', say: text, rate: sp.rate * 0.95, pause: 1000 + c.length * sp.perChar, chunk: chunkNo++, si });
       }
     });
     steps.push({ kind: 'check', say: pick(LINES.recheck), rate: TALK, talk: true, pause: 500 });
-    sentences.forEach((s) => steps.push({ kind: 'recheck', say: s, rate: sp.rate, pause: 2600 }));
+    sentences.forEach((s) => steps.push({ kind: 'recheck', say: E.speakForm(s), rate: sp.rate, pause: 2600 }));
     steps.push({ kind: 'end', say: pick(LINES.endPaper), rate: TALK, talk: true, pause: 0 });
     return { steps, chunks: chunkNo };
   }
@@ -770,7 +770,7 @@
     const showHeard = () => { if (heardKey && isHeard() && (!markable || marked())) { status.hidden = false; status.textContent = 'Vypočuté ✓'; } else status.hidden = true; };
     const speak = () => {
       Voice.stop();
-      Voice.seq([word, ...list.flatMap((x) => [x.say, x.text])].filter(Boolean)).then((ok) => {
+      Voice.seq([E.speakForm(word), ...list.flatMap((x) => [x.say, x.text])].filter(Boolean)).then((ok) => {
         if (!ok || !heardKey) return;
         if (opts.onHeard) opts.onHeard(); else S.heard.add(heardKey);
         showHeard();
@@ -980,7 +980,7 @@
       case 'gapType': S.gapTypes.has(v) ? S.gapTypes.delete(v) : S.gapTypes.add(v); savePrefs(); render(); break;
       case 'mode': S.mode = v; savePrefs(); render(); break;
       case 'speed': S.speed = v; savePrefs(); render(); break;
-      case 'sample': Voice.stop(); Voice.say(LINES.sample[0], TALK, true).then(() => Voice.say(LINES.sampleSentence[0], SPEEDS[S.speed].rate, false)); break;
+      case 'sample': Voice.stop(); Voice.say(LINES.sample[0], TALK, true).then(() => Voice.say(E.speakForm(LINES.sampleSentence[0]), SPEEDS[S.speed].rate, false)); break;
       case 'generate': case 'regen': generate(); break;
       case 'start': startDictation(); break;
       case 'play': if (P.playing) pausePlayer(); else { if (P.finished) { P.i = 0; P.finished = false; } runPlayer(); } break;
