@@ -260,7 +260,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--yellow); ou
 .cal-head h2 { flex: 1; text-align: center; }
 .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .cal .dn { text-align: center; font-family: var(--head); font-weight: 800; font-size: 15px; color: var(--soft); text-transform: uppercase; }
-.day { aspect-ratio: 1 / 1; border: 2px solid var(--ink); border-radius: 12px; background: var(--panel-3); padding: 4px 5px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+.day { min-height: 96px; border: 2px solid var(--ink); border-radius: 12px; background: var(--panel-3); color: var(--ink); padding: 4px 5px; display: flex; flex-direction: column; justify-content: space-between; gap: 3px; min-width: 0; text-align: left; font: inherit; }
+.day.sel { background: #FFF4CC; box-shadow: 0 0 0 3px var(--cyan-d); }
+.day .times { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.day .times i { font-style: normal; font-family: var(--text); font-weight: 900; font-size: 12.5px; line-height: 1.15; padding: 0 4px; border-radius: 5px; font-variant-numeric: tabular-nums; }
+.day .times i.r { color: var(--red-d); background: #FFE0E3; }
+.day .times i.g { color: var(--green-d); background: #DBF8E4; }
+.day .times i.more { color: var(--muted); }
+.item .time { display: inline-block; font-variant-numeric: tabular-nums; background: var(--ink); color: #fff; border-radius: 8px; padding: 0 7px; margin-right: 4px; font-size: .9em; }
 .day.out { opacity: .3; }
 .day.today { box-shadow: 0 0 0 3px var(--yellow); }
 .day .d { font-family: var(--head); font-weight: 800; font-size: 17px; line-height: 1; }
@@ -354,7 +361,8 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
   .key.wide { font-size: 18px; }
   .wrap.focus.with-keys { padding-bottom: calc(230px + env(safe-area-inset-bottom, 0px)); }
   .choose { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .day { padding: 3px; border-radius: 9px; }
+  .day { padding: 3px; border-radius: 9px; min-height: 58px; }
+  .day .times { display: none; }
   .day .d { font-size: 14px; }
   .day .cnt i { font-size: 12px; min-width: 16px; height: 17px; border-radius: 5px; }
   .sheet-head { font-size: 30px; }
