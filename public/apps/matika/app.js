@@ -39,6 +39,8 @@
   const MONTHS = ['január', 'február', 'marec', 'apríl', 'máj', 'jún', 'júl', 'august', 'september', 'október', 'november', 'december'];
   const fmtDate = (iso) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
   const fmtShort = (d) => `${d.getDate()}. ${d.getMonth() + 1}.`;
+  const fmtTime = (iso) => { const d = new Date(iso); return `${d.getHours()}:${pad(d.getMinutes())}`; };
+  const DAYS = ['nedeľa', 'pondelok', 'utorok', 'streda', 'štvrtok', 'piatok', 'sobota'];
 
   // ---------------- ikony ----------------
   const I = {
@@ -199,7 +201,7 @@
     view: 'home', // home | paper | check | tablet | result | detail
     op: prefs.op || 'krat', level: prefs.level || 'stredne', count: prefs.count || 'kratke', mode: prefs.mode || 'tablet',
     items: [], answers: [], sel: 0, marks: new Set(), exId: null, startedAt: null,
-    gateMsg: '', filter: 'all', month: null, detailId: null,
+    gateMsg: '', filter: 'all', month: null, calDay: null, detailId: null,
     wishWho: null, wishWhat: null, wishText: '', wishMsg: '',
     prevLevel: null,
   };
@@ -362,19 +364,33 @@
     const first = new Date(m.y, m.m, 1);
     const start = weekStart(first);
     const per = {};
-    for (const e of M.list) {
+    for (const e of [...M.list].reverse()) {
       const k = dayKey(new Date(e.created_at));
-      per[k] = per[k] || { r: 0, g: 0 };
+      per[k] = per[k] || { r: 0, g: 0, list: [] };
       if (e.mode === 'papier') per[k].r++; else per[k].g++;
+      per[k].list.push(e);
     }
+    const sel = S.calDay || dayKey(now);
     const cells = [];
     const d = new Date(start);
     for (let i = 0; i < 42; i++) {
       const k = dayKey(d); const c = per[k];
-      cells.push(`<div class="day ${d.getMonth() !== m.m ? 'out' : ''} ${k === dayKey(now) ? 'today' : ''}" aria-label="${d.getDate()}. ${MONTHS[d.getMonth()]}${c ? `: na papier ${c.r}, na tablete ${c.g}` : ''}"><span class="d">${d.getDate()}</span><span class="cnt">${c && c.r ? `<i class="r">${c.r}</i>` : ''}${c && c.g ? `<i class="g">${c.g}</i>` : ''}</span></div>`);
+      const times = c ? c.list.slice(0, 3).map((e) => `<i class="${e.mode === 'papier' ? 'r' : 'g'}">${fmtTime(e.created_at)}</i>`).join('') + (c.list.length > 3 ? `<i class="more">+${c.list.length - 3}</i>` : '') : '';
+      const label = `${d.getDate()}. ${MONTHS[d.getMonth()]}${c ? `: ${c.list.map((e) => `${fmtTime(e.created_at)} ${e.mode === 'papier' ? 'na papier' : 'na tablete'}`).join(', ')}` : ''}`;
+      cells.push(`<button class="day ${d.getMonth() !== m.m ? 'out' : ''} ${k === dayKey(now) ? 'today' : ''} ${k === sel ? 'sel' : ''}" data-act="calDay" data-k="${k}" aria-label="${label}" aria-pressed="${k === sel}"><span class="d">${d.getDate()}</span><span class="times">${times}</span><span class="cnt">${c && c.r ? `<i class="r">${c.r}</i>` : ''}${c && c.g ? `<i class="g">${c.g}</i>` : ''}</span></button>`);
       d.setDate(d.getDate() + 1);
       if (i >= 34 && d.getMonth() !== m.m) break;
     }
+    const [sy, sm, sd] = sel.split('-').map(Number);
+    const sDate = new Date(sy, sm - 1, sd);
+    const sList = per[sel] ? per[sel].list : [];
+    const dayPanel = `<section class="panel">
+      <h3>${DAYS[sDate.getDay()]} ${fmtShort(sDate)}</h3>
+      ${sList.length ? `<div class="list">${sList.map((e) => {
+        const [t, c] = STATUS[statusOf(e)];
+        return `<button class="item ${e.mode === 'papier' ? 'paper' : ''}" data-act="detail" data-ex="${e.id}"><span class="stripe"></span><span class="t"><b><span class="time">${fmtTime(e.created_at)}</span> ${exTitle(e)}</b><small>${e.mode === 'papier' ? 'Na papier' : 'Na tablete'} · ${e.items.length - e.wrong.length}/${e.items.length} správne</small></span><span class="st"><span class="tag ${c}">${t}</span></span></button>`;
+      }).join('')}</div>` : '<p class="hint">V tento deň žiadne cvičenie.</p>'}
+    </section>`;
     // posledné 4 týždne – výzva
     const weeks = [];
     for (let w = 0; w < 4; w++) {
@@ -388,8 +404,9 @@
     <section class="panel">
       <div class="cal-head"><button class="btn small dark" data-act="month" data-d="-1" aria-label="Predchádzajúci mesiac">‹</button><h2 class="out">${MONTHS[m.m]} ${m.y}</h2><button class="btn small dark" data-act="month" data-d="1" aria-label="Ďalší mesiac">›</button></div>
       <div class="cal">${['po', 'ut', 'st', 'št', 'pi', 'so', 'ne'].map((x) => `<span class="dn">${x}</span>`).join('')}${cells.join('')}</div>
-      <div class="legend"><span><i class="r"></i>Na papier</span><span><i class="g"></i>Na tablete</span><span>Číslo = koľko cvičení v ten deň</span></div>
+      <div class="legend"><span><i class="r"></i>Na papier</span><span><i class="g"></i>Na tablete</span><span>Čas = kedy cvičenie urobil · číslo = koľko ich bolo</span></div>
     </section>
+    ${dayPanel}
     <section class="panel">
       <h3>Tento týždeň</h3>
       <p>Na papier: <b>${weekCount.filter((e) => e.mode === 'papier').length}</b> · Na tablete: <b>${weekCount.filter((e) => e.mode === 'tablet').length}</b></p>
@@ -642,7 +659,7 @@
         if (S.view === 'check' && !(await ask('Naozaj skončiť? Cvičenie sa neuloží.', 'Skončiť'))) break;
         S.view = 'home'; render(); window.scrollTo(0, 0); break;
       case 'home': S.view = 'home'; S.tab = 'play'; render(); window.scrollTo(0, 0); break;
-      case 'back': S.view = 'home'; S.tab = 'saved'; render(); break;
+      case 'back': S.view = 'home'; S.tab = S.detailFrom || 'saved'; render(); break;
       case 'print': window.print(); break;
       case 'paperDone': S.view = 'check'; render(); window.scrollTo(0, 0); break;
       case 'toggleMark': { const i = +b.dataset.i; if (S.marks.has(i)) S.marks.delete(i); else S.marks.add(i); render(); break; }
@@ -686,8 +703,9 @@
         } else { S.gateMsg = 'Kód nesedí. Skús znova.'; render(); }
         break;
       }
-      case 'detail': S.detailId = b.dataset.ex; S.view = 'detail'; S.gateMsg = ''; render(); window.scrollTo(0, 0); break;
+      case 'detail': S.detailFrom = S.tab; S.detailId = b.dataset.ex; S.view = 'detail'; S.gateMsg = ''; render(); window.scrollTo(0, 0); break;
       case 'filter': S.filter = b.dataset.v; render(); break;
+      case 'calDay': S.calDay = b.dataset.k; render(); document.querySelector('.cal')?.closest('.panel')?.nextElementSibling?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); break;
       case 'month': {
         const now = new Date(); const m = S.month || { y: now.getFullYear(), m: now.getMonth() };
         const d = new Date(m.y, m.m + Number(b.dataset.d), 1); S.month = { y: d.getFullYear(), m: d.getMonth() }; render(); break;
