@@ -12,6 +12,7 @@ Jedna appka pre všetky Štullers appky: jedno prihlásenie, jeden dizajn (font 
 | Stullers Social | v hube ako pôvodná appka (`public/apps/social/`) |
 | Hudy Packaging | v hube (`public/apps/hudy/`), CMYK šablóna .ai sa nahrá raz tlačidlom Šablóna (nie je v repozitári) |
 | Učiteľ 2.0 (diktáty z vybraných slov) | v hube (`public/apps/ucitel/`), otvorí sa aj bez prihlásenia (`#/ucitel`), dáta v `diktat_results` a `diktat_payouts` (`supabase/ucitel/diktaty.sql`). Banku viet kontroluje `node tools/check-ucitel-bank.mjs` |
+| Anglina (anglické slovíčka pre Ota) | v hube (`public/apps/anglina/`), bez prihlásenia (`#/anglina`), dáta v `anglina_events` (`supabase/anglina/anglina.sql`). Slovíčka kontroluje `node tools/check-anglina.mjs` |
 
 ## Ako to funguje
 - `src/App.tsx` – prihlásenie (rodinné profily s PIN, alebo e-mail), úvodná obrazovka s dlaždicami, otváranie modulov na `#/<id>`.
