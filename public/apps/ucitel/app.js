@@ -804,9 +804,20 @@
 
   // ---------------- akcie ----------------
   function generate() {
-    const recent = lsGet('ucitel2-recent', []);
-    S.dict = { ...E.generate(S.length, [...S.letters], recent, S.hard), id: uid() };
-    lsSet('ucitel2-recent', [...S.dict.ids, ...recent].slice(0, 45));
+    // čo už Oto robil: z tohto zariadenia aj z uložených cvičení (aj z iného zariadenia)
+    const local = lsGet('ucitel2-recent', []).filter((x) => typeof x === 'string');
+    const fromRows = mine().filter((r) => r.details?.kind === 'done' && r.text)
+      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+      .flatMap((r) => E.TAGGED.filter((t) => r.text.includes(t.text)).map((t) => t.id));
+    const recent = [...new Set([...local, ...fromRows])];
+    const last = S.dict?.ids || [];
+    let d = null;
+    for (let k = 0; k < 6; k++) { // istota: nové zadanie nesmie byť rovnaké ako to predchádzajúce
+      d = E.generate(S.length, [...S.letters], recent, S.hard);
+      if (!last.length || d.ids.some((id) => !last.includes(id))) break;
+    }
+    S.dict = { ...d, id: uid() };
+    lsSet('ucitel2-recent', [...S.dict.ids, ...local.filter((id) => !S.dict.ids.includes(id))].slice(0, 400));
     S.rewarded = false;
     S.view = 'ready'; render();
   }
