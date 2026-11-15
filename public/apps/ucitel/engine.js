@@ -119,8 +119,8 @@ window.UCITEL_ENGINE = (() => {
   }
 
   const TAGGED = [
-    ...B.SENTENCES.map((text, id) => ({ id, text, hard: false, ...tagSentence(text) })),
-    ...B.HARD.map((text, k) => ({ id: 1000 + k, text, hard: true, ...tagSentence(text) })),
+    ...B.SENTENCES.map((text) => ({ id: text, text, hard: false, ...tagSentence(text) })),
+    ...B.HARD.map((text) => ({ id: text, text, hard: true, ...tagSentence(text) })),
   ];
 
   function shuffle(a) {
@@ -134,8 +134,15 @@ window.UCITEL_ENGINE = (() => {
     const cfg = LENGTHS[lengthKey];
     const POOL = TAGGED.filter((t) => !t.hard);
     const sel = new Set(letters.length ? letters : LETTERS);
-    const rec = new Set(recent);
-    const order = (arr) => { const s = shuffle(arr); return [...s.filter((x) => !rec.has(x.id)), ...s.filter((x) => rec.has(x.id))]; };
+    // recent = id viet od najnovšej po najstaršiu. Nepoužité vety idú prvé (náhodne),
+    // potom tie, čo boli dávno, a úplne nakoniec tie z posledných cvičení.
+    const age = new Map(); recent.forEach((id, i) => { if (!age.has(id)) age.set(id, i); });
+    const order = (arr) => {
+      const s = shuffle(arr);
+      const fresh = s.filter((x) => !age.has(x.id));
+      const used = s.filter((x) => age.has(x.id)).sort((a, b) => age.get(b.id) - age.get(a.id));
+      return [...fresh, ...used];
+    };
     const subset = (t) => t.letters.every((l) => sel.has(l));
     const used = new Set();
     const pick = (cands) => { const t = cands.find((x) => !used.has(x.id)); if (t) used.add(t.id); return t; };
