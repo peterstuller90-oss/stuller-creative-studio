@@ -161,7 +161,7 @@
     explained: ['Vysvetlené', 'green'],
     unexplained: ['Nevysvetlené', 'red'],
   };
-  const countsForGoal = (e) => e.mode === 'papier' && e.level === 'tazke' && e.confirmed && e.wrong.length === 0;
+  const countsForGoal = (e) => e.mode === 'papier' && (e.level === 'tazke' || e.level === 'desatinne') && e.confirmed && e.wrong.length === 0;
   const weekGoal = (M, wk = weekKey(new Date())) => M.list.filter((e) => countsForGoal(e) && weekKey(new Date(e.created_at)) === wk).length;
 
   // ---------------- hlas (vysvetlenia) ----------------
@@ -238,7 +238,7 @@
 
   // ---------------- HRAŤ ----------------
   function viewHome(M) {
-    const ops = [['plus', '+', 'Sčítanie', 'var(--cyan)'], ['minus', '−', 'Odčítanie', 'var(--pink)'], ['krat', '·', 'Násobilka', 'var(--yellow)'], ['deleno', ':', 'Delenie', 'var(--green)'], ['mix', '?', 'Mix', 'var(--orange)']];
+    const ops = [['plus', '+', 'Sčítanie', 'var(--cyan)'], ['minus', '−', 'Odčítanie', 'var(--pink)'], ['krat', '·', 'Násobilka', 'var(--yellow)'], ['deleno', ':', 'Delenie', 'var(--green)'], ['jednotky', 'mm', 'Jednotky', '#C4B5FD'], ['mix', '?', 'Mix', 'var(--orange)']];
     const info = E.LEVEL_INFO[S.op];
     const wk = weekGoal(M);
     return `${hud(M)}
@@ -248,7 +248,7 @@
     </section>
     <section class="panel">
       <span class="label">2 · Úroveň</span>
-      <div class="levels">${Object.entries(E.LEVELS).map(([id, l]) => `<button class="level" data-act="level" data-v="${id}" aria-pressed="${S.level === id}"><b>${l.name}<span class="pips">${[1, 2, 3].map((i) => `<i class="${i <= l.n ? 'on' : ''}"></i>`).join('')}</span></b><small>${esc(info[id])}</small></button>`).join('')}</div>
+      <div class="levels ${S.op === 'jednotky' ? 'four' : ''}">${Object.entries(E.LEVELS).filter(([, l]) => !l.only || l.only === S.op).map(([id, l]) => `<button class="level" data-act="level" data-v="${id}" aria-pressed="${S.level === id}"><b>${l.name}<span class="pips">${[1, 2, 3].map((i) => `<i class="${i <= l.n ? 'on' : ''}"></i>`).join('')}</span></b>${l.only ? '' : ''}<small>${esc(info[id])}</small></button>`).join('')}</div>
       <span class="label">3 · Koľko príkladov</span>
       <div class="seg">${Object.entries(E.COUNTS).map(([id, c]) => `<button data-act="count" data-v="${id}" aria-pressed="${S.count === id}">${c.name}<small>${prikladov(c.n)}</small></button>`).join('')}</div>
     </section>
@@ -272,10 +272,10 @@
   function viewPaper() {
     const ex = { op: S.op, level: S.level };
     return `<div class="bar noprint"><button class="x" data-act="quit" aria-label="Zrušiť">×</button><h2 class="out">${exTitle(ex)}</h2><span class="tag red">Na papier</span></div>
-    <section class="panel noprint"><p>Odpíš si príklady do zošita a vypočítaj ich. ${S.level === 'tazke' && ['plus', 'minus'].includes(S.op) ? 'Sčítanie a odčítanie počítaj <b>pod seba</b>. ' : ''}Keď máš všetko, ťukni na <b>Mám vypočítané</b>.</p></section>
+    <section class="panel noprint"><p>Odpíš si príklady do zošita a vypočítaj ich. ${S.level === 'tazke' && ['plus', 'minus'].includes(S.op) ? 'Sčítanie a odčítanie počítaj <b>pod seba</b>. ' : ''}${S.op === 'jednotky' ? 'Výsledok napíš v jednotke, ktorá je za čiarou. ' : ''}Keď máš všetko, ťukni na <b>Mám vypočítané</b>.</p></section>
     <section class="sheet-paper">
       <h3>${esc(exTitle(ex))} – ${prikladov(S.items.length)}</h3>
-      <div class="tasks">${S.items.map((it, i) => `<div class="task"><span class="n">${i + 1}.</span><span class="q">${E.text(it)} =</span><span class="line"></span></div>`).join('')}</div>
+      <div class="tasks">${S.items.map((it, i) => `<div class="task"><span class="n">${i + 1}.</span><span class="q">${E.text(it)} =</span><span class="line"></span>${E.unitOf(it) ? `<span class="u">${E.unitOf(it)}</span>` : ''}</div>`).join('')}</div>
     </section>
     <div class="row noprint">
       <button class="btn dark" data-act="print">${I.print.replace('<svg', '<svg class="ico"')} Vytlačiť</button>
@@ -287,7 +287,7 @@
     const n = S.marks.size;
     return `<div class="bar"><button class="x" data-act="quit" aria-label="Zrušiť">×</button><h2 class="out">Porovnaj so zošitom</h2><span class="tag red">Na papier</span></div>
     <section class="panel"><p>Tu sú správne výsledky. <b>Ťukni na každý príklad, ktorý máš v zošite inak.</b> Buď poctivý – ocko to skontroluje. Kontrola je len raz.</p></section>
-    <div class="check-list">${S.items.map((it, i) => `<button class="mark" data-act="toggleMark" data-i="${i}" aria-pressed="${S.marks.has(i)}"><span class="n">${i + 1}.</span><span class="q">${E.text(it)} = <b>${E.fmt(it.ans)}</b></span><span class="state">${S.marks.has(i) ? 'Mám zle' : 'Mám dobre'}</span></button>`).join('')}</div>
+    <div class="check-list">${S.items.map((it, i) => `<button class="mark" data-act="toggleMark" data-i="${i}" aria-pressed="${S.marks.has(i)}"><span class="n">${i + 1}.</span><span class="q">${E.text(it)} = <b>${E.ansText(it)}</b></span><span class="state">${S.marks.has(i) ? 'Mám zle' : 'Mám dobre'}</span></button>`).join('')}</div>
     <button class="btn red big" data-act="paperSave">Uložiť – ${n ? chyb(n) : 'bez chyby'}</button>`;
   }
 
@@ -300,11 +300,11 @@
     const all = filled === S.items.length;
     return `<div class="bar"><button class="x" data-act="quit" aria-label="Zrušiť">×</button><h2 class="out">${exTitle({ op: S.op, level: S.level })}</h2><span class="tag green">${filled}/${S.items.length}</span></div>
     <div class="progress" aria-hidden="true"><i style="width:${(filled / S.items.length) * 100}%"></i></div>
-    <div class="grid">${S.items.map((it, i) => `<button class="card ${S.sel === i ? 'sel' : ''}" data-act="sel" data-i="${i}"><span class="n">${i + 1}</span><span class="q">${E.text(it)} =</span>${slotHtml(i)}</button>`).join('')}</div>
+    <div class="grid">${S.items.map((it, i) => `<button class="card ${S.sel === i ? 'sel' : ''}" data-act="sel" data-i="${i}"><span class="n">${i + 1}</span><span class="q">${E.text(it)} =</span>${slotHtml(i)}${E.unitOf(it) ? `<span class="u">${E.unitOf(it)}</span>` : ''}</button>`).join('')}</div>
     <button class="btn green big" data-act="tabletCheck" ${all ? '' : 'disabled'}>Skontrolovať${all ? '' : ` (${S.items.length - filled} chýba)`}</button>
     <div class="keys"><div class="keys-in">
       ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((d) => `<button class="key" data-act="key" data-k="${d}">${d}</button>`).join('')}
-      <button class="key del wide" data-act="key" data-k="del" aria-label="Zmazať">⌫</button>
+      ${S.level === 'desatinne' ? '<button class="key" data-act="key" data-k="," aria-label="Desatinná čiarka">,</button><button class="key del" data-act="key" data-k="del" aria-label="Zmazať">⌫</button>' : '<button class="key del wide" data-act="key" data-k="del" aria-label="Zmazať">⌫</button>'}
       ${all ? '<button class="key go wide" data-act="tabletCheck" style="grid-column: span 6">Skontrolovať</button>' : '<button class="key next wide" data-act="key" data-k="next" style="grid-column: span 6">Ďalší ➜</button>'}
     </div></div>`;
   }
@@ -315,7 +315,7 @@
       <div class="grid one">${ex.wrong.map((i) => {
         const it = ex.items[i];
         const given = ex.given ? ex.given[i] : null;
-        return `<div class="card bad"><span class="n">${i + 1}</span><span class="q">${E.text(it)} =</span><span class="slot">${given != null && given !== '' ? `<s>${esc(/^\d+$/.test(given) ? E.fmt(Number(given)) : given)}</s>` : ''}<span class="right">${E.fmt(it.ans)}</span></span><button class="why ${ex.heard.has(i) ? 'heard' : ''}" data-act="why" data-ex="${ex.id}" data-i="${i}">${ex.heard.has(i) ? '✓ Prečo' : 'Prečo?'}</button></div>`;
+        return `<div class="card bad"><span class="n">${i + 1}</span><span class="q">${E.text(it)} =</span><span class="slot">${given != null && given !== '' ? `<s>${esc(/^\d+$/.test(given) ? E.fmt(Number(given)) : given)}</s>` : ''}<span class="right">${E.ansText(it)}</span></span><button class="why ${ex.heard.has(i) ? 'heard' : ''}" data-act="why" data-ex="${ex.id}" data-i="${i}">${ex.heard.has(i) ? '✓ Prečo' : 'Prečo?'}</button></div>`;
       }).join('')}</div></section>`;
   }
 
@@ -442,7 +442,7 @@
       ${ex.mode === 'papier' && !ex.confirmed ? gateBox(ex) : ''}
     </section>
     ${wrongList(ex)}
-    <section class="sheet-paper"><h3>Všetky príklady</h3><div class="tasks">${ex.items.map((it, i) => `<div class="task"><span class="n">${i + 1}.</span><span class="q">${E.text(it)} = <b style="color:${ex.wrong.includes(i) ? 'var(--red-d)' : 'var(--green-d)'}">${E.fmt(it.ans)}</b></span></div>`).join('')}</div></section>`;
+    <section class="sheet-paper"><h3>Všetky príklady</h3><div class="tasks">${ex.items.map((it, i) => `<div class="task"><span class="n">${i + 1}.</span><span class="q">${E.text(it)} = <b style="color:${ex.wrong.includes(i) ? 'var(--red-d)' : 'var(--green-d)'}">${E.ansText(it)}</b></span></div>`).join('')}</div></section>`;
   }
 
   // ---------------- ODMENY ----------------
@@ -507,7 +507,7 @@
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap';
     wrap.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Vysvetlenie">
-      <div class="sheet-head">${E.text(it)} = <b>${E.fmt(it.ans)}</b></div>
+      <div class="sheet-head">${E.text(it)} = <b>${E.ansText(it)}</b></div>
       ${it.kind === 'pis' ? columnHtml(it) : ''}
       <ol class="steps">${x.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ol>
       <p class="sheet-status ${wasHeard ? '' : 'wait'}" id="whyStatus">${wasHeard ? '✓ Toto si si už vypočul' : Voice.voices.length ? '🔊 Počúvaj…' : 'Prečítaj si to pozorne.'}</p>
@@ -632,7 +632,7 @@
     render(); window.scrollTo(0, 0);
   }
   function saveDone(mode, wrong, given) {
-    const ex = { op: S.op, level: S.level, count: S.count, mode, items: S.items.map(({ op, a, b, ans, kind }) => ({ op, a, b, ans, kind })), wrong, given: given || null, mistakes: wrong.length, started_at: S.startedAt };
+    const ex = { op: S.op, level: S.level, count: S.count, mode, items: S.items.map((it) => (it.op === 'jednotky' ? { op: it.op, parts: it.parts, to: it.to, mm: it.mm, ans: it.ans, kind: it.kind } : { op: it.op, a: it.a, b: it.b, ans: it.ans, kind: it.kind })), wrong, given: given || null, mistakes: wrong.length, started_at: S.startedAt };
     if (mode === 'tablet') ex.xp = xpFor(ex);
     Store.add('done', S.exId, ex);
   }
@@ -648,7 +648,7 @@
     const a = b.dataset.act;
     switch (a) {
       case 'tab': S.tab = b.dataset.tab; S.view = 'home'; S.wishMsg = ''; render(); window.scrollTo(0, 0); if (S.tab !== 'play') Store.sync().then(render); break;
-      case 'op': S.op = b.dataset.v; render(); break;
+      case 'op': S.op = b.dataset.v; if (S.level === 'desatinne' && S.op !== 'jednotky') S.level = 'tazke'; render(); break;
       case 'level': S.level = b.dataset.v; render(); break;
       case 'count': S.count = b.dataset.v; render(); break;
       case 'mode': S.mode = b.dataset.v; render(); break;
@@ -679,13 +679,14 @@
           let j = (S.sel + 1) % n;
           for (let t = 0; t < n; t++) { if (!S.answers[(S.sel + 1 + t) % n]) { j = (S.sel + 1 + t) % n; break; } }
           S.sel = j;
-        } else if (String(S.answers[S.sel] || '').length < 5) S.answers[S.sel] = String(S.answers[S.sel] || '') + k;
+        } else if (k === ',') { const cur = String(S.answers[S.sel] || ''); if (cur && !cur.includes(',')) S.answers[S.sel] = cur + ','; }
+        else if (String(S.answers[S.sel] || '').length < 7) S.answers[S.sel] = String(S.answers[S.sel] || '') + k;
         render(); if (k === 'next') scrollSel();
         break;
       }
       case 'tabletCheck': {
         if (S.answers.some((x) => x === '')) break;
-        const wrong = S.items.map((it, i) => (Number(S.answers[i]) === it.ans ? -1 : i)).filter((i) => i >= 0);
+        const wrong = S.items.map((it, i) => (E.check(it, S.answers[i]) ? -1 : i)).filter((i) => i >= 0);
         saveDone('tablet', wrong, S.answers.slice());
         S.view = 'result'; render(); window.scrollTo(0, 0);
         if (!wrong.length) fireworks();
@@ -735,7 +736,8 @@
   // Fyzická klávesnica (iPad s klávesnicou / počítač) pri počítaní na tablete.
   document.addEventListener('keydown', (ev) => {
     if (S.view !== 'tablet' || document.querySelector('.sheet-wrap, .lvlup')) return;
-    if (/^[0-9]$/.test(ev.key)) { document.querySelector(`.key[data-k="${ev.key}"]`)?.click(); ev.preventDefault(); }
+    if (ev.key === ',' || ev.key === '.') { document.querySelector('.key[data-k=","]')?.click(); ev.preventDefault(); }
+    else if (/^[0-9]$/.test(ev.key)) { document.querySelector(`.key[data-k="${ev.key}"]`)?.click(); ev.preventDefault(); }
     else if (ev.key === 'Backspace') { document.querySelector('.key[data-k="del"]')?.click(); ev.preventDefault(); }
     else if (ev.key === 'Enter' || ev.key === 'Tab') { (document.querySelector('.key.go') || document.querySelector('.key[data-k="next"]'))?.click(); ev.preventDefault(); }
   });

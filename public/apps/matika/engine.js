@@ -13,14 +13,16 @@
     minus: { sign: '−', word: 'mínus', name: 'Odčítanie', short: '−' },
     krat: { sign: '·', word: 'krát', name: 'Násobilka', short: '·' },
     deleno: { sign: ':', word: 'delené', name: 'Delenie', short: ':' },
+    jednotky: { sign: '', word: '', name: 'Jednotky', short: 'mm' },
   };
-  const OP_IDS = Object.keys(OPS);
+  const OP_IDS = ['plus', 'minus', 'krat', 'deleno']; // Mix = tieto štyri
 
   // Úrovne: čo sa v nich precvičuje (pre každú operáciu iný popis).
   const LEVELS = {
     lahke: { name: 'Ľahké', n: 1 },
     stredne: { name: 'Stredné', n: 2 },
     tazke: { name: 'Ťažké', n: 3 },
+    desatinne: { name: 'Desatinné', n: 3, only: 'jednotky' },
   };
   const LEVEL_INFO = {
     plus: {
@@ -43,6 +45,12 @@
       stredne: 'Delenie v celej násobilke do 100',
       tazke: 'Delenie 6 až 9 a delenie 10, 100, 1\u202F000',
     },
+    jednotky: {
+      lahke: 'Premeň na menšiu jednotku (4\u202Fm = ? cm, 60 mm = ? cm)',
+      stredne: 'Dve jednotky na menšiu (40 cm 2 mm = ? mm)',
+      tazke: 'Zmiešané a väčšie čísla (7 mm 3 dm = ? mm, 15 dm 23 cm = ? cm)',
+      desatinne: 'S desatinnou čiarkou – učivo 5. ročníka (7 mm 3 dm = ? dm)',
+    },
     mix: {
       lahke: 'Všetko spolu – ľahké príklady',
       stredne: 'Všetko spolu – stredné príklady',
@@ -62,6 +70,12 @@
   const fmt = (n) => {
     const s = String(n);
     return s.length < 4 ? s : s.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  };
+  /** Číslo aj s desatinnou čiarkou: 3,07 alebo 4 350. */
+  const fmtNum = (x) => {
+    if (Number.isInteger(x)) return fmt(x);
+    const [i, d] = String(Math.round(x * 1000) / 1000).split('.');
+    return `${fmt(Number(i))},${d}`;
   };
   const plural = (n, one, few, many) => (n === 1 ? one : n >= 2 && n <= 4 ? few : many);
   const UNIT = {
@@ -184,7 +198,85 @@
     },
   };
 
-  const key = (it) => `${it.op}|${it.a}|${it.b}`;
+  let GEN_U;
+
+  // ---------- jednotky dĺžky (všetko sa počíta v mm, aby nevznikali chyby zaokrúhlenia) ----------
+  const U = { mm: 1, cm: 10, dm: 100, m: 1000, km: 1000000 };
+  const UORDER = ['mm', 'cm', 'dm', 'm', 'km'];
+  const totalMm = (parts) => parts.reduce((a, [n, u]) => a + n * U[u], 0);
+  function makeU(parts, to, kind) {
+    const mm = totalMm(parts);
+    return { op: 'jednotky', parts, to, mm, ans: mm / U[to], kind };
+  }
+  const SMALLER = { cm: ['mm'], dm: ['cm', 'mm'], m: ['dm', 'cm', 'mm'], km: ['m'] };
+  const NEXT_DOWN = [['km', 'm'], ['m', 'dm'], ['m', 'cm'], ['dm', 'cm'], ['cm', 'mm'], ['dm', 'mm'], ['m', 'mm']];
+  GEN_U = {
+    lahke() {
+      const from = pick(['cm', 'dm', 'm', 'm', 'km']);
+      const to = pick(SMALLER[from]);
+      const f = U[from] / U[to];
+      if (Math.random() < 0.6) {
+        const n = rnd(2, Math.max(2, Math.min(99, Math.floor(10000 / f))));
+        return makeU([[n, from]], to, 'u_down');
+      }
+      // naopak na väčšiu jednotku, len keď to vyjde presne (60 mm = 6 cm)
+      const n = rnd(2, Math.min(99, Math.floor(10000 / f)));
+      return makeU([[n * f, to]], from, 'u_up');
+    },
+    stredne() {
+      const [big, small] = pick(NEXT_DOWN);
+      const f = U[big] / U[small];
+      const nb = big === 'km' ? rnd(1, 9) : big === 'm' && f >= 100 ? rnd(1, 9) : rnd(1, 60);
+      const ns = rnd(1, f - 1);
+      if (nb * f + ns > 10000) return this.stredne();
+      return makeU([[nb, big], [ns, small]], small, 'u_down');
+    },
+    tazke() {
+      const r = Math.random();
+      if (r < 0.45) {
+        // ako „7 mm 3 dm“ alebo „15 dm 23 cm“: menšia časť môže byť väčšia ako 1 väčšia jednotka, poradie môže byť obrátené
+        const [big, small] = pick(NEXT_DOWN.filter(([b]) => b !== 'km'));
+        const f = U[big] / U[small];
+        const nb = rnd(1, f >= 100 ? 9 : 25);
+        const ns = rnd(f, f * 3 + 5);
+        if (nb * f + ns > 10000) return this.tazke();
+        const parts = Math.random() < 0.5 ? [[ns, small], [nb, big]] : [[nb, big], [ns, small]];
+        return makeU(parts, small, 'u_down');
+      }
+      if (r < 0.75) {
+        // tri jednotky: 2 m 3 dm 4 cm = ? cm
+        const set = pick([['m', 'dm', 'cm'], ['dm', 'cm', 'mm'], ['m', 'cm', 'mm'], ['m', 'dm', 'mm']]);
+        const parts = [[rnd(1, 9), set[0]], [rnd(1, U[set[0]] / U[set[1]] - 1), set[1]], [rnd(1, U[set[1]] / U[set[2]] - 1), set[2]]];
+        const it = makeU(parts, set[2], 'u_down');
+        return it.ans > 10000 ? this.tazke() : it;
+      }
+      // väčšie číslo na väčšiu jednotku, presne: 4 000 m = 4 km, 1 200 cm = 120 dm
+      const pairs = [['km', 'm'], ['m', 'cm'], ['dm', 'cm'], ['m', 'mm'], ['dm', 'mm'], ['m', 'dm']];
+      const [big, small] = pick(pairs);
+      const f = U[big] / U[small];
+      const n = rnd(11, Math.min(999, Math.floor(10000 / f)));
+      return makeU([[n * f, small]], big, 'u_up');
+    },
+    desatinne() {
+      // výsledok s desatinnou čiarkou (max. 2 desatinné miesta): 7 mm 3 dm = 3,07 dm
+      for (;;) {
+        const [big, small] = pick([['cm', 'mm'], ['dm', 'cm'], ['dm', 'mm'], ['m', 'cm'], ['m', 'dm'], ['km', 'm']]);
+        const f = U[big] / U[small];
+        if (f > 100 && big !== 'km') continue;
+        const nb = big === 'km' ? rnd(1, 9) : rnd(1, 40);
+        const ns = big === 'km' ? rnd(1, 99) * 10 : rnd(1, Math.random() < 0.7 ? f - 1 : f * 2 + 3);
+        if (ns % f === 0) continue;
+        const parts = Math.random() < 0.3 ? [[ns, small], [nb, big]] : [[nb, big], [ns, small]];
+        const it = makeU(parts, big, 'u_dec');
+        if (Number.isInteger(it.ans)) continue;
+        const dec = String(Math.round(it.ans * 1000) / 1000).split('.')[1] || '';
+        if (dec.length > 2) continue;
+        return it;
+      }
+    },
+  };
+
+  const key = (it) => (it.op === 'jednotky' ? `u|${it.parts.map((p) => p.join(' ')).join('|')}|${it.to}` : `${it.op}|${it.a}|${it.b}`);
   /** Zostaví sadu príkladov. op = plus|minus|krat|deleno|mix */
   function generate(op, level, count) {
     const n = COUNTS[count]?.n || 10;
@@ -192,7 +284,8 @@
     let guard = 0;
     while (out.length < n && guard++ < 5000) {
       const o = op === 'mix' ? OP_IDS[out.length % 4] : op;
-      const it = GEN[o][level]();
+      if (o !== 'jednotky' && level === 'desatinne') level = 'tazke';
+      const it = o === 'jednotky' ? GEN_U[level]() : GEN[o][level]();
       if (seen.has(key(it))) continue;
       seen.add(key(it));
       out.push(it);
@@ -202,7 +295,54 @@
   }
 
   // ---------- vysvetlenia ----------
-  const T = (it) => `${fmt(it.a)} ${OPS[it.op].sign} ${fmt(it.b)}`;
+  const T = (it) => (it.op === 'jednotky' ? it.parts.map(([n, u]) => `${fmt(n)} ${u}`).join(' ') : `${fmt(it.a)} ${OPS[it.op].sign} ${fmt(it.b)}`);
+  const unitOf = (it) => (it.op === 'jednotky' ? it.to : '');
+  const ansText = (it) => fmtNum(it.ans) + (it.op === 'jednotky' ? ` ${it.to}` : '');
+  /** Porovná odpoveď (text z klávesnice, môže mať čiarku) so správnym výsledkom. */
+  const check = (it, given) => {
+    const g = String(given ?? '').trim().replace(',', '.');
+    if (!/^\d+(\.\d+)?$/.test(g)) return false;
+    return Math.round(Number(g) * 1000) === Math.round(it.ans * 1000);
+  };
+  const REL = ['1 cm = 10 mm', '1 dm = 10 cm = 100 mm', '1 m = 10 dm = 100 cm = 1 000 mm', '1 km = 1 000 m'];
+  const relLine = (a, b) => {
+    const [big, small] = U[a] > U[b] ? [a, b] : [b, a];
+    return `1 ${big} = ${fmt(U[big] / U[small])} ${small}`;
+  };
+  function explainU(it) {
+    const lines = [];
+    const smallest = it.parts.reduce((m, [, u]) => (U[u] < U[m] ? u : m), it.to);
+    const used = [...new Set([...it.parts.map(([, u]) => u), it.to])].sort((a, b) => U[b] - U[a]);
+    const rels = [];
+    for (let i = 0; i < used.length - 1; i++) rels.push(relLine(used[i], used[i + 1]));
+    lines.push(`Pamätaj: ${rels.join(', ')}.`);
+    if (it.kind === 'u_up') {
+      const [[n, u]] = it.parts;
+      const f = U[it.to] / U[u];
+      lines.push(`${fmt(f)} ${u} je 1 ${it.to}, preto delíme: ${fmt(n)} : ${fmt(f)} = ${fmtNum(it.ans)}.`);
+      lines.push(`${fmt(n)} ${u} = ${ansText(it)}.`);
+      return lines;
+    }
+    const base = it.kind === 'u_dec' ? smallest : it.to;
+    const conv = it.parts.map(([n, u]) => {
+      const f = U[u] / U[base];
+      return { n, u, v: n * f, f };
+    });
+    if (conv.length > 1) {
+      lines.push(`Všetko premeníme na ${UFORMS[base][1]}:`);
+    }
+    if (conv.length > 1 || conv[0].u !== base) {
+      for (const c of conv) lines.push(c.u === base ? `${fmt(c.n)} ${c.u} ostáva ${fmt(c.n)} ${base}.` : `${fmt(c.n)} ${c.u} = ${fmt(c.n)} · ${fmt(c.f)} = ${fmt(c.v)} ${base}.`);
+    }
+    const sum = conv.reduce((a, c) => a + c.v, 0);
+    if (conv.length > 1) lines.push(`Spolu ${conv.map((c) => fmt(c.v)).join(' + ')} = ${fmt(sum)} ${base}.`);
+    if (it.kind === 'u_dec') {
+      const f = U[it.to] / U[base];
+      lines.push(`1 ${it.to} = ${fmt(f)} ${base}, preto ${fmt(sum)} ${base} : ${fmt(f)} = ${ansText(it)}.`);
+      lines.push(`Celé ${UFORMS[it.to][1]} sú pred čiarkou, zvyšok za čiarkou.`);
+    }
+    return lines;
+  }
   const spoken = (s) => String(s)
     .replace(/ /g, '')
     .replace(/ · /g, ' krát ').replace(/ : /g, ' delené ').replace(/ − /g, ' mínus ').replace(/ \+ /g, ' plus ')
@@ -258,6 +398,11 @@
   }
 
   function explain(it) {
+    if (it.op === 'jednotky') {
+      const lines = explainU(it);
+      const head = `${T(it)} = ${ansText(it)}`;
+      return { head, lines, say: spokenU([`${head}.`, ...lines].join(' ')) };
+    }
     const { op, a, b, ans, kind } = it;
     let lines = [];
     if (kind === 'pam') {
@@ -308,7 +453,24 @@
     return { head, lines, say: spoken([`${head}.`, ...lines].join(' ')) };
   }
 
+  // Správne tvary: 1 meter, 2–4 metre, 5 a viac metrov, desatinné číslo 2,5 metra.
+  const UFORMS = {
+    mm: ['milimeter', 'milimetre', 'milimetrov', 'milimetra'],
+    cm: ['centimeter', 'centimetre', 'centimetrov', 'centimetra'],
+    dm: ['decimeter', 'decimetre', 'decimetrov', 'decimetra'],
+    m: ['meter', 'metre', 'metrov', 'metra'],
+    km: ['kilometer', 'kilometre', 'kilometrov', 'kilometra'],
+  };
+  const uWord = (num, u) => {
+    const f = UFORMS[u];
+    if (num.includes(',')) return f[3];
+    const n = Number(num);
+    return n === 1 ? f[0] : n >= 2 && n <= 4 ? f[1] : f[2];
+  };
+  const spokenU = (txt) => spoken(txt)
+    .replace(/(\d+(?:,\d+)?) (mm|cm|dm|m|km)\b/g, (_, n, u) => `${n} ${uWord(n, u)}`)
+    .replace(/(^|[.:] )([234]) ([a-z]*metre) je /g, '$1$2 $3 sú '); // 2 centimetre sú 20 milimetrov
   function questionSay(it) { return spoken(`${T(it)}`); }
 
-  window.MATIKA_ENGINE = { OPS, OP_IDS, LEVELS, LEVEL_INFO, COUNTS, generate, explain, fmt, text: T, questionSay, spoken, digits };
+  window.MATIKA_ENGINE = { unitOf, ansText, check, fmtNum, OPS, OP_IDS, LEVELS, LEVEL_INFO, COUNTS, generate, explain, fmt, text: T, questionSay, spoken, digits };
 })();

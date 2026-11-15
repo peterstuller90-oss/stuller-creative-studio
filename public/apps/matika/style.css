@@ -109,7 +109,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--yellow); ou
 .x:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 
 /* ---------- výber cvičenia ---------- */
-.ops { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.ops { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
 .op { border: 3px solid var(--ink); border-radius: 18px; padding: 10px 6px 12px; background: var(--panel-3); box-shadow: 0 5px 0 var(--ink); display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 108px; justify-content: center; transition: transform .1s; }
 .op .sym { font-family: var(--head); font-weight: 800; font-size: 46px; line-height: 1; width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; border: 3px solid var(--ink); background: var(--c, var(--cyan)); color: var(--ink); }
 .op span { font-family: var(--head); font-weight: 800; font-size: 17px; text-transform: uppercase; color: var(--ink); }
@@ -344,7 +344,6 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
   .week svg { width: 24px; height: 24px; }
   .ops { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
   .op { grid-column: span 2; min-height: 84px; padding: 8px 2px; border-radius: 14px; }
-  .op:nth-child(4) { grid-column: 2 / span 2; }
   .op .sym { width: 44px; height: 44px; font-size: 34px; }
   .op span { font-size: 14px; }
   .seg button { font-size: 18px; padding: 6px 4px; }
@@ -403,3 +402,11 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
 }
 :is(.ops, .levels, .seg, .modes, .filters, .choose):has(> [aria-pressed="true"]) > [aria-pressed="false"]:hover { opacity: .75; }
 @media (prefers-reduced-motion: reduce) { :is(.ops, .levels, .seg, .modes, .filters, .choose) > button { transform: none !important; } }
+
+/* ---------- jednotky dĺžky ---------- */
+.op[data-v="jednotky"] .sym { font-size: 24px; letter-spacing: -.02em; text-transform: none; }
+.levels.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.task .u, .card .u { font-weight: 800; flex: none; }
+.card .u { font-size: 24px; }
+.card .q { min-width: 0; }
+@media (max-width: 640px) { .levels.four { grid-template-columns: minmax(0, 1fr); } .card .u { font-size: 20px; } }
