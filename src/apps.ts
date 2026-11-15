@@ -27,6 +27,7 @@ export const APPS: HubApp[] = [
   { id: 'social', name: 'Stullers Social', description: 'Stories, carousel a mockupy z ilustrácie', frame: 'apps/social/', audience: ['parent'] },
   { id: 'ucitel', name: 'Slovina', description: 'Diktáty zo slovenčiny pre Ota: levely, kalendár, týždenná výzva (bez prihlásenia)', frame: 'apps/ucitel/', public: true, audience: ['parent', 'child', 'other'] },
   { id: 'matika', name: 'Matika', description: 'Sčítanie, odčítanie, násobilka a delenie pre Ota (bez prihlásenia)', frame: 'apps/matika/', public: true, audience: ['parent', 'child', 'other'] },
+  { id: 'anglina', name: 'Anglina', description: 'Anglické slovíčka pre Ota: témy, úrovne, kalendár, odmeny (bez prihlásenia)', frame: 'apps/anglina/', public: true, audience: ['parent', 'child', 'other'] },
   { id: 'roker', name: 'Roker dizajnér', description: 'Oto si s Claudom navrhuje svoju kockatú postavičku', link: 'https://claude.ai/artifact/LfL22jnfASPhP2h6HZUHhD', highlight: true, public: true, audience: ['parent', 'child'] },
   { id: 'hudy', name: 'Hudy Packaging', description: 'Generátor obalov', frame: 'apps/hudy/', audience: ['parent'] },
 ]
