@@ -16,16 +16,18 @@ const add = (t) => { if (t && t.trim()) texts.set(KEY(t), t.trim()) }
 
 Object.values(L).flat().forEach(add)
 const sentences = [...B.SENTENCES, ...B.HARD]
+const say = (t) => add(E.speakForm(t)) // diktované texty idú foneticky (mäkké ďe, ťi, ňi, ľi)
+say(L.sampleSentence[0])
 for (const s of sentences) {
-  add(s)
+  say(s)
   for (const c of E.chunks(s)) {
-    add(c)
+    say(c)
     const last = c.slice(-1)
-    if (PUNCT[last]) add(`${c.replace(/[.,?!]$/, '')}, ${PUNCT[last]}`)
+    if (PUNCT[last]) say(`${c.replace(/[.,?!]$/, '')}, ${PUNCT[last]}`)
   }
   for (const m of s.matchAll(E.WORD_RE)) {
     const w = m[0]
-    add(w)
+    say(w)
     for (const x of E.wordInfo(w).list) { add(x.say); add(x.text) }
     for (const x of E.otherFeatures(w)) { add(x.say); add(x.text) }
   }

@@ -540,5 +540,34 @@ window.UCITEL_ENGINE = (() => {
     return { i: -1, len: 0, type: 'spell', tag: 'pravopis', head: 'Ako sa píše?', say: '', text: `Toto slovo píšeme presne takto: ${[...word.toLowerCase()].join(', ')}.` };
   }
 
-  return { GAP_TYPES, otherFeatures, itemsFor, wordInfo, LETTERS, LENGTHS, TAGGED, positions, explain, tagSentence, generate, chunks, grade, gapPlan, gradeGaps, tokenize, WORD_RE };
+
+  // ---------- výslovnosť pre hlas ----------
+  // Pravidlo slovenskej výslovnosti: d, t, n, l pred e, i, í, ia, ie, iu vyslovujeme mäkko (ďe, ťi, ňi, ľi),
+  // aj keď mäkčeň nepíšeme. Hlas to sám nevie, preto mu text pri diktovaní prepíšeme foneticky.
+  // Tvrdo zostáva: cudzie slová (diktát, technika, Peter), slová ten, tento, teraz, jeden, vtedy
+  // a koncovky prídavných mien a zámen (pekné, malej, tvrdého) a mužský rod v množnom čísle (mladí, pekní).
+  const HARD_SAY = new Set(['ten', 'tento', 'tenže', 'tamten', 'onen', 'teraz', 'jeden', 'jedenásť', 'jedenásty', 'vtedy', 'vtedajší',
+    'tí', 'tie', 'tej', 'tieto', 'tejto', 'títo', 'tým', 'tomto',
+    'diktát', 'diktáty', 'diktátu', 'diktáte', 'rádio', 'rádia', 'rádiu', 'tiger', 'tigra', 'tigre', 'technika', 'techniku', 'techniky', 'technike',
+    'matematika', 'matematiky', 'matematiku', 'matematike', 'informatika', 'informatike', 'informatiky', 'dinosaura', 'dinosaurus',
+    'cyklista', 'cyklisti', 'cyklistu', 'hokejista', 'hokejisti', 'batériu', 'batéria', 'kontajnera', 'kontajner', 'mobile', 'mobil',
+    'peter', 'telefón', 'telefóne', 'bicykli', 'fyziky', 'fyzika', 'di', 'ti', 'ni', 'li']);
+  const SAY_FIX = { desiate: 'ďesiate', desiaty: 'ďesiaty' };
+  const SAY_SOFT = { d: 'ď', t: 'ť', n: 'ň', l: 'ľ', D: 'Ď', T: 'Ť', N: 'Ň', L: 'Ľ' };
+  function speakWord(w) {
+    const low = w.toLowerCase();
+    if (HARD_SAY.has(low) || B.EXC[low]) return w;
+    let out = SAY_FIX[low];
+    if (!out) {
+      // koncovka prídavného mena: -é, -ého, -ému, -ej po d, t, n, l zostáva tvrdá
+      const m = low.match(/[dtnl](é|ého|ému|ej)$/);
+      const keep = m ? low.length - m[0].length : -1;
+      out = [...w].map((ch, i) => (SAY_SOFT[ch] && i !== keep && /^[eéiíě]$/i.test(w[i + 1] || '') ? SAY_SOFT[ch] : ch)).join('');
+      return out;
+    }
+    return w[0] === w[0].toUpperCase() ? out[0].toUpperCase() + out.slice(1) : out;
+  }
+  const speakForm = (text) => text.replace(/[A-Za-zÁÄČĎÉÍĹĽŇÓÔŔŠŤÚÝŽáäčďéíĺľňóôŕšťúýž]+/g, speakWord);
+
+  return { speakForm, GAP_TYPES, otherFeatures, itemsFor, wordInfo, LETTERS, LENGTHS, TAGGED, positions, explain, tagSentence, generate, chunks, grade, gapPlan, gradeGaps, tokenize, WORD_RE };
 })();
