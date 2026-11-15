@@ -536,3 +536,6 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
 }
 @media print { .say { display: none !important; } }
 .wcard .en-q { color: var(--cyan-d); font-weight: 800; }
+.spell .lt { flex-direction: column; height: auto; min-height: 58px; padding: 4px 6px; gap: 0; display: flex; align-items: center; justify-content: center; }
+.spell .lt b { font-size: 28px; line-height: 1.1; }
+.spell .lt small { font-size: 12px; color: var(--soft); font-weight: 700; white-space: nowrap; }
