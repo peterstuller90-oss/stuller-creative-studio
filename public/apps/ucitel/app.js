@@ -940,7 +940,7 @@
     saveDone(r.mistakes, r.iy, r.words, answer);
     render();
     Voice.chat(pick(r.mistakes === 0 ? LINES.perfect : LINES.oops));
-    if (r.mistakes === 0) window.Panacik?.cheer(); else window.Panacik?.sad();
+    window.Panacik?.result(r.mistakes);
   }
 
   async function gateCheck() {
@@ -960,6 +960,7 @@
     S.levelUp = after > before ? after : 0;
     S.celebrate = !!(res && (res.clean || S.levelUp));
     render();
+    if (res && !S.celebrate) window.Panacik?.result(Math.max(1, S.marked.size || S.wrongGaps.size));
     Voice.chat(S.levelUp ? LINES.levelUp[0] : pick(res && res.clean ? LINES.win : LINES.noMoney));
   }
 

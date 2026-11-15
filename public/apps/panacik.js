@@ -15,7 +15,9 @@
   const css = document.createElement('style');
   css.textContent = `
   #panacik{position:fixed;left:0;top:0;width:${80 * SC}px;height:${90 * SC}px;z-index:9000;pointer-events:none;overflow:visible;will-change:transform;
+    color:#0B1033;transition:color .25s ease;
     filter:drop-shadow(0 0 1.4px #fff) drop-shadow(0 0 1.4px #fff) drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+  #panacik.dark{color:#fff;filter:drop-shadow(0 0 1.4px #0B1033) drop-shadow(0 0 1.4px #0B1033) drop-shadow(0 2px 2px rgba(0,0,0,.45))}
   .pan-letter{position:fixed;left:0;top:0;z-index:9001;pointer-events:none;min-width:30px;height:32px;padding:0 6px;line-height:28px;text-align:center;
     font:800 24px 'Baloo 2','Arial Rounded MT Bold','Arial Black',sans-serif;color:#0B1033;background:#FFCF1F;border:2px solid #0B1033;border-radius:8px;box-shadow:0 2px 0 #0B1033}
   .pan-wait{color:transparent!important;-webkit-text-fill-color:transparent!important;text-shadow:none!important}
@@ -25,7 +27,7 @@
   const NS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg');
   svg.id = 'panacik'; svg.setAttribute('viewBox', '-40 -80 80 90'); svg.setAttribute('aria-hidden', 'true');
-  for (const [k, v] of Object.entries({ fill: 'none', stroke: '#0B1033', 'stroke-width': '3.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })) svg.setAttribute(k, v);
+  for (const [k, v] of Object.entries({ fill: 'none', stroke: 'currentColor', 'stroke-width': '3.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })) svg.setAttribute(k, v);
   const el = {};
   for (const [id, tag] of [['legB', 'polyline'], ['armB', 'polyline'], ['body', 'line'], ['head', 'circle'], ['legF', 'polyline'], ['armF', 'polyline']]) {
     el[id] = document.createElementNS(NS, tag); svg.appendChild(el[id]);
@@ -132,7 +134,26 @@
     if (carried) carried.style.transform = `translate(${pos.x + handTop.x * SC - carried.offsetWidth / 2}px, ${pos.y + handTop.y * SC - 34}px)`;
     // ciele, do ktorých práve niečo nesie, nech ukazujú prázdno, kým to nedonesie
     for (const j of jobs) { const t = j.to(); if (t && !t.classList.contains('pan-wait')) t.classList.add('pan-wait'); }
+    if (now - lastBg > 150) { lastBg = now; svg.classList.toggle('dark', isDarkAt(pos.x, pos.y - 30 * SC)); }
     requestAnimationFrame(frame);
+  }
+
+  /* ---------- FARBA PODĽA POZADIA ----------
+     Pozrie, čo je pod panáčikom: na tmavej ploche je biely, na svetlej tmavý. */
+  let lastBg = 0;
+  const parseRGBA = (c) => { const m = c && c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const v = m[1].split(/[ ,/]+/).filter(Boolean).map(Number); return { r: v[0], g: v[1], b: v[2], a: v.length > 3 ? v[3] : 1 }; };
+  const lum = (c) => (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b) / 255;
+  function isDarkAt(x, y) {
+    let e = document.elementFromPoint(Math.max(0, Math.min(innerWidth - 1, x)), Math.max(0, Math.min(innerHeight - 1, y)));
+    while (e && e.nodeType === 1) {
+      const cs = getComputedStyle(e);
+      const c = parseRGBA(cs.backgroundColor);
+      if (c && c.a > 0.5) return lum(c) < 0.5;
+      const g = cs.backgroundImage && cs.backgroundImage !== 'none' && parseRGBA((cs.backgroundImage.match(/rgba?\([^)]+\)/) || [])[0]);
+      if (g && g.a > 0.5) return lum(g) < 0.5;   // plocha s prechodom farieb
+      e = e.parentElement;
+    }
+    return true;   // nič nenašiel = pozadie appky (tmavomodré)
   }
 
   /* ---------- SRANDY ---------- */
@@ -150,7 +171,19 @@
     drepy: [{ pose: 'crouch', ms: 380, set: { sL: 90, eL: 0, sR: 90, eR: 0, lean: 20 } }, { pose: 'stand', ms: 380, set: { sL: 90, eL: 0, sR: 90, eR: 0 } },
       { pose: 'crouch', ms: 380, set: { sL: 90, eL: 0, sR: 90, eR: 0, lean: 20 } }, { pose: 'stand', ms: 420 }],
   };
-  const NAMES = Object.keys(TRICKS);
+  // radosť a smútok (reakcie na výsledok)
+  const UP = (o) => P({ sL: 150, eL: 20, sR: 150, eR: 20, ...o });
+  TRICKS.jupi = [{ pose: 'crouch', ms: 220 }, { pose: UP({ air: 34, tL: 20, kL: 60, tR: -10, kR: 30 }), ms: 220 }, { pose: 'crouch', ms: 200 },
+    { pose: UP({ air: 30, tL: -10, kL: 30, tR: 20, kR: 60 }), ms: 220 }, { pose: 'crouch', ms: 200 }, { pose: 'stand', ms: 250 }];
+  TRICKS.pest = [{ pose: P({ sR: 120, eR: 110, head: -6, lean: -4 }), ms: 220 }, { pose: P({ sR: 165, eR: 20, head: -10, lean: -6, air: 6 }), ms: 180 },
+    { pose: P({ sR: 120, eR: 110, head: -6, lean: -4 }), ms: 200 }, { pose: P({ sR: 165, eR: 20, head: -10, lean: -6, air: 6 }), ms: 180 }, { pose: 'stand', ms: 260 }];
+  TRICKS.tlieskanie = [0, 1, 2, 3, 4, 5].map((i) => ({ pose: P({ sL: 80, eL: i % 2 ? 50 : 20, sR: 80, eR: i % 2 ? 50 : 20, head: -6 }), ms: 140 })).concat([{ pose: 'stand', ms: 220 }]);
+  TRICKS.smutny = [{ pose: P({ lean: 18, head: 35, sL: -6, eL: 4, sR: 4, eR: 4, kL: 10, kR: 10 }), ms: 500 }, { pose: P({ lean: 22, head: 40, sL: -8, eL: 4, sR: 6, eR: 4, kL: 12, kR: 12 }), ms: 1100 }];
+  TRICKS.krcenie = [{ pose: P({ lean: 8, head: -20, sL: -10, sR: 10 }), ms: 200 }, { pose: P({ lean: 8, head: 20, sL: -10, sR: 10 }), ms: 200 },
+    { pose: P({ lean: 8, head: -20, sL: -10, sR: 10 }), ms: 200 }, { pose: P({ lean: 8, head: 20, sL: -10, sR: 10 }), ms: 200 }];
+  TRICKS.nevadi = [{ pose: 'crouch', ms: 300 }, { pose: 'stand', ms: 300 }, { pose: P({ sR: 140, eR: 30, sL: 6 }), ms: 260 }, { pose: P({ sR: 140, eR: 70, sL: 6 }), ms: 200 },
+    { pose: P({ sR: 140, eR: 30, sL: 6 }), ms: 200 }, { pose: 'stand', ms: 300 }];
+  const NAMES = ['skok', 'salto', 'mavanie', 'sad', 'natiahnutie', 'tanec', 'drepy'];
   let busy = false;
   const jobs = [];           // čakajúce nosenia {text, from, to, done}
 
@@ -229,11 +262,20 @@
       carried?.remove(); carried = null; carryOn = false;
       document.querySelectorAll('.pan-wait').forEach((e) => e.classList.remove('pan-wait'));
     },
-    async cheer() { this.flush(); while (busy) await wait(40); busy = true; stopMove(); if (!reduced) { await play(TRICKS.salto); await play(TRICKS.tanec); } busy = false; },
-    async sad() {
+    // celá reakcia: dobehne doprostred obrazovky, aby ho Oto videl, a zahrá to
+    async react(list) {
       this.flush(); while (busy) await wait(40); busy = true; stopMove();
-      const N = P({ lean: 8, head: -20, sL: -10, sR: 10 }), M = P({ lean: 8, head: 20, sL: -10, sR: 10 });
-      await play([{ pose: N, ms: 200 }, { pose: M, ms: 200 }, { pose: N, ms: 200 }, { pose: M, ms: 200 }, { pose: 'stand', ms: 300 }]); busy = false;
+      await goTo({ x: innerWidth / 2 + (Math.random() - 0.5) * 120, y: innerHeight * 0.62 }, true, 900);
+      for (const n of list) await play(TRICKS[n]);
+      busy = false;
+    },
+    cheer() { return this.react(reduced ? ['tlieskanie'] : ['jupi', 'salto', 'tanec', 'pest']); },
+    sad() { return this.react(['krcenie', 'smutny', 'nevadi']); },
+    // výsledok cvičenia: 0 chýb = veľká oslava, 1–2 chyby = „skoro!“, viac = smutný, ale povzbudí
+    result(mistakes) {
+      if (!mistakes) return this.cheer();
+      if (mistakes <= 2) return this.react(['krcenie', 'tlieskanie', 'nevadi']);
+      return this.sad();
     },
     async jump() { if (busy || jobs.length) return; busy = true; stopMove(); await play(TRICKS.skok); busy = false; },
   };

@@ -737,7 +737,7 @@
     if (S.answers.some((x) => x === '' || x == null)) return;
     window.Panacik?.flush();
     const wrong = S.items.map((it, i) => (E.check(it, S.answers[i]) ? -1 : i)).filter((i) => i >= 0);
-    if (wrong.length) window.Panacik?.sad();
+    if (wrong.length) window.Panacik?.result(wrong.length);
     Voice.stop();
     saveDone('tablet', wrong, S.answers.map((a) => String(a).trim()));
     S.view = 'result'; render(); window.scrollTo(0, 0);
@@ -774,6 +774,7 @@
         const n = S.marks.size;
         if (!(await ask(`Uložiť s výsledkom: ${n ? chyb(n) : 'bez chyby'}? Potom sa to už nedá zmeniť.`, 'Uložiť'))) break;
         saveDone('papier', [...S.marks].sort((x, y) => x - y), null);
+        window.Panacik?.result(n);
         S.view = 'result'; render(); window.scrollTo(0, 0);
         break;
       }
