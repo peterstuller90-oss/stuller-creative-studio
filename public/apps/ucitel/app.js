@@ -273,6 +273,7 @@
 
   // ---------------- ohňostroj ----------------
   function fireworks() {
+    window.Panacik?.cheer();
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const c = document.createElement('canvas');
     c.className = 'fx';
@@ -923,6 +924,7 @@
   }
 
   function checkGaps() {
+    window.Panacik?.flush();
     document.querySelectorAll('.gap[data-gap]').forEach((g) => { S.gaps[g.dataset.gap] = g.value.trim(); });
     const empty = S.plan.filter((p) => p.gap !== undefined && !(S.gaps[p.gap] || '').trim());
     if (empty.length) {
@@ -938,6 +940,7 @@
     saveDone(r.mistakes, r.iy, r.words, answer);
     render();
     Voice.chat(pick(r.mistakes === 0 ? LINES.perfect : LINES.oops));
+    if (r.mistakes === 0) window.Panacik?.cheer(); else window.Panacik?.sad();
   }
 
   async function gateCheck() {
@@ -965,7 +968,7 @@
   $app.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act], [data-key]');
     if (!b) return;
-    if (b.dataset.key) { fillGap(b.dataset.key); return; }
+    if (b.dataset.key) { fillGap(b.dataset.key, b); return; }
     const act = b.dataset.act; const v = b.dataset.v;
     const openGate = (g) => { S.gate = g; render(); document.getElementById('gateIn')?.focus(); };
     switch (act) {
@@ -1057,10 +1060,13 @@
     el.textContent = `${filled} z ${total}`;
     if (filled === total && S.notice) { S.notice = ''; document.querySelector('.notice.bad-note')?.remove(); }
   }
-  function fillGap(c) {
+  function fillGap(c, keyEl) {
     const g = document.getElementById(`g${S.focusGap}`) || document.querySelector('.gap[data-gap]');
     if (!g) return;
-    g.value = c; S.gaps[g.dataset.gap] = c; updateFilled(); focusNext(g);
+    g.value = c; S.gaps[g.dataset.gap] = c; updateFilled();
+    // panáčik dobehne k písmenku a donesie ho do okienka
+    const id = g.id; window.Panacik?.carry(c, keyEl, () => document.getElementById(id));
+    focusNext(g);
   }
   function focusNext(g) {
     const all = [...document.querySelectorAll('input.gap')];

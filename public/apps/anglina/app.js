@@ -635,6 +635,7 @@
 
   // ---------------- oslava ----------------
   function fireworks() {
+    window.Panacik?.cheer();
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const c = document.createElement('canvas'); c.className = 'fx'; document.body.appendChild(c);
     const dpr = Math.min(2, devicePixelRatio || 1);
@@ -734,7 +735,9 @@
   }
   function tabletCheck() {
     if (S.answers.some((x) => x === '' || x == null)) return;
+    window.Panacik?.flush();
     const wrong = S.items.map((it, i) => (E.check(it, S.answers[i]) ? -1 : i)).filter((i) => i >= 0);
+    if (wrong.length) window.Panacik?.sad();
     Voice.stop();
     saveDone('tablet', wrong, S.answers.map((a) => String(a).trim()));
     S.view = 'result'; render(); window.scrollTo(0, 0);
@@ -778,7 +781,7 @@
       case 'prev': goTo(S.sel - 1); break;
       case 'next': goTo(nextOpen()); break;
       case 'pick': {
-        S.answers[S.sel] = b.dataset.v; render();
+        S.answers[S.sel] = b.dataset.v; render(); window.Panacik?.jump();
         // Po výbere krátko ukáž zvýraznenie a prejdi na ďalšiu nezodpovedanú otázku.
         const all = S.answers.every((x) => x);
         const at = S.sel;
@@ -788,7 +791,11 @@
       case 'key': {
         const k = b.dataset.k; const cur = String(S.answers[S.sel] || '');
         if (k === 'del') S.answers[S.sel] = cur.slice(0, -1);
-        else if (cur.length < 24 && !(k === ' ' && (!cur || cur.endsWith(' ')))) S.answers[S.sel] = cur + k;
+        else if (cur.length < 24 && !(k === ' ' && (!cur || cur.endsWith(' ')))) {
+          S.answers[S.sel] = cur + k;
+          // panáčik donesie písmenko do políčka s odpoveďou
+          if (k !== ' ') window.Panacik?.carry(k, b, () => (S.view === 'tablet' ? document.querySelector('.typed') : null));
+        }
         render();
         break;
       }
