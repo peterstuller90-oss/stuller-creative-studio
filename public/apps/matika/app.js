@@ -249,6 +249,7 @@
     <section class="panel">
       <span class="label">2 · Úroveň</span>
       <div class="levels ${S.op === 'jednotky' ? 'four' : ''}">${Object.entries(E.LEVELS).filter(([, l]) => !l.only || l.only === S.op).map(([id, l]) => `<button class="level" data-act="level" data-v="${id}" aria-pressed="${S.level === id}"><b>${l.name}<span class="pips">${[1, 2, 3].map((i) => `<i class="${i <= l.n ? 'on' : ''}"></i>`).join('')}</span></b>${l.only ? '' : ''}<small>${esc(info[id])}</small></button>`).join('')}</div>
+      ${S.op === 'jednotky' ? '<button class="btn small cyan unitsbtn noprint" data-act="units">📏 Ako prevádzať jednotky</button>' : ''}
       <span class="label">3 · Koľko príkladov</span>
       <div class="seg">${Object.entries(E.COUNTS).map(([id, c]) => `<button data-act="count" data-v="${id}" aria-pressed="${S.count === id}">${c.name}<small>${prikladov(c.n)}</small></button>`).join('')}</div>
     </section>
@@ -272,10 +273,10 @@
   function viewPaper() {
     const ex = { op: S.op, level: S.level };
     return `<div class="bar noprint"><button class="x" data-act="quit" aria-label="Zrušiť">×</button><h2 class="out">${exTitle(ex)}</h2><span class="tag red">Na papier</span></div>
-    <section class="panel noprint"><p>Odpíš si príklady do zošita a vypočítaj ich. ${S.level === 'tazke' && ['plus', 'minus'].includes(S.op) ? 'Sčítanie a odčítanie počítaj <b>pod seba</b>. ' : ''}${S.op === 'jednotky' ? 'Výsledok napíš v jednotke, ktorá je za čiarou. ' : ''}Keď máš všetko, ťukni na <b>Mám vypočítané</b>.</p></section>
+    <section class="panel noprint"><p>Odpíš si príklady do zošita a vypočítaj ich. ${S.level === 'tazke' && ['plus', 'minus'].includes(S.op) ? 'Sčítanie a odčítanie počítaj <b>pod seba</b>. ' : ''}${S.op === 'jednotky' ? 'Výsledok napíš v jednotke, ktorá je za čiarou. ' : ''}Keď máš všetko, ťukni na <b>Mám vypočítané</b>.</p>${S.op === 'jednotky' ? '<p class="hint">Nevieš si rady? Ťukni na <b>?</b> pri príklade.</p>' : ''}${S.op === 'jednotky' ? '<button class="btn small cyan unitsbtn noprint" data-act="units">📏 Ako prevádzať jednotky</button>' : ''}</section>
     <section class="sheet-paper">
       <h3>${esc(exTitle(ex))} – ${prikladov(S.items.length)}</h3>
-      <div class="tasks">${S.items.map((it, i) => `<div class="task"><span class="n">${i + 1}.</span><span class="q">${E.text(it)} =</span><span class="line"></span>${E.unitOf(it) ? `<span class="u">${E.unitOf(it)}</span>` : ''}</div>`).join('')}</div>
+      <div class="tasks ${S.op === 'jednotky' ? 'units' : ''}">${S.items.map((it, i) => `<div class="task"><span class="n">${i + 1}.</span><span class="q">${E.text(it)} =</span><span class="line"></span>${E.unitOf(it) ? `<span class="u">${E.unitOf(it)}</span><button class="hintbtn noprint" data-act="hint" data-i="${i}" aria-label="Pomôcka k príkladu ${i + 1}">?</button>` : ''}</div>`).join('')}</div>
     </section>
     <div class="row noprint">
       <button class="btn dark" data-act="print">${I.print.replace('<svg', '<svg class="ico"')} Vytlačiť</button>
@@ -286,7 +287,7 @@
   function viewCheck() {
     const n = S.marks.size;
     return `<div class="bar"><button class="x" data-act="quit" aria-label="Zrušiť">×</button><h2 class="out">Porovnaj so zošitom</h2><span class="tag red">Na papier</span></div>
-    <section class="panel"><p>Tu sú správne výsledky. <b>Ťukni na každý príklad, ktorý máš v zošite inak.</b> Buď poctivý – ocko to skontroluje. Kontrola je len raz.</p></section>
+    <section class="panel"><p>Tu sú správne výsledky. <b>Ťukni na každý príklad, ktorý máš v zošite inak.</b> Buď poctivý – ocko to skontroluje. Kontrola je len raz.</p>${S.op === 'jednotky' ? '<button class="btn small cyan unitsbtn noprint" data-act="units">📏 Ako prevádzať jednotky</button>' : ''}</section>
     <div class="check-list">${S.items.map((it, i) => `<button class="mark" data-act="toggleMark" data-i="${i}" aria-pressed="${S.marks.has(i)}"><span class="n">${i + 1}.</span><span class="q">${E.text(it)} = <b>${E.ansText(it)}</b></span><span class="state">${S.marks.has(i) ? 'Mám zle' : 'Mám dobre'}</span></button>`).join('')}</div>
     <button class="btn red big" data-act="paperSave">Uložiť – ${n ? chyb(n) : 'bez chyby'}</button>`;
   }
@@ -300,12 +301,14 @@
     const all = filled === S.items.length;
     return `<div class="bar"><button class="x" data-act="quit" aria-label="Zrušiť">×</button><h2 class="out">${exTitle({ op: S.op, level: S.level })}</h2><span class="tag green">${filled}/${S.items.length}</span></div>
     <div class="progress" aria-hidden="true"><i style="width:${(filled / S.items.length) * 100}%"></i></div>
+    ${S.op === 'jednotky' ? '<div class="unitsrow">' + '<button class="btn small cyan unitsbtn" data-act="units">📏 Ako prevádzať jednotky</button>' + '</div>' : ''}
     <div class="grid">${S.items.map((it, i) => `<button class="card ${S.sel === i ? 'sel' : ''}" data-act="sel" data-i="${i}"><span class="n">${i + 1}</span><span class="q">${E.text(it)} =</span>${slotHtml(i)}${E.unitOf(it) ? `<span class="u">${E.unitOf(it)}</span>` : ''}</button>`).join('')}</div>
     <button class="btn green big" data-act="tabletCheck" ${all ? '' : 'disabled'}>Skontrolovať${all ? '' : ` (${S.items.length - filled} chýba)`}</button>
     <div class="keys"><div class="keys-in">
       ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((d) => `<button class="key" data-act="key" data-k="${d}">${d}</button>`).join('')}
       ${S.level === 'desatinne' ? '<button class="key" data-act="key" data-k="," aria-label="Desatinná čiarka">,</button><button class="key del" data-act="key" data-k="del" aria-label="Zmazať">⌫</button>' : '<button class="key del wide" data-act="key" data-k="del" aria-label="Zmazať">⌫</button>'}
-      ${all ? '<button class="key go wide" data-act="tabletCheck" style="grid-column: span 6">Skontrolovať</button>' : '<button class="key next wide" data-act="key" data-k="next" style="grid-column: span 6">Ďalší ➜</button>'}
+      ${S.op === 'jednotky' ? '<button class="key hint wide" data-act="hint" data-i="' + S.sel + '" aria-label="Pomôcka k vybranému príkladu">💡 Pomoc</button>' : ''}
+      ${all ? `<button class="key go wide" data-act="tabletCheck" style="grid-column: span ${S.op === 'jednotky' ? 4 : 6}">Skontrolovať</button>` : `<button class="key next wide" data-act="key" data-k="next" style="grid-column: span ${S.op === 'jednotky' ? 4 : 6}">Ďalší ➜</button>`}
     </div></div>`;
   }
 
@@ -541,6 +544,52 @@
     }
   }
   function closeWhy() { document.querySelector('.sheet-wrap')?.remove(); }
+  /** Jednoduché okno s pomôckou (bez sledovania „vypočuté“). */
+  function openInfo(label, html, sayText) {
+    closeWhy();
+    const wrap = document.createElement('div');
+    wrap.className = 'sheet-wrap info';
+    const canSay = Voice.voices.length > 0;
+    wrap.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(label)}">${html}
+      <div class="row">${canSay ? `<button class="btn dark" data-a="say">${I.speaker.replace('<svg', '<svg class="ico"')} Prečítaj</button>` : ''}<button class="btn yellow" data-a="close">Rozumiem</button></div></div>`;
+    wrap.addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-a]');
+      if (ev.target === wrap || b?.dataset.a === 'close') { Voice.stop(); wrap.remove(); return; }
+      if (b?.dataset.a === 'say') Voice.say(sayText);
+    });
+    document.body.appendChild(wrap);
+  }
+  function openHint(it, i) {
+    const lines = E.hintU(it);
+    openInfo('Pomôcka', `<div class="sheet-kicker">💡 Pomôcka k príkladu ${i + 1}</div>
+      <div class="sheet-head">${E.text(it)} = <span class="qm">?</span> ${E.unitOf(it)}</div>
+      <ol class="steps">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ol>
+      <p class="hint center">Výsledok si vypočítaj sám. 💪</p>`, E.sayU(`${E.text(it)} = koľko ${E.unitOf(it)}? ${lines.join(' ')}`));
+  }
+  function openUnits() {
+    const f = E.fmt;
+    const steps = [['km', 'kilometer'], ['m', 'meter'], ['dm', 'decimeter'], ['cm', 'centimeter'], ['mm', 'milimeter']];
+    const fac = [1000, 10, 10, 10];
+    const stairs = steps.map(([u, w], k) => `<div class="st" style="--k:${k}"><b>${u}</b><small>${w}</small></div>${k < 4 ? `<div class="st-arrow" style="--k:${k}"><span class="down">· ${f(fac[k])} ↓</span><span class="up">↑ : ${f(fac[k])}</span></div>` : ''}`).join('');
+    const dec = S.level === 'desatinne';
+    const html = `<div class="sheet-kicker">📏 Prevod jednotiek dĺžky</div>
+      <div class="rule"><p><span class="pill down">Na menšiu jednotku</span> <b>násobíme</b> – číslo bude väčšie.</p><p><span class="pill up">Na väčšiu jednotku</span> <b>delíme</b> – číslo bude menšie.</p></div>
+      <div class="stairs">${stairs}</div>
+      <h4>Pamätaj si</h4>
+      <ul class="rels"><li>1 cm = 10 mm</li><li>1 dm = 10 cm = 100 mm</li><li>1 m = 10 dm = 100 cm = ${f(1000)} mm</li><li>1 km = ${f(1000)} m</li></ul>
+      <p class="tip">Keď násobíš 10, pripíšeš 1 nulu, pri 100 dve nuly, pri ${f(1000)} tri nuly.</p>
+      <h4>Príklady</h4>
+      <div class="ex"><b>7 m = ? cm</b><span>Na menšiu → násobím: 7 · 100 = 700 cm</span></div>
+      <div class="ex"><b>60 mm = ? cm</b><span>Na väčšiu → delím: 60 : 10 = 6 cm</span></div>
+      <div class="ex"><b>40 cm 2 mm = ? mm</b><span>Každú časť premením na mm: 40 cm = 40 · 10 = 400 mm, 2 mm ostanú 2 mm.</span><span>Sčítam: 400 + 2 = 402 mm</span></div>
+      <div class="ex"><b>15 dm 23 cm = ? cm</b><span>15 dm = 15 · 10 = 150 cm, 23 cm ostanú.</span><span>Sčítam: 150 + 23 = 173 cm</span></div>
+      ${dec ? `<div class="ex"><b>7 mm 3 dm = ? dm</b><span>Najprv všetko na mm: 3 dm = 300 mm, spolu 300 + 7 = 307 mm.</span><span>1 dm = 100 mm, preto 307 : 100 = 3,07 dm</span><span>Celé decimetre sú pred čiarkou.</span></div>` : ''}`;
+    const say = E.sayU(['Na menšiu jednotku násobíme, číslo bude väčšie. Na väčšiu jednotku delíme, číslo bude menšie.',
+      `1 cm = 10 mm. 1 dm = 10 cm = 100 mm. 1 m = 10 dm = 100 cm = ${f(1000)} mm. 1 km = ${f(1000)} m.`,
+      'Príklad: 40 cm 2 mm na milimetre. 40 cm = 400 mm, 2 mm ostanú. Sčítam: 400 + 2 = 402 mm.',
+      dec ? '7 mm 3 dm na decimetre. Najprv všetko na milimetre: 300 + 7 = 307 mm. Potom 307 : 100 = 3,07 dm.' : ''].join(' '));
+    openInfo('Prevod jednotiek', html, say);
+  }
   /** Otázka v appke (namiesto confirm, ktorý niektoré okná blokujú). */
   function ask(text, yes, no = 'Späť') {
     return new Promise((resolve) => {
@@ -694,6 +743,8 @@
         break;
       }
       case 'why': openWhy(b.dataset.ex, +b.dataset.i); break;
+      case 'units': openUnits(); break;
+      case 'hint': { const it = S.items[+b.dataset.i]; if (it) openHint(it, +b.dataset.i); break; }
       case 'confirm': {
         const v = document.getElementById('code')?.value || '';
         if (await codeOk(v)) {

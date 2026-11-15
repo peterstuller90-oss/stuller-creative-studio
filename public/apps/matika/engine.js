@@ -343,6 +343,38 @@
     }
     return lines;
   }
+  /** Pomôcka k príkladu na jednotky – postup BEZ výsledku. */
+  function hintU(it) {
+    const lines = [];
+    const smallest = it.parts.reduce((m, [, u]) => (U[u] < U[m] ? u : m), it.to);
+    const used = [...new Set([...it.parts.map(([, u]) => u), it.to])].sort((a, b) => U[b] - U[a]);
+    const rels = [];
+    for (let i = 0; i < used.length - 1; i++) rels.push(relLine(used[i], used[i + 1]));
+    lines.push(`Pamätaj: ${rels.join(', ')}.`);
+    if (it.kind === 'u_up') {
+      const [[n, u]] = it.parts;
+      const f = U[it.to] / U[u];
+      lines.push(`Ideš z menšej jednotky (${u}) na väčšiu (${it.to}), preto delíš.`);
+      lines.push(`Vypočítaj ${fmt(n)} : ${fmt(f)}.`);
+      return lines;
+    }
+    const base = it.kind === 'u_dec' ? smallest : it.to;
+    if (it.parts.length === 1 && it.kind === 'u_down') {
+      const [[n, u]] = it.parts;
+      lines.push(`Ideš z väčšej jednotky (${u}) na menšiu (${it.to}), preto násobíš.`);
+      lines.push(`Vypočítaj ${fmt(n)} · ${fmt(U[u] / U[it.to])}.`);
+      return lines;
+    }
+    lines.push(`Každú časť premeň na ${UFORMS[base][1]} (väčšiu jednotku násob):`);
+    for (const [n, u] of it.parts) lines.push(u === base ? `${fmt(n)} ${u} ostáva ${fmt(n)} ${base}.` : `${fmt(n)} ${u} → ${fmt(n)} · ${fmt(U[u] / U[base])} = ? ${base}`);
+    lines.push('Potom čísla sčítaj.');
+    if (it.kind === 'u_dec') {
+      const f = U[it.to] / U[base];
+      lines.push(`Súčet vydeľ ${fmt(f)}, lebo 1 ${it.to} = ${fmt(f)} ${base}.`);
+      lines.push(`Celé ${UFORMS[it.to][1]} napíš pred čiarku, zvyšok za čiarku.`);
+    }
+    return lines;
+  }
   const spoken = (s) => String(s)
     .replace(/ /g, '')
     .replace(/ · /g, ' krát ').replace(/ : /g, ' delené ').replace(/ − /g, ' mínus ').replace(/ \+ /g, ' plus ')
@@ -472,5 +504,5 @@
     .replace(/(^|[.:] )([234]) ([a-z]*metre) je /g, '$1$2 $3 sú '); // 2 centimetre sú 20 milimetrov
   function questionSay(it) { return spoken(`${T(it)}`); }
 
-  window.MATIKA_ENGINE = { unitOf, ansText, check, fmtNum, OPS, OP_IDS, LEVELS, LEVEL_INFO, COUNTS, generate, explain, fmt, text: T, questionSay, spoken, digits };
+  window.MATIKA_ENGINE = { unitOf, ansText, check, fmtNum, OPS, OP_IDS, LEVELS, LEVEL_INFO, COUNTS, generate, explain, fmt, text: T, questionSay, spoken, digits, hintU, sayU: (t) => spokenU(t) };
 })();
