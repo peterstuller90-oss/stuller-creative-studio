@@ -286,6 +286,18 @@ span.gap { display: inline-block; line-height: 1.5em; }
 .day { min-height: 70px; border: 2px solid var(--line); border-radius: 12px; padding: 4px 6px; display: flex; flex-direction: column; justify-content: space-between; background: var(--panel-2); }
 .day.out { opacity: .4; }
 .day.today { border: var(--edge); background: #FFF6CF; }
+.day { font: inherit; color: var(--ink); text-align: left; cursor: pointer; align-items: stretch; }
+.day.sel { box-shadow: 0 0 0 3px var(--blue); }
+.dtimes { display: flex; flex-direction: column; gap: 1px; margin: 2px 0; }
+.dtimes .t { font-style: normal; font-size: 12px; font-weight: 900; line-height: 1.2; border-left: 4px solid; padding-left: 4px; color: var(--ink); }
+.dtimes .t.red { border-color: var(--red); } .dtimes .t.green { border-color: var(--green); } .dtimes .t.more { border-color: transparent; color: var(--muted); }
+.day-card { gap: 10px; }
+.day-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.day-list li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 2px solid var(--line); border-left: 8px solid; border-radius: 12px; background: var(--panel-2); }
+.day-list li.red { border-left-color: var(--red); } .day-list li.green { border-left-color: var(--green); }
+.day-list .dt { font-family: var(--head); font-weight: 800; font-size: 24px; min-width: 64px; }
+.day-list span { display: flex; flex-direction: column; font-weight: 900; }
+.day-list small { font-weight: 700; color: var(--muted); font-size: 14px; }
 .dnum { font-family: var(--head); font-weight: 800; font-size: 17px; color: var(--ink-soft); }
 .dcounts { display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; }
 .cnt { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 8px; border: 2px solid var(--ink); font-style: normal; font-family: var(--head); font-weight: 800; font-size: 15px; color: #fff;  text-shadow: 0 2px 0 rgba(13,22,64,.55); }
@@ -354,6 +366,7 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
   .xp-table { grid-template-columns: 1fr; }
   .week { grid-template-columns: repeat(7, minmax(0, 1fr)) 40px; gap: 3px; }
   .day { min-height: 54px; padding: 2px 3px; border-radius: 8px; }
+  .dtimes { display: none; }
   .dnum { font-size: 14px; }
   .cnt { min-width: 18px; height: 18px; font-size: 12px; padding: 0 3px; border-radius: 6px; }
   .wsum b { font-size: 16px; }
@@ -366,4 +379,3 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
 
 .tabs .ic { display: grid; place-items: center; height: 26px; }
 .tabs .ic svg { width: 24px; height: 24px; fill: currentColor; stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; }
-.tabs button[aria-current="page"] .ic svg { stroke: none; }

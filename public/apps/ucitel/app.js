@@ -663,10 +663,14 @@
     const per = {};
     for (const r of mine().filter((x) => x.details?.kind === 'done')) {
       const k = dayKey(r.created_at);
-      per[k] = per[k] || { red: 0, green: 0 };
-      per[k][r.mode === 'doplnanie' ? 'green' : 'red']++;
+      per[k] = per[k] || { red: 0, green: 0, items: [] };
+      const col = r.mode === 'doplnanie' ? 'green' : 'red';
+      per[k][col]++;
+      per[k].items.push({ at: new Date(r.details?.doneAt || r.created_at), col, r });
     }
+    for (const v of Object.values(per)) v.items.sort((a, b) => a.at - b.at);
     const today = dayKey(new Date());
+    const sel = S.calDay || today;
     const monthName = first.toLocaleDateString('sk-SK', { month: 'long', year: 'numeric' });
     const weeks = [];
     const d = new Date(start);
@@ -674,9 +678,10 @@
       const days = [];
       let wr = 0; let wg = 0;
       for (let i = 0; i < 7; i++) {
-        const k = dayKey(d); const c = per[k] || { red: 0, green: 0 };
+        const k = dayKey(d); const c = per[k] || { red: 0, green: 0, items: [] };
         wr += c.red; wg += c.green;
-        days.push(`<div class="day ${d.getMonth() !== m ? 'out' : ''} ${k === today ? 'today' : ''}"><span class="dnum">${d.getDate()}</span><span class="dcounts">${c.red ? `<i class="cnt red" title="diktát">${c.red}</i>` : ''}${c.green ? `<i class="cnt green" title="doplňovačka">${c.green}</i>` : ''}</span></div>`);
+        const times = c.items.slice(0, 3).map((it) => `<i class="t ${it.col}">${hhmm(it.at)}</i>`).join('') + (c.items.length > 3 ? `<i class="t more">+${c.items.length - 3}</i>` : '');
+        days.push(`<button class="day ${d.getMonth() !== m ? 'out' : ''} ${k === today ? 'today' : ''} ${k === sel ? 'sel' : ''}" data-act="calDay" data-v="${k}" aria-label="${d.getDate()}. ${c.items.length ? `${c.items.length} cvičení` : 'bez cvičenia'}"><span class="dnum">${d.getDate()}</span>${times ? `<span class="dtimes">${times}</span>` : ''}<span class="dcounts">${c.red ? `<i class="cnt red" title="diktát">${c.red}</i>` : ''}${c.green ? `<i class="cnt green" title="doplňovačka">${c.green}</i>` : ''}</span></button>`);
         d.setDate(d.getDate() + 1);
       }
       weeks.push(`<div class="week">${days.join('')}<div class="wsum"><b>${wr + wg}</b><span>${wr ? `<i class="cnt red">${wr}</i>` : ''}${wg ? `<i class="cnt green">${wg}</i>` : ''}</span></div></div>`);
@@ -690,8 +695,19 @@
       ${weeks.join('')}
       <div class="cal-legend"><span><i class="cnt red">2</i> diktát na papier</span><span><i class="cnt green">1</i> doplňovačka</span></div>
     </section>
+    ${dayPanel(sel, per[sel])}
     ${cloudLine()}
     ${tabBar()}`;
+  }
+
+  function hhmm(t) { return `${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}`; }
+
+  function dayPanel(k, c) {
+    const [yy, mm, dd] = k.split('-').map(Number);
+    const raw = new Date(yy, mm - 1, dd).toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long' });
+    const title = raw.charAt(0).toUpperCase() + raw.slice(1);
+    const list = c?.items?.length ? `<ul class="day-list">${c.items.map(({ at, col, r }) => `<li class="${col}"><b class="dt">${hhmm(at)}</b><span>${col === 'green' ? 'Doplňovačka' : 'Diktát na papier'}<small>${esc(E.LENGTHS[r.length]?.label || '')}${r.details?.hard ? ', náročný' : ''}</small></span></li>`).join('')}</ul>` : '<p class="hint">V tento deň nebolo žiadne cvičenie.</p>';
+    return `<section class="card day-card"><h2 class="day-title">${esc(title)}</h2>${list}</section>`;
   }
 
   function viewLevel() {
@@ -972,6 +988,7 @@
       case 'quit': Voice.stop(); S.view = 'ready'; render(); break;
       case 'toggleDone': S.openDone = S.openDone === b.dataset.id ? null : b.dataset.id; render(); break;
       case 'doneFilter': S.doneFilter = v; render(); break;
+      case 'calDay': S.calDay = v; render(); break;
       case 'calMove': { const d = S.calMonth ? new Date(S.calMonth) : new Date(); d.setDate(1); d.setMonth(d.getMonth() + +v); S.calMonth = d.toISOString(); render(); break; }
       case 'rwWith': S.rewardPick = { ...(S.rewardPick || {}), with: v }; render(); break;
       case 'rwPlace': S.rewardPick = { ...(S.rewardPick || {}), place: v, own: '' }; render(); break;
