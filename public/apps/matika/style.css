@@ -386,3 +386,20 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
 .sheet-q { font-size: 22px; line-height: 1.35; text-align: center; font-weight: 800; }
 .ask { align-items: center; }
 .ask .sheet { max-width: 480px; }
+
+/* ---------- výber: nevybrané potlačené, vybrané výrazné (Peter 2026-11-15) ---------- */
+:is(.ops, .levels, .seg, .modes, .filters, .choose) > button { position: relative; transition: transform .15s, opacity .15s, filter .15s, box-shadow .15s; }
+:is(.ops, .levels, .seg, .modes, .filters, .choose):has(> [aria-pressed="true"]) > [aria-pressed="false"] {
+  opacity: .5; filter: saturate(.25) brightness(.97); transform: scale(.95); box-shadow: 0 2px 0 var(--ink);
+}
+:is(.ops, .levels, .seg, .modes, .filters, .choose) > [aria-pressed="true"] {
+  opacity: 1; filter: none; z-index: 1;
+  box-shadow: 0 6px 0 var(--ink), 0 0 0 4px #fff, 0 0 0 7px var(--cyan-d);
+}
+:is(.ops, .levels, .seg, .modes, .choose) > [aria-pressed="true"]::after {
+  content: '✓'; position: absolute; top: -10px; right: -8px; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--green); color: #fff; border: 3px solid var(--ink); display: grid; place-items: center;
+  font: 900 16px/1 var(--text); text-shadow: 0 1px 0 var(--ink); box-shadow: 0 2px 0 var(--ink);
+}
+:is(.ops, .levels, .seg, .modes, .filters, .choose):has(> [aria-pressed="true"]) > [aria-pressed="false"]:hover { opacity: .75; }
+@media (prefers-reduced-motion: reduce) { :is(.ops, .levels, .seg, .modes, .filters, .choose) > button { transform: none !important; } }
