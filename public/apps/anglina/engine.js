@@ -242,7 +242,17 @@
   }
 
   /** Hláskovanie: písmená oddelené bodkou (hlas prečíta názvy písmen), slová oddelené pauzou. */
-  const spell = (en) => en.split(' ').map((part) => part.replace(/-/g, '').toUpperCase().split('').join('. ') + '.').join(' … ');
+  // Slovenské názvy písmen (ako sa hláskuje v škole), napísané tak, aby ich slovenský hlas prečítal správne.
+  const SK_LETTER = { a: 'á', b: 'bé', c: 'cé', d: 'dé', e: 'é', f: 'ef', g: 'gé', h: 'há', i: 'í', j: 'jé', k: 'ká', l: 'el', m: 'em', n: 'en', o: 'ó', p: 'pé', q: 'kvé', r: 'er', s: 'es', t: 'té', u: 'ú', v: 'vé', w: 'dvojité vé', x: 'iks', y: 'ypsilon', z: 'zet' };
+  /** Hláskovanie po slovensky: každé písmeno zvlášť a pomaly (veľké písmeno, medzera a pomlčka sa povedia). */
+  const spellSk = (en) => en.split('').map((c) => {
+    if (c === ' ') return { lang: 'sk', text: 'medzera', rate: 0.7 };
+    if (c === '-') return { lang: 'sk', text: 'pomlčka', rate: 0.7 };
+    const name = SK_LETTER[c.toLowerCase()];
+    return { lang: 'sk', text: c !== c.toLowerCase() ? `veľké ${name}` : name, rate: 0.7 };
+  });
+  /** Hláskovanie po anglicky: anglické názvy písmen, každé zvlášť a pomaly. */
+  const spellEn = (en) => en.replace(/[ -]/g, '').toUpperCase().split('').map((c) => ({ lang: 'en', text: `${c}.`, rate: 0.6 }));
   /** Vysvetlenie chyby: riadky na čítanie a postupnosť pre hlas (sk / en). */
   function explain(item) {
     const w = BY_ID.get(item.id);
@@ -250,11 +260,12 @@
     if (w.alt && w.alt.length) lines.push(`Uznáva sa aj: ${w.alt.join(', ')}.`);
     if (w.tip) lines.push(plain(w.tip));
     const seq = [
-      { lang: 'sk', text: `Slovo ${w.sk} sa po anglicky povie` }, { lang: 'en', text: w.en },
-      { lang: 'sk', text: 'Píše sa' }, { lang: 'en', text: spell(w.en) },
+      { lang: 'sk', text: `Slovo ${w.sk} sa po anglicky povie` }, { lang: 'en', text: w.en, rate: 0.7 },
+      { lang: 'sk', text: 'Hláskujeme po slovensky:', rate: 0.85 }, ...spellSk(w.en),
+      { lang: 'sk', text: 'A teraz po anglicky:', rate: 0.85 }, ...spellEn(w.en),
     ];
     if (w.tip) seq.push(...tipSeq(w.tip));
-    seq.push({ lang: 'sk', text: 'Ešte raz:' }, { lang: 'en', text: w.en });
+    seq.push({ lang: 'sk', text: 'Ešte raz:' }, { lang: 'en', text: w.en, rate: 0.7 });
     return { lines, seq };
   }
   /** Tip so značkami {anglické slovo}: na čítanie bez zátvoriek, pre hlas po častiach (sk / en). */
@@ -262,5 +273,5 @@
   const tipSeq = (t) => t.split(/(\{[^}]+\})/).filter((x) => x.trim()).map((x) => (x.startsWith('{') ? { lang: 'en', text: x.slice(1, -1) } : { lang: 'sk', text: x.trim() }));
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-  window.ANGLINA_ENGINE = { TOPICS, BY_ID, topicOf, LEVELS, LEVEL_INFO, COUNTS, generate, check, explain, pick, word: (id) => BY_ID.get(id), plain };
+  window.ANGLINA_ENGINE = { TOPICS, BY_ID, topicOf, LEVELS, LEVEL_INFO, COUNTS, generate, check, explain, pick, word: (id) => BY_ID.get(id), plain, skLetter: (c) => SK_LETTER[c.toLowerCase()] || '' };
 })();

@@ -201,7 +201,7 @@
       this.stop();
       const tok = this.token;
       for (const p of parts) {
-        if (!(await this.one(p.lang, p.text, tok, rate))) return false;
+        if (!(await this.one(p.lang, p.text, tok, p.rate || rate))) return false;
       }
       return tok === this.token;
     },
@@ -571,7 +571,7 @@
     wrap.className = 'sheet-wrap';
     wrap.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Vysvetlenie">
       <div class="sheet-head wordhead">${pic(w)}<span>${esc(w.sk)} = <b>${esc(w.en)}</b></span></div>
-      <div class="spell" aria-hidden="true">${w.en.split('').map((c) => (c === ' ' ? '<i class="gap"></i>' : `<span>${esc(c)}</span>`)).join('')}</div>
+      <div class="spell" aria-hidden="true">${w.en.split('').map((c) => (c === ' ' ? '<i class="gap"></i>' : c === '-' ? '<span class="lt"><b>-</b><small>pomlčka</small></span>' : `<span class="lt"><b>${esc(c)}</b><small>${esc((c !== c.toLowerCase() ? 'veľké ' : '') + E.skLetter(c))}</small></span>`)).join('')}</div>
       <ol class="steps">${x.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ol>
       <p class="sheet-status ${wasHeard ? '' : 'wait'}" id="whyStatus">${wasHeard ? '✓ Toto si si už vypočul' : canSay ? '🔊 Počúvaj…' : 'Prečítaj si to pozorne.'}</p>
       <div class="row"><button class="btn dark" data-act="replay">${I.speaker.replace('<svg', '<svg class="ico"')} Znova</button><button class="btn yellow" data-act="closeWhy" id="whyOk" ${wasHeard || canSay ? '' : 'disabled'}>Rozumiem</button></div>
