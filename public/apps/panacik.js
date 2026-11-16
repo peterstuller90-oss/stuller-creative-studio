@@ -1,12 +1,16 @@
-/* Panáčik – malý panáčik z čiarok, ktorý pobehuje po appke (Slovina, Matika, Anglina),
-   robí srandy a nosí písmenká/číslice tam, kam ich Oto doplňuje.
+/* Panáčik – malý panáčik z čiarok v appkách Slovina, Matika, Anglina.
+   Kým sa nepracuje, sedí na svojom tlačidle (lavičke) a neprekáža:
+     notebook (široká obrazovka) – vľavo dole, mimo obsahu,
+     iPad a telefón – vpravo dole, tesne nad spodnou lištou/klávesnicou.
+   Vybehne, až keď Oto aktívne pracuje (ťukne na písmeno, číslo alebo odpoveď, alebo príde výsledok),
+   nosí písmenká/číslice tam, kam ich Oto doplňuje, a po chvíli bez práce sa vráti a sadne si.
 
    Použitie v appke:
      Panacik.carry(text, odkialElement, () => cielovyElement)  – donesie text (len animácia, stav si appka uloží sama)
      Panacik.flush()  – okamžite dokončí všetko nosenie (napr. pred kontrolou)
      Panacik.cheer()  – oslava (salto + tanec)
      Panacik.sad()    – krútenie hlavou
-     Panacik.jump()   – malý poskok
+     Panacik.jump(el) – vybehne k prvku a poskočí (napr. po výbere odpovede)
    Kým nesie znak do cieľa, cieľ má triedu .pan-wait (appka ju môže použiť na skrytie textu). */
 (() => {
   if (window.Panacik) return;
@@ -20,9 +24,12 @@
   #panacik.dark{color:#fff;filter:drop-shadow(0 0 1.4px #0B1033) drop-shadow(0 0 1.4px #0B1033) drop-shadow(0 2px 2px rgba(0,0,0,.45))}
   .pan-letter{position:fixed;left:0;top:0;z-index:9001;pointer-events:none;min-width:30px;height:32px;padding:0 6px;line-height:28px;text-align:center;
     font:800 24px 'Baloo 2','Arial Rounded MT Bold','Arial Black',sans-serif;color:#0B1033;background:#FFCF1F;border:2px solid #0B1033;border-radius:8px;box-shadow:0 2px 0 #0B1033}
+  .pan-perch{position:fixed;left:0;top:0;z-index:8999;width:52px;height:14px;padding:0;border:2px solid #0B1033;border-radius:7px;
+    background:#FFCF1F;box-shadow:0 3px 0 #0B1033;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .pan-perch:focus-visible{outline:3px solid #45C3FF;outline-offset:2px}
   .pan-wait{color:transparent!important;-webkit-text-fill-color:transparent!important;text-shadow:none!important}
   .pan-wait *{color:transparent!important;-webkit-text-fill-color:transparent!important;text-shadow:none!important}
-  @media print{#panacik,.pan-letter{display:none!important}}`;
+  @media print{#panacik,.pan-letter,.pan-perch{display:none!important}}`;
   document.head.appendChild(css);
   const NS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg');
@@ -33,14 +40,16 @@
     el[id] = document.createElementNS(NS, tag); svg.appendChild(el[id]);
   }
   el.head.setAttribute('r', '6.5');
-  const mount = () => document.body.appendChild(svg);
+  const perch = document.createElement('button');
+  perch.type = 'button'; perch.className = 'pan-perch'; perch.setAttribute('aria-label', 'Panáčikova lavička – ťukni a zamáva ti');
+  const mount = () => { document.body.appendChild(perch); document.body.appendChild(svg); };
   document.body ? mount() : document.addEventListener('DOMContentLoaded', mount);
 
   /* ---------- KOSTRA ----------
      Uhly v stupňoch od zvislice (0 = visí dole), kladné = dopredu.
      t = stehno, k = ohnutie kolena, s = rameno, e = ohnutie lakťa. */
   const L = { torso: 17, neck: 3, head: 6.5, thigh: 11.5, shin: 11.5, up: 9, fore: 9 };
-  const P = (o) => Object.assign({ lean: 0, head: 0, tL: 3, kL: 3, tR: -3, kR: 3, sL: 6, eL: 12, sR: -6, eR: 12, air: 0, rot: 0 }, o);
+  const P = (o) => Object.assign({ lean: 0, head: 0, tL: 3, kL: 3, tR: -3, kR: 3, sL: 6, eL: 12, sR: -6, eR: 12, air: 0, rot: 0, seat: 0 }, o);
   const POSE = {
     stand: P({}),
     crouch: P({ lean: 32, tL: 72, kL: 122, tR: 66, kR: 116, sL: -45, eL: 10, sR: -40, eR: 12 }),
@@ -51,6 +60,8 @@
     throw: P({ lean: 16, sL: 95, eL: 4, sR: 90, eR: 4 }),
     sit: P({ lean: -14, head: -8, tL: 88, kL: 12, tR: 84, kR: 20, sL: -38, eL: 0, sR: -42, eR: 0 }),
     stretch: P({ lean: -6, head: -14, sL: 152, eL: 6, sR: 140, eR: 10 }),
+    // sedí na lavičke, nohy mu visia dole
+    seat: P({ seat: 1, lean: -4, tL: 84, kL: 82, tR: 78, kR: 76, sL: 24, eL: 40, sR: 18, eR: 40 }),
   };
   const KEYS = Object.keys(POSE.stand);
   const D = Math.PI / 180;
@@ -81,7 +92,7 @@
     const arm = (s, e) => { const a = s + p.lean * 0.3; const elb = add(sh, v(a, L.up)); return [sh, elb, add(elb, v(a + e, L.fore))]; };
     const lL = leg(p.tL, p.kL), lR = leg(p.tR, p.kR), aL = arm(p.sL, p.eL), aR = arm(p.sR, p.eR);
     let low = -Infinity; for (const q of [...lL, ...lR, aL[2], aR[2], head, hip]) low = Math.max(low, q[1]);
-    const lift = -low - p.air;     // najnižší bod tela stojí na zemi
+    const lift = (1 - p.seat) * -low - p.air;     // najnižší bod tela stojí na zemi; keď sedí, boky sú na lavičke
     const cx = neck[0] / 2, cy = neck[1] / 2, r = p.rot * D * face, c = Math.cos(r), s = Math.sin(r);
     const T = (q) => { const x = q[0] - cx, y = q[1] - cy; return [cx + x * c - y * s, cy + x * s + y * c + lift]; };
     const str = (arr) => arr.map(T).map((q) => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ');
@@ -122,6 +133,11 @@
         if (d < sp * dt || d < 1) { pos.x = pt.x; pos.y = pt.y; want = carryOn ? { ...POSE.lift } : { ...POSE.stand }; const r = target.res; target = null; r(); }
         else { pos.x += (dx / d) * sp * dt; pos.y += (dy / d) * sp * dt; ph += ((sp * dt) / (target.run ? 30 : 19)) * Math.PI; want = walkPose(ph, target.run, carryOn); smooth = target.run ? 30 : 20; }
       }
+    } else if (home) {
+      // sedí na lavičke: pomaly hompáľa nohami a obzerá sa
+      const sw = Math.sin(now / 520) * 14;
+      want = { ...POSE.seat, kL: 82 + sw, kR: 76 - sw, head: Math.sin(now / 2100) * 10 };
+      if (perchPt) { pos.x = perchPt.x; pos.y = perchPt.y; face = perchPt.face; }
     } else if (!carryOn) {
       const b = Math.sin(now / 600);   // dýchanie v stoji
       want = { ...POSE.stand, lean: 1 + b * 1.2, sL: 6 + b * 2, sR: -6 - b * 2, head: Math.sin(now / 1700) * 4 };
@@ -134,9 +150,51 @@
     if (carried) carried.style.transform = `translate(${pos.x + handTop.x * SC - carried.offsetWidth / 2}px, ${pos.y + handTop.y * SC - 34}px)`;
     // ciele, do ktorých práve niečo nesie, nech ukazujú prázdno, kým to nedonesie
     for (const j of jobs) { const t = j.to(); if (t && !t.classList.contains('pan-wait')) t.classList.add('pan-wait'); }
+    if (now - lastPerch > 400 || !perchPt) { lastPerch = now; placePerch(); }
     if (now - lastBg > 150) { lastBg = now; svg.classList.toggle('dark', isDarkAt(pos.x, pos.y - 30 * SC)); }
     requestAnimationFrame(frame);
   }
+
+  /* ---------- LAVIČKA (miesto, kde sedí) ---------- */
+  let home = true, homing = false, tok = 0, lastWork = 0, lastPerch = 0, perchPt = null;
+  function placePerch() {
+    const w = innerWidth, h = innerHeight;
+    let x, y, f;
+    if (w >= 1100) { x = 70; y = h - 40; f = 1; }               // notebook: vľavo dole
+    else {
+      // iPad / telefón: vpravo dole, nad spodnou lištou alebo klávesnicou, ak tam nejaká je
+      let bottom = h;
+      perch.style.pointerEvents = 'none';           // nech sa pri hľadaní lišty nenájde samotná lavička
+      const probe = document.elementFromPoint(w - 30, h - 2);
+      perch.style.pointerEvents = '';
+      for (let e = probe; e && e.nodeType === 1; e = e.parentElement) {
+        const ps = getComputedStyle(e).position;
+        if (ps === 'fixed' || ps === 'sticky') { const r = e.getBoundingClientRect(); if (r.height < h * 0.5) bottom = Math.min(bottom, r.top); break; }
+      }
+      const phone = w < 600;
+      x = w - (phone ? 36 : 50); y = bottom - (phone ? 12 : 18); f = -1;
+    }
+    perchPt = { x, y, face: f };
+    perch.style.transform = `translate(${x - 26}px, ${y}px)`;
+  }
+  // začne sa pracovať: vstane z lavičky
+  function wake() { tok++; homing = false; home = false; lastWork = performance.now(); }
+  async function goHome() {
+    const my = ++tok; homing = true;
+    const r = await goTo(() => perchPt, true, 700);
+    if (my !== tok || r === 'stop') return;
+    face = perchPt.face;
+    const r2 = await play([{ pose: 'crouch', ms: 160 }, { pose: 'seat', ms: 320 }]);
+    if (my !== tok || r2 === 'stop') return;
+    home = true; homing = false;
+  }
+  perch.addEventListener('click', async () => {
+    if (!home || seq) return;
+    const S2 = (e) => ({ ...POSE.seat, sR: 150, eR: e, head: -8 });
+    const my = tok;
+    await play([{ pose: S2(30), ms: 220 }, { pose: S2(75), ms: 180 }, { pose: S2(30), ms: 180 }, { pose: S2(75), ms: 180 }, { pose: 'seat', ms: 260 }]);
+    if (my === tok) home = true;
+  });
 
   /* ---------- FARBA PODĽA POZADIA ----------
      Pozrie, čo je pod panáčikom: na tmavej ploche je biely, na svetlej tmavý. */
@@ -183,19 +241,17 @@
     { pose: P({ lean: 8, head: -20, sL: -10, sR: 10 }), ms: 200 }, { pose: P({ lean: 8, head: 20, sL: -10, sR: 10 }), ms: 200 }];
   TRICKS.nevadi = [{ pose: 'crouch', ms: 300 }, { pose: 'stand', ms: 300 }, { pose: P({ sR: 140, eR: 30, sL: 6 }), ms: 260 }, { pose: P({ sR: 140, eR: 70, sL: 6 }), ms: 200 },
     { pose: P({ sR: 140, eR: 30, sL: 6 }), ms: 200 }, { pose: 'stand', ms: 300 }];
-  const NAMES = ['skok', 'salto', 'mavanie', 'sad', 'natiahnutie', 'tanec', 'drepy'];
   let busy = false;
   const jobs = [];           // čakajúce nosenia {text, from, to, done}
 
+  // Keď nepracuje: chvíľu počká pri práci (občas malá sranda na mieste), potom sa vráti na lavičku.
+  const SMALL = ['skok', 'drepy', 'natiahnutie', 'mavanie'];
   async function idle() {
     while (true) {
-      if (busy || jobs.length) { await wait(60); continue; }
-      const r = await goTo({ x: 30 + Math.random() * (innerWidth - 60), y: innerHeight * (0.25 + Math.random() * 0.7) }, false);
-      if (r === 'stop' || busy || jobs.length) continue;
-      await wait(200);
-      if (busy || jobs.length) continue;
-      if (!reduced && Math.random() < 0.8) await play(TRICKS[NAMES[Math.floor(Math.random() * NAMES.length)]]);
-      if (!busy && !jobs.length) await wait(500 + Math.random() * 1200);
+      await wait(250);
+      if (busy || jobs.length || home || homing || seq || target) continue;
+      if (performance.now() - lastWork > 7000) { goHome(); continue; }
+      if (!reduced && Math.random() < 0.05) { const my = tok; await play(TRICKS[SMALL[Math.floor(Math.random() * SMALL.length)]]); if (my !== tok) continue; }
     }
   }
 
@@ -207,7 +263,7 @@
   }
 
   async function runJob(j) {
-    busy = true; stopSeq(); stopMove();
+    wake(); busy = true; stopSeq(); stopMove();
     const fast = () => (jobs.length > 1 ? 1500 : 1000);
     const f = j.from;
     const side = pos.x < f.x ? -1 : 1;
@@ -236,6 +292,7 @@
     }
     c?.remove();
     finish(j);
+    lastWork = performance.now();
     busy = false;
   }
 
@@ -264,9 +321,10 @@
     },
     // celá reakcia: dobehne doprostred obrazovky, aby ho Oto videl, a zahrá to
     async react(list) {
-      this.flush(); while (busy) await wait(40); busy = true; stopMove();
+      this.flush(); while (busy) await wait(40); wake(); busy = true; stopMove(); stopSeq();
       await goTo({ x: innerWidth / 2 + (Math.random() - 0.5) * 120, y: innerHeight * 0.62 }, true, 900);
       for (const n of list) await play(TRICKS[n]);
+      lastWork = performance.now();
       busy = false;
     },
     cheer() { return this.react(reduced ? ['tlieskanie'] : ['jupi', 'salto', 'tanec', 'pest']); },
@@ -277,7 +335,14 @@
       if (mistakes <= 2) return this.react(['krcenie', 'tlieskanie', 'nevadi']);
       return this.sad();
     },
-    async jump() { if (busy || jobs.length) return; busy = true; stopMove(); await play(TRICKS.skok); busy = false; },
+    async jump(nearEl) {
+      if (busy || jobs.length) return;
+      const c = nearEl ? center(nearEl) : null;
+      wake(); busy = true; stopMove(); stopSeq();
+      if (c && c.r.width) await goTo({ x: c.x + (pos.x < c.x ? -1 : 1) * (c.r.width / 2 + 22), y: c.r.bottom }, true, 1000);
+      await play(TRICKS.skok);
+      lastWork = performance.now(); busy = false;
+    },
   };
   requestAnimationFrame(frame); idle(); worker();
 })();
