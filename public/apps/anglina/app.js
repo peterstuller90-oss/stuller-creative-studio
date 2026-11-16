@@ -782,7 +782,7 @@
       case 'prev': goTo(S.sel - 1); break;
       case 'next': goTo(nextOpen()); break;
       case 'pick': {
-        S.answers[S.sel] = b.dataset.v; render(); window.Panacik?.jump();
+        S.answers[S.sel] = b.dataset.v; window.Panacik?.jump(b); render();
         // Po výbere krátko ukáž zvýraznenie a prejdi na ďalšiu nezodpovedanú otázku.
         const all = S.answers.every((x) => x);
         const at = S.sel;
