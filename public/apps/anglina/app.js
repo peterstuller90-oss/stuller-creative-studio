@@ -66,7 +66,7 @@
     return { lv, into: xp - base, need, base };
   };
   const levelStart = (lv) => { let b = 0; let need = 40; for (let i = 1; i < lv; i++) { b += need; need += 20; } return b; };
-  const MULT = { lahke: 1, stredne: 2, tazke: 3 };
+  const MULT = { lahke: 1, stredne: 2, tazke: 3, poskladaj: 2 };
   /** XP za cvičenie: každé správne slovo 1/2/3 podľa úrovne, bez chyby bonus, na papier dvojnásobok. */
   const xpFor = (ex) => {
     const m = MULT[ex.level] || 1;
@@ -268,13 +268,13 @@
 
   // ---------------- HRAŤ ----------------
   function viewHome(M) {
-    const topics = [...E.TOPICS.map((t) => ({ id: t.id, em: t.em, name: t.name, c: t.color, school: t.school, n: t.words.length })), { id: 'mix', em: '🎲', name: 'Mix všetkého', c: 'var(--orange)' }];
+    const topics = [...E.TOPICS.map((t) => ({ id: t.id, em: t.em, name: t.name, c: t.color, school: t.school, badge: t.badge, n: t.words.length })), { id: 'mix', em: '🎲', name: 'Mix všetkého', c: 'var(--orange)' }];
     const info = E.LEVEL_INFO[S.mode];
     const wk = weekGoal(M);
     return `${hud(M)}
     <section class="panel">
       <span class="label">1 · Téma</span>
-      <div class="ops topics">${topics.map((t) => `<button class="op" data-act="topic" data-v="${t.id}" aria-pressed="${S.topic === t.id}" style="--c:${t.c}">${t.school ? '<span class="badge-school">Zo školy</span>' : ''}<span class="sym">${t.em}</span><span>${esc(t.name)}</span></button>`).join('')}</div>
+      <div class="ops topics">${topics.map((t) => `<button class="op" data-act="topic" data-v="${t.id}" aria-pressed="${S.topic === t.id}" style="--c:${t.c}">${t.school ? '<span class="badge-school">Zo školy</span>' : t.badge ? `<span class="badge-school extra">${esc(t.badge)}</span>` : ''}<span class="sym">${t.em}</span><span>${esc(t.name)}</span></button>`).join('')}</div>
       <button class="btn small cyan noprint" data-act="words">📖 Pozrieť slovíčka</button>
     </section>
     <section class="panel">
@@ -286,7 +286,7 @@
     </section>
     <section class="panel">
       <span class="label">3 · Úroveň</span>
-      <div class="levels">${Object.entries(E.LEVELS).map(([id, l]) => `<button class="level" data-act="level" data-v="${id}" aria-pressed="${S.level === id}"><b>${l.name}<span class="pips">${[1, 2, 3].map((i) => `<i class="${i <= l.n ? 'on' : ''}"></i>`).join('')}</span></b><small>${esc(info[id])}</small></button>`).join('')}</div>
+      <div class="levels ${S.mode === 'tablet' ? 'four' : ''}">${Object.entries(E.LEVELS).filter(([, l]) => !l.only || l.only === S.mode).map(([id, l]) => `<button class="level" data-act="level" data-v="${id}" aria-pressed="${S.level === id}"><b>${l.name}<span class="pips">${[1, 2, 3].map((i) => `<i class="${i <= l.n ? 'on' : ''}"></i>`).join('')}</span></b><small>${esc(info[id])}</small></button>`).join('')}</div>
       <span class="label">4 · Koľko slovíčok</span>
       <div class="seg two">${Object.entries(E.COUNTS).map(([id, c]) => `<button data-act="count" data-v="${id}" aria-pressed="${S.count === id}">${c.name}<small>${slov(c.n)}</small></button>`).join('')}</div>
       <div class="goal-note">${I.trophy}<span>Týždenná výzva: <b>${Math.min(wk, WEEK_GOAL)} z ${WEEK_GOAL}</b> bezchybných <b>ťažkých</b> cvičení <b>na papier</b>. Keď ich máš 10, vyberieš si zážitok s ockom alebo s mamou!</span></div>
@@ -342,7 +342,21 @@
     const it = S.items[S.sel]; const w = W(it);
     const typed = S.level === 'tazke';
     let q; let ans;
-    if (S.level === 'lahke') {
+    if (S.level === 'poskladaj') {
+      q = `<div class="qcard">${pic(w, 'big')}<span class="qlabel">Poskladaj po anglicky</span><div class="qword">${esc(w.sk)}</div></div>`;
+      const pk = S.picks[S.sel]; let k = 0;
+      const slots = w.en.split('').map((c) => {
+        if (c === ' ') return '<i class="lgap"></i>';
+        if (c === '-') return '<span class="lsep">-</span>';
+        const pos = k++; const t = pk[pos];
+        return t == null ? `<span class="lslot empty" data-p="${pos}"></span>` : `<button class="lslot" data-act="unslot" data-p="${pos}" aria-label="Vrátiť písmeno ${esc(it.tiles[t])}">${esc(it.tiles[t])}</button>`;
+      }).join('');
+      const used = new Set(pk.filter((x) => x != null));
+      ans = `<div class="lslots">${slots}</div>
+        <div class="tiles">${it.tiles.map((ch, i) => `<button class="tile" data-act="tile" data-i="${i}" ${used.has(i) ? 'disabled aria-pressed="true"' : 'aria-pressed="false"'}>${esc(ch)}</button>`).join('')}</div>
+        <div class="row center"><button class="btn small dark" data-act="clearWord" ${used.size ? '' : 'disabled'}>↺ Znova poskladať</button></div>
+        <p class="hint center">Ťukni na písmená v správnom poradí. Ťuknutím na písmeno hore ho vrátiš.</p>`;
+    } else if (S.level === 'lahke') {
       q = `<div class="qcard"><span class="qlabel">Čo znamená po slovensky?</span><div class="qword en">${esc(w.en)}</div><button class="btn cyan small" data-act="sayQ">${I.speaker.replace('<svg', '<svg class="ico"')} Vypočuť</button></div>`;
       ans = `<div class="answers">${it.opts.map((id) => `<button class="ans" data-act="pick" data-v="${id}" aria-pressed="${S.answers[S.sel] === id}">${esc(E.word(id).sk)}</button>`).join('')}</div>`;
     } else {
@@ -571,7 +585,7 @@
     wrap.className = 'sheet-wrap';
     wrap.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Vysvetlenie">
       <div class="sheet-head wordhead">${pic(w)}<span>${esc(w.sk)} = <b>${esc(w.en)}</b></span></div>
-      <div class="spell" aria-hidden="true">${w.en.split('').map((c) => (c === ' ' ? '<i class="gap"></i>' : c === '-' ? '<span class="lt"><b>-</b><small>pomlčka</small></span>' : `<span class="lt"><b>${esc(c)}</b><small>${esc((c !== c.toLowerCase() ? 'veľké ' : '') + E.skLetter(c))}</small></span>`)).join('')}</div>
+      <div class="spell" aria-hidden="true">${w.en.split('').map((c) => (c === ' ' ? '<i class="gap"></i>' : c === '-' ? '<span class="lt"><b>-</b><small>pomlčka</small></span>' : `<span class="lt ${/w/i.test(c) ? 'wl-hi' : ''}"><b>${esc(c)}</b><small>${esc((c !== c.toLowerCase() ? 'veľké ' : '') + E.skLetter(c))}</small></span>`)).join('')}</div>
       <ol class="steps">${x.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ol>
       <p class="sheet-status ${wasHeard ? '' : 'wait'}" id="whyStatus">${wasHeard ? '✓ Toto si si už vypočul' : canSay ? '🔊 Počúvaj…' : 'Prečítaj si to pozorne.'}</p>
       <div class="row"><button class="btn dark" data-act="replay">${I.speaker.replace('<svg', '<svg class="ico"')} Znova</button><button class="btn yellow" data-act="closeWhy" id="whyOk" ${wasHeard || canSay ? '' : 'disabled'}>Rozumiem</button></div>
@@ -705,8 +719,10 @@
   }
   function start() {
     savePrefs();
+    if (E.LEVELS[S.level]?.only && E.LEVELS[S.level].only !== S.mode) S.level = 'lahke';
     S.items = E.generate(S.topic, S.level, S.count, S.mode, history());
     S.answers = S.items.map(() => '');
+    S.picks = S.items.map((it) => (it.tiles ? it.tiles.map(() => null) : null));
     S.sel = 0; S.marks = new Set(); S.exId = uid(); S.startedAt = new Date().toISOString(); S.gateMsg = '';
     S.view = S.mode === 'papier' ? 'paper' : 'tablet';
     render(); window.scrollTo(0, 0);
@@ -754,7 +770,7 @@
       case 'topic': S.topic = b.dataset.v; render(); break;
       case 'level': S.level = b.dataset.v; render(); break;
       case 'count': S.count = b.dataset.v; render(); break;
-      case 'mode': S.mode = b.dataset.v; render(); break;
+      case 'mode': S.mode = b.dataset.v; if (E.LEVELS[S.level].only && E.LEVELS[S.level].only !== S.mode) S.level = 'lahke'; render(); break;
       case 'words': openWords(); break;
       case 'start': start(); break;
       case 'again': S.view = 'home'; S.tab = 'play'; start(); break;
@@ -800,6 +816,20 @@
         render();
         break;
       }
+      case 'tile': {
+        const it = S.items[S.sel]; const pk = S.picks[S.sel]; const ti = +b.dataset.i;
+        if (pk.includes(ti)) break;
+        const pos = pk.indexOf(null); if (pos < 0) break;
+        pk[pos] = ti;
+        const w = W(it);
+        S.answers[S.sel] = pk.includes(null) ? '' : E.assemble(w.en, it.tiles, pk);
+        window.Panacik?.carry(it.tiles[ti], b, () => (S.view === 'tablet' ? document.querySelector(`.lslot[data-p="${pos}"]`) : null));
+        render();
+        if (S.answers[S.sel] && !S.answers.every((x) => x)) { const at = S.sel; setTimeout(() => { if (S.view === 'tablet' && S.sel === at) goTo(nextOpen()); }, 700); }
+        break;
+      }
+      case 'unslot': { const pk = S.picks[S.sel]; pk[+b.dataset.p] = null; S.answers[S.sel] = ''; render(); break; }
+      case 'clearWord': S.picks[S.sel] = S.picks[S.sel].map(() => null); S.answers[S.sel] = ''; render(); break;
       case 'tabletCheck': tabletCheck(); break;
       case 'why': openWhy(b.dataset.ex, +b.dataset.i); break;
       case 'confirm': {

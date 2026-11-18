@@ -539,3 +539,26 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
 .spell .lt { flex-direction: column; height: auto; min-height: 58px; padding: 4px 6px; gap: 0; display: flex; align-items: center; justify-content: center; }
 .spell .lt b { font-size: 28px; line-height: 1.1; }
 .spell .lt small { font-size: 12px; color: var(--soft); font-weight: 700; white-space: nowrap; }
+
+/* ---------- Poskladaj (rozhádzané písmená) a Slová s W ---------- */
+.badge-school.extra { background: var(--pink); }
+.lslots { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.lslot { width: 52px; height: 60px; border: 3px solid var(--ink); border-radius: 12px; background: #FFF6C9; color: var(--ink); font-family: var(--head); font-weight: 800; font-size: 34px; display: grid; place-items: center; padding: 0; box-shadow: 0 3px 0 var(--ink); }
+.lslot.empty { border-style: dashed; border-color: #B9AEE3; background: #F4F0FF; box-shadow: none; }
+.lgap { width: 22px; }
+.lsep { font-size: 34px; font-weight: 800; color: var(--ink); align-self: center; }
+.tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 8px 0 0; }
+.tile { width: 58px; height: 62px; border: 3px solid var(--ink); border-radius: 14px; background: linear-gradient(180deg, #92E8FF 0 45%, var(--cyan) 45%); color: var(--ink); font-family: var(--head); font-weight: 800; font-size: 34px; box-shadow: 0 5px 0 var(--ink); padding: 0; transition: transform .1s, opacity .15s; }
+.tile:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.tile[disabled] { opacity: .2; filter: grayscale(1); box-shadow: none; transform: scale(.9); }
+.row.center { justify-content: center; }
+.row.center > .btn { flex: 0 1 auto; }
+.hint.center { text-align: center; margin: 0; }
+.spell .lt.wl-hi { border-color: var(--red-d); background: #FFE1E4; }
+.spell .lt.wl-hi b { color: var(--red-d); }
+@media (max-width: 640px) {
+  .lslot { width: 40px; height: 50px; font-size: 26px; border-radius: 10px; }
+  .tile { width: 48px; height: 54px; font-size: 28px; }
+  .lslots { gap: 5px; }
+  .tiles { gap: 8px; }
+}
