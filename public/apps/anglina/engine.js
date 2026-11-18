@@ -1,6 +1,6 @@
 /* Anglina – slovíčka z angličtiny pre Ota (4. ročník ZŠ, úroveň A1).
    Britská angličtina (ako v slovenských učebniciach): colour, grey, mum, rubber, jumper, trousers.
-   Témy podľa ŠVP pre 1. stupeň (rodina, škola, zvieratá, jedlo, oblečenie, telo, dom, čísla, farby, dni)
+   Extra téma Slová s W (Otovi robí w problém). Témy podľa ŠVP pre 1. stupeň (rodina, škola, zvieratá, jedlo, oblečenie, telo, dom, čísla, farby, dni)
    a ako prvá téma učivo, ktoré Oto práve preberá v škole (zoznam od ocka).
    Každé slovo: en = anglicky (správny pravopis), sk = slovensky, em = obrázok (emoji), alt = iné uznané tvary,
    tip = krátka overená poznámka. Kontrola obsahu: node tools/check-anglina.mjs */
@@ -27,6 +27,32 @@
         W('fridge', 'chladnička', '🧊'),
         W('computer game', 'počítačová hra', '🎮', { tip: '{Computer game} sa píše ako dve slová, medzi nimi je medzera.' }),
       ],
+    },
+    {
+      // Extra cvičenie: slová s písmenom w (Otovi robí problém). Slová z 1.–4. ročníka a pár jednoduchých navyše.
+      id: 'w', name: 'Slová s W', em: 'W', color: '#FF5FA8', badge: 'Extra',
+      words: [
+        W('water', 'voda', '💧'), W('window', 'okno', '🪟'), W('white', 'biely', '', { sw: '#FFFFFF' }),
+        W('watch', 'hodinky', '⌚'), W('week', 'týždeň', '📅'), W('woman', 'žena', '👩'),
+        W('wolf', 'vlk', '🐺'), W('winter', 'zima', '❄️'), W('warm', 'teplý', ''), W('wet', 'mokrý', '💦'),
+        W('wind', 'vietor', '🌬️'), W('wall', 'stena', '🧱'), W('world', 'svet', '🌍'),
+        W('Wednesday', 'streda', 'St', { tip: 'V slove {Wednesday} sa prvé d nevyslovuje, ale píše sa. Dni v týždni sa píšu s veľkým písmenom.' }),
+        W('what', 'čo', '❓'), W('where', 'kde', ''), W('when', 'kedy', ''),
+        W('who', 'kto', '', { tip: 'V slove {who} sa w nevyslovuje.', silentW: true }),
+        W('write', 'písať', '✍️', { tip: 'V slove {write} sa w na začiatku nevyslovuje.', silentW: true }),
+        W('two', 'dva', '2', { tip: 'V slove {two} sa w nevyslovuje.', silentW: true }),
+        W('twelve', 'dvanásť', '12'), W('twenty', 'dvadsať', '20'),
+        W('swim', 'plávať', '🏊'), W('sweets', 'cukríky', '🍬'), W('sandwich', 'sendvič', '🥪'),
+        W('cow', 'krava', '🐮', { ow: 'au' }), W('brown', 'hnedý', '', { sw: '#8B5A2B', ow: 'au' }), W('owl', 'sova', '🦉', { ow: 'au' }),
+        W('flower', 'kvet', '🌸', { ow: 'au' }), W('tower', 'veža', '🗼', { ow: 'au' }),
+        W('yellow', 'žltý', '', { sw: '#FFD60A', ow: 'ou' }), W('snow', 'sneh', '☃️', { ow: 'ou' }),
+      ].map((w) => {
+        // Overené poznámky k výslovnosti w (ak slovo nemá vlastnú, ktorá to už hovorí).
+        let t = w.tip || '';
+        if (w.ow) t = `Písmená o a w znejú v tomto slove ako slovenské ${w.ow}.` + (t ? ' ' + t : '');
+        else if (!w.silentW) t = (t ? t + ' ' : '') + 'Písmeno w sa vyslovuje ako krátke u so zaokrúhlenými perami, nie ako slovenské v.';
+        return { ...w, tip: t };
+      }),
     },
     {
       id: 'farby', name: 'Farby', em: '🎨', color: '#FF5FA8',
@@ -177,12 +203,14 @@
     lahke: { name: 'Ľahké', n: 1 },
     stredne: { name: 'Stredné', n: 2 },
     tazke: { name: 'Ťažké', n: 3 },
+    poskladaj: { name: 'Poskladaj', n: 2, only: 'tablet' },
   };
   const LEVEL_INFO = {
     tablet: {
       lahke: 'Počuješ anglické slovo a vyberieš, čo znamená.',
       stredne: 'Vidíš slovenské slovo a vyberieš anglické.',
       tazke: 'Vidíš slovenské slovo a napíšeš ho po anglicky.',
+      poskladaj: 'Vidíš slovenské slovo a poskladáš ho z rozhádzaných písmen.',
     },
     papier: {
       lahke: 'Vidíš obrázok a slovenské slovo, appka ti ho prečíta po anglicky. Píšeš do zošita.',
@@ -221,12 +249,26 @@
     return shuffle([w, ...shuffle(same).slice(0, 3)]).map((x) => x.id);
   }
 
+  /** Rozhádzané písmená slova (bez medzier a pomlčiek), nikdy nie v správnom poradí. */
+  function tiles(en) {
+    const letters = en.replace(/[ -]/g, '').split('');
+    if (new Set(letters).size < 2) return letters;
+    let t = letters;
+    for (let k = 0; k < 20 && t.join('') === letters.join(''); k++) t = shuffle(letters);
+    return t;
+  }
+  /** Poskladaná odpoveď: písmená z dlaždíc doplnené do slova, medzery a pomlčky ostávajú na mieste. */
+  function assemble(en, tl, picks) {
+    let k = 0;
+    return en.split('').map((c) => (c === ' ' || c === '-' ? c : (picks[k] != null ? tl[picks[k++]] : (k++, '?')))).join('');
+  }
   function generate(topic, level, count, mode, history) {
     const words = pick(topic, COUNTS[count].n, history);
     return words.map((w) => {
       const it = { id: w.id };
       if (mode === 'tablet' && level === 'lahke') it.opts = options(w, 'sk');
       if (mode === 'tablet' && level === 'stredne') it.opts = options(w, 'en');
+      if (mode === 'tablet' && level === 'poskladaj') it.tiles = tiles(w.en);
       return it;
     });
   }
@@ -273,5 +315,5 @@
   const tipSeq = (t) => t.split(/(\{[^}]+\})/).filter((x) => x.trim()).map((x) => (x.startsWith('{') ? { lang: 'en', text: x.slice(1, -1) } : { lang: 'sk', text: x.trim() }));
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-  window.ANGLINA_ENGINE = { TOPICS, BY_ID, topicOf, LEVELS, LEVEL_INFO, COUNTS, generate, check, explain, pick, word: (id) => BY_ID.get(id), plain, skLetter: (c) => SK_LETTER[c.toLowerCase()] || '' };
+  window.ANGLINA_ENGINE = { TOPICS, BY_ID, topicOf, LEVELS, LEVEL_INFO, COUNTS, generate, check, explain, pick, word: (id) => BY_ID.get(id), assemble, plain, skLetter: (c) => SK_LETTER[c.toLowerCase()] || '' };
 })();
