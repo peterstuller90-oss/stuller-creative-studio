@@ -593,7 +593,11 @@
     document.body.appendChild(wrap);
     const markHeard = () => {
       const e2 = model().list.find((e) => e.id === exId);
-      if (e2 && !e2.heard.has(idx)) Store.add('heard', exId, { idx });
+      if (e2 && !e2.heard.has(idx)) {
+        Store.add('heard', exId, { idx });
+        // všetky chyby vysvetlené = podarilo sa
+        if (e2.wrong.every((i) => i === idx || e2.heard.has(i))) Sfx.success();
+      }
       const st = document.getElementById('whyStatus');
       if (st) { st.textContent = '✓ Vypočuté'; st.classList.remove('wait'); }
     };
@@ -647,8 +651,37 @@
     });
   }
 
+  // ---------------- jemné zvuky (Web Audio, bez súborov) ----------------
+  // Klik = krátke tiché ťuknutie, úspech = jemná trojtónová zvonkohra. Hlasitosť je nízka, aby nerušila.
+  const Sfx = {
+    ctx: null,
+    get() {
+      if (!this.ctx) { try { const C = window.AudioContext || window.webkitAudioContext; if (C) this.ctx = new C(); } catch { this.ctx = null; } }
+      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      return this.ctx;
+    },
+    tone(freq, start, dur, vol, type = 'sine') {
+      const c = this.get(); if (!c) return;
+      const t0 = c.currentTime + start;
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g).connect(c.destination);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    },
+    click() { this.tone(1150, 0, 0.07, 0.035); this.tone(760, 0.004, 0.06, 0.02, 'triangle'); },
+    success() { [[784, 0], [988, 0.11], [1319, 0.22]].forEach(([f, t]) => { this.tone(f, t, 0.55, 0.06); this.tone(f * 2, t, 0.3, 0.012); }); },
+  };
+  document.addEventListener('pointerdown', (ev) => {
+    const b = ev.target.closest('button');
+    if (b && !b.disabled) Sfx.click();
+  }, { capture: true, passive: true });
+
   // ---------------- oslava ----------------
   function fireworks() {
+    Sfx.success();
     window.Panacik?.cheer();
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const c = document.createElement('canvas'); c.className = 'fx'; document.body.appendChild(c);
