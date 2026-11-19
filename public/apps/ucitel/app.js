@@ -731,6 +731,7 @@
     window.Zosit.open({
       title: `Veta ${S.penI + 1} z ${S.dict.sentences.length}`, lang: 'sk', lines: 3, expect: [s, plain],
       prompt: '<p style="margin:0">Napíš vetu, ktorú si počul. Na konci daj bodku.</p>',
+      repeat: () => sayPenSentence(), repeatLabel: 'Zopakovať vetu',
       onDone: (res) => { Voice.stop(); S.penRes[S.penI] = res; render(); },
     });
   }
