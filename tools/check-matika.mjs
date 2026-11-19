@@ -35,5 +35,26 @@ for (const op of [...E.OP_IDS, 'mix']) for (const lv of ['lahke', 'stredne', 'ta
     if (/undefined|NaN|null/.test(x.head + x.lines.join(' '))) { bad++; console.log('VYSVETLENIE', it, x) }
   }
 }
+// 5. ročník
+E.setGrade(5)
+if (!/milióna/.test(E.LEVEL_INFO.plus.tazke)) { bad++; console.log('LEVEL_INFO sa neprestavilo') }
+for (const op of [...E.OP_IDS, 'mix']) for (const lv of ['lahke', 'stredne', 'tazke']) for (let r = 0; r < 200; r++) {
+  const set = E.generate(op, lv, 'dlhe')
+  const keys = new Set(set.map((it) => `${it.op}|${it.a}|${it.b}`))
+  if (set.length !== 30 || keys.size !== 30) { bad++; console.log('5: krátka/opakovaná sada', op, lv) }
+  for (const it of set) {
+    const { a, b, ans } = it
+    const exp = it.op === 'plus' ? a + b : it.op === 'minus' ? a - b : it.op === 'krat' ? a * b : a / b
+    const ok = Number.isInteger(ans) && ans === exp && ans >= 0 && Math.max(a, b, ans) < 1000000 && !(it.op === 'deleno' && b === 0)
+      && String(ans).length <= 7
+    if (!ok) { bad++; console.log('5 ZLÉ', it) }
+    const x = E.explain(it)
+    const txt = x.head + x.lines.join(' ')
+    if (/undefined|NaN|null|Infinity/.test(txt + x.say)) { bad++; console.log('5 VYSVETLENIE', it, x) }
+    if (!txt.includes(E.fmt(ans))) { bad++; console.log('5 vysvetlenie bez výsledku', it, x.lines) }
+  }
+}
+E.setGrade(4)
+if (/milióna/.test(E.LEVEL_INFO.plus.tazke)) { bad++; console.log('LEVEL_INFO späť na 4 nefunguje') }
 console.log(bad ? `CHYBY: ${bad}` : 'OK – všetko sedí')
 process.exit(bad ? 1 : 0)

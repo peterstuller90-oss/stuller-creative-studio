@@ -205,6 +205,14 @@
     wishWho: null, wishWhat: null, wishText: '', wishMsg: '',
     prevLevel: null,
   };
+  // Ročník: spoločný výber pre všetky appky (../rocnik.js). Matika má učivo 4. a 5. ročníka;
+  // osnovy (ŠVP) nedelia učivo na polroky, preto oba polroky ročníka majú rovnaké príklady.
+  const READY = [{ grade: 4, half: 1 }, { grade: 4, half: 2 }, { grade: 5, half: 1 }, { grade: 5, half: 2 }];
+  const gradeNow = () => (window.Rocnik ? Rocnik.get() : { grade: 4, half: 1 });
+  if (window.Rocnik) {
+    Rocnik.setup({ app: 'Matika', ready: READY, onChange(r) { E.setGrade(r.grade); S.tab = 'play'; S.view = 'home'; render(); window.scrollTo(0, 0); } });
+    if (!Rocnik.isReady()) { const g = Rocnik.get().grade; E.setGrade(g > 5 ? 5 : 4); } else E.setGrade(Rocnik.get().grade);
+  }
   const savePrefs = () => lsSet('matika-prefs', { op: S.op, level: S.level, count: S.count, mode: S.mode });
 
   // ---------------- časti obrazovky ----------------
@@ -227,7 +235,7 @@
 
   function nav(M) {
     const unexp = M.list.filter((e) => ['unexplained', 'wait'].includes(statusOf(e))).length;
-    const tabs = [['play', 'Hrať', I.play], ['cal', 'Kalendár', I.cal], ['saved', 'Uložené', I.saved], ['rewards', 'Odmeny', I.gifttab]];
+    const tabs = [['play', 'Poď sa učiť', I.play], ['cal', 'Kalendár', I.cal], ['saved', 'Uložené', I.saved], ['rewards', 'Odmeny', I.gifttab]];
     return `<nav class="nav"><div class="nav-in">${tabs.map(([id, name, ico]) => `<button class="tab" data-act="tab" data-tab="${id}" ${S.tab === id ? 'aria-current="page"' : ''}>${ico}<span>${name}</span>${id === 'saved' && unexp ? `<span class="dot">${unexp}</span>` : ''}</button>`).join('')}</div></nav>`;
   }
 
@@ -236,12 +244,17 @@
     return t ? `<p class="cloud">${t}</p>` : '';
   }
 
-  // ---------------- HRAŤ ----------------
+  // ---------------- POĎ SA UČIŤ ----------------
   function viewHome(M) {
     const ops = [['plus', '+', 'Sčítanie', 'var(--cyan)'], ['minus', '−', 'Odčítanie', 'var(--pink)'], ['krat', '·', 'Násobilka', 'var(--yellow)'], ['deleno', ':', 'Delenie', 'var(--green)'], ['jednotky', 'mm', 'Jednotky', '#C4B5FD'], ['mix', '?', 'Mix', 'var(--orange)']];
     const info = E.LEVEL_INFO[S.op];
     const wk = weekGoal(M);
+    const R = gradeNow();
     return `${hud(M)}
+    <section class="panel grade-panel">
+      <div class="grade-line"><span class="grade-ico">🎓</span><span><b>${R.grade}. ročník</b> · ${R.half}. polrok<small>Príklady podľa osnov ${R.grade}. ročníka</small></span></div>
+      ${window.Rocnik ? Rocnik.buttonHtml() : ''}
+    </section>
     <section class="panel">
       <span class="label">1 · Čo budeme počítať</span>
       <div class="ops">${ops.map(([id, sym, name, c]) => `<button class="op" data-act="op" data-v="${id}" aria-pressed="${S.op === id}" style="--c:${c}"><span class="sym">${sym}</span><span>${name}</span></button>`).join('')}</div>
@@ -682,7 +695,7 @@
     render(); window.scrollTo(0, 0);
   }
   function saveDone(mode, wrong, given) {
-    const ex = { op: S.op, level: S.level, count: S.count, mode, items: S.items.map((it) => (it.op === 'jednotky' ? { op: it.op, parts: it.parts, to: it.to, mm: it.mm, ans: it.ans, kind: it.kind } : { op: it.op, a: it.a, b: it.b, ans: it.ans, kind: it.kind })), wrong, given: given || null, mistakes: wrong.length, started_at: S.startedAt };
+    const ex = { op: S.op, level: S.level, count: S.count, grade: E.grade(), mode, items: S.items.map((it) => (it.op === 'jednotky' ? { op: it.op, parts: it.parts, to: it.to, mm: it.mm, ans: it.ans, kind: it.kind } : { op: it.op, a: it.a, b: it.b, ans: it.ans, kind: it.kind })), wrong, given: given || null, mistakes: wrong.length, started_at: S.startedAt };
     if (mode === 'tablet') ex.xp = xpFor(ex);
     Store.add('done', S.exId, ex);
   }

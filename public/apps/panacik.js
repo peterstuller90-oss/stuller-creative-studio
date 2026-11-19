@@ -6,11 +6,10 @@
    nosí písmenká/číslice tam, kam ich Oto doplňuje, a po chvíli bez práce sa vráti a sadne si.
 
    Použitie v appke:
-     Panacik.carry(text, odkialElement, () => cielovyElement)  – donesie text (len animácia, stav si appka uloží sama)
-     Panacik.flush()  – okamžite dokončí všetko nosenie (napr. pred kontrolou)
-     Panacik.cheer()  – oslava (salto + tanec)
-     Panacik.sad()    – krútenie hlavou
-     Panacik.jump(el) – vybehne k prvku a poskočí (napr. po výbere odpovede)
+     Od 19. 11. 2026 (Peter: „panáčik je veľmi rušivý“) reaguje IBA pri splnenom cvičení:
+     Panacik.cheer() / Panacik.result(0) – oslava (salto + tanec)
+     Panacik.carry, jump, sad a result(>0) nerobia nič (ostali, aby appky nemuseli meniť volania).
+     Panacik.flush()  – okamžite dokončí rozbehnutú animáciu
    Kým nesie znak do cieľa, cieľ má triedu .pan-wait (appka ju môže použiť na skrytie textu). */
 (() => {
   if (window.Panacik) return;
@@ -306,13 +305,9 @@
     }
   }
 
+  // Peter (19. 11.): panáčik ruší – pri bežnej práci sedí na lavičke, reaguje len pri splnenom cvičení.
   window.Panacik = {
-    carry(text, fromEl, toFn) {
-      if (!fromEl) return;
-      const c = center(fromEl);
-      jobs.push({ text: String(text), from: { x: c.x, y: c.r.top }, to: () => { try { return toFn(); } catch (e) { return null; } }, done: false });
-      while (jobs.length > 4) { const o = jobs[1] || jobs[0]; finish(o); }   // pri veľmi rýchlom ťukaní nečakaj donekonečna
-    },
+    carry() {},   // znaky už nenosí (text sa ukáže hneď)
     flush() {
       for (const j of [...jobs]) finish(j);
       stopMove(); stopSeq();
@@ -328,14 +323,14 @@
       busy = false;
     },
     cheer() { return this.react(reduced ? ['tlieskanie'] : ['jupi', 'salto', 'tanec', 'pest']); },
-    sad() { return this.react(['krcenie', 'smutny', 'nevadi']); },
-    // výsledok cvičenia: 0 chýb = veľká oslava, 1–2 chyby = „skoro!“, viac = smutný, ale povzbudí
+    sad() { return Promise.resolve(); },
+    // výsledok cvičenia: reaguje (oslavou) len vtedy, keď je cvičenie splnené bez chyby
     result(mistakes) {
       if (!mistakes) return this.cheer();
-      if (mistakes <= 2) return this.react(['krcenie', 'tlieskanie', 'nevadi']);
-      return this.sad();
+      return Promise.resolve();
     },
-    async jump(nearEl) {
+    async jump() { return; },
+    async jumpOld(nearEl) {
       if (busy || jobs.length) return;
       const c = nearEl ? center(nearEl) : null;
       wake(); busy = true; stopMove(); stopSeq();

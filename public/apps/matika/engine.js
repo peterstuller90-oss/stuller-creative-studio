@@ -49,7 +49,7 @@
       lahke: 'Premeň na menšiu jednotku (4\u202Fm = ? cm, 60 mm = ? cm)',
       stredne: 'Dve jednotky na menšiu (40 cm 2 mm = ? mm)',
       tazke: 'Zmiešané a väčšie čísla (7 mm 3 dm = ? mm, 15 dm 23 cm = ? cm)',
-      desatinne: 'S desatinnou čiarkou – učivo 5. ročníka (7 mm 3 dm = ? dm)',
+      desatinne: 'S desatinnou čiarkou – navyše, nad rámec osnov (7 mm 3 dm = ? dm)',
     },
     mix: {
       lahke: 'Všetko spolu – ľahké príklady',
@@ -57,6 +57,43 @@
       tazke: 'Všetko spolu – ťažké príklady',
     },
   };
+  // 5. ročník podľa inovovaného ŠVP (ISCED 2): obor do a nad milión, písomné násobenie
+  // jednociferným a dvojciferným číslom, písomné delenie jednociferným a dvojciferným číslom,
+  // spamäti násobky malej násobilky s nulami (70 · 800, 72 000 : 9), premena jednotiek dĺžky.
+  const LEVEL_INFO4 = JSON.parse(JSON.stringify(LEVEL_INFO));
+  const LEVEL_INFO5 = {
+    plus: {
+      lahke: 'Spamäti celé tisícky, desaťtisícky a stotisícky (34\u202F000 + 5\u202F000)',
+      stredne: 'Pričítaj celé tisícky, desaťtisícky, stotisícky (245\u202F300 + 30\u202F000)',
+      tazke: 'Písomne pod seba do milióna (348\u202F675 + 275\u202F486)',
+    },
+    minus: {
+      lahke: 'Spamäti celé tisícky, desaťtisícky a stotisícky (86\u202F000 − 9\u202F000)',
+      stredne: 'Odčítaj celé tisícky, desaťtisícky, stotisícky (245\u202F300 − 30\u202F000)',
+      tazke: 'Písomne pod seba do milióna (603\u202F241 − 285\u202F767)',
+    },
+    krat: {
+      lahke: 'Spamäti s nulami (70 · 800)',
+      stredne: 'Písomne jednociferným číslom (3\u202F476 · 7)',
+      tazke: 'Písomne dvojciferným číslom (356 · 24)',
+    },
+    deleno: {
+      lahke: 'Spamäti s nulami (72\u202F000 : 9)',
+      stredne: 'Písomne jednociferným číslom (1\u202F856 : 4)',
+      tazke: 'Písomne dvojciferným číslom (864 : 24)',
+    },
+    jednotky: LEVEL_INFO4.jednotky,
+    mix: LEVEL_INFO4.mix,
+  };
+  let grade = 4;
+  const MAXN = () => (grade >= 5 ? 1000000 : 10000);
+  /** Prestaví učivo na daný ročník (4 alebo 5). */
+  function setGrade(g) {
+    grade = g >= 5 ? 5 : 4;
+    const src = grade === 5 ? LEVEL_INFO5 : LEVEL_INFO4;
+    for (const k of Object.keys(src)) LEVEL_INFO[k] = JSON.parse(JSON.stringify(src[k]));
+    return grade;
+  }
   const COUNTS = {
     kratke: { name: 'Krátke', n: 10 },
     stredne: { name: 'Stredné', n: 20 },
@@ -79,12 +116,17 @@
   };
   const plural = (n, one, few, many) => (n === 1 ? one : n >= 2 && n <= 4 ? few : many);
   const UNIT = {
-    10: { one: 'desiatka', few: 'desiatky', many: 'desiatok', loc: 'desiatkach', nuly: 'jednu nulu' },
-    100: { one: 'stovka', few: 'stovky', many: 'stoviek', loc: 'stovkách', nuly: 'dve nuly' },
-    1000: { one: 'tisícka', few: 'tisícky', many: 'tisícok', loc: 'tisíckach', nuly: 'tri nuly' },
+    10: { one: 'desiatka', acc: 'desiatku', few: 'desiatky', many: 'desiatok', loc: 'desiatkach', nuly: 'jednu nulu' },
+    100: { one: 'stovka', acc: 'stovku', few: 'stovky', many: 'stoviek', loc: 'stovkách', nuly: 'dve nuly' },
+    1000: { one: 'tisícka', acc: 'tisícku', few: 'tisícky', many: 'tisícok', loc: 'tisíckach', nuly: 'tri nuly' },
+    10000: { one: 'desaťtisícka', acc: 'desaťtisícku', few: 'desaťtisícky', many: 'desaťtisícok', loc: 'desaťtisíckach', nuly: 'štyri nuly' },
+    100000: { one: 'stotisícka', acc: 'stotisícku', few: 'stotisícky', many: 'stotisícok', loc: 'stotisíckach', nuly: 'päť núl' },
   };
+  const NULY = ['', 'jednu nulu', 'dve nuly', 'tri nuly', 'štyri nuly', 'päť núl', 'šesť núl'];
+  const je = (n) => (n >= 2 && n <= 4 ? 'sú' : 'je');
+  const unitsAcc = (n, p) => (n === 1 ? `1 ${UNIT[p].acc}` : units(n, p));
   const units = (n, p) => `${fmt(n)} ${plural(n, UNIT[p].one, UNIT[p].few, UNIT[p].many)}`;
-  const PLACE = ['Jednotky', 'Desiatky', 'Stovky', 'Tisícky', 'Desaťtisícky'];
+  const PLACE = ['Jednotky', 'Desiatky', 'Stovky', 'Tisícky', 'Desaťtisícky', 'Stotisícky', 'Milióny'];
   const digits = (n) => String(n).split('').reverse().map(Number);
 
   // ---------- generátory ----------
@@ -198,6 +240,96 @@
     },
   };
 
+  const carriesAdd = (a, b) => { const da = digits(a); const db = digits(b); let n = 0; let c = 0; for (let i = 0; i < Math.max(da.length, db.length); i++) { const v = (da[i] || 0) + (db[i] || 0) + c; c = v >= 10 ? 1 : 0; n += c; } return n; };
+  const borrowsSub = (a, b) => { const da = digits(a); const db = digits(b); let n = 0; let c = 0; for (let i = 0; i < da.length; i++) { const s2 = (db[i] || 0) + c; c = da[i] < s2 ? 1 : 0; n += c; } return n; };
+  const GEN5 = {
+    plus: {
+      lahke() {
+        const p = pick([1000, 10000, 10000, 100000]);
+        let x; let y;
+        if (p === 100000) { x = rnd(1, 8); y = rnd(1, 9 - x); }
+        else if (p === 10000) { x = rnd(11, 89); y = Math.random() < 0.5 ? rnd(2, 9) : rnd(11, 98 - x); }
+        else { x = rnd(110, 899); y = Math.random() < 0.5 ? rnd(2, 9) : rnd(11, 99); }
+        return Math.random() < 0.5 ? make('plus', x * p, y * p, 'pam') : make('plus', y * p, x * p, 'pam');
+      },
+      stredne() {
+        const p = pick([1000, 10000, 10000, 100000]);
+        const n = rnd(10001, 899999); const k = rnd(1, 9);
+        if (n + k * p >= 1000000 || n % p === 0) return this.stredne();
+        return make('plus', n, k * p, 'rad');
+      },
+      tazke() {
+        for (;;) {
+          const a = rnd(10000, 899999);
+          const b = Math.random() < 0.3 ? rnd(1000, 99999) : rnd(10000, 899999);
+          if (a + b >= 1000000 || carriesAdd(a, b) < 2) continue;
+          return make('plus', a, b, 'pis');
+        }
+      },
+    },
+    minus: {
+      lahke() {
+        const p = pick([1000, 10000, 10000, 100000]);
+        if (p === 100000) { const x = rnd(3, 9); return make('minus', x * p, rnd(1, x - 1) * p, 'pam'); }
+        const x = p === 10000 ? rnd(20, 99) : rnd(150, 999);
+        const y = Math.random() < 0.5 ? rnd(2, 9) : rnd(11, Math.min(99, x - 5));
+        return make('minus', x * p, y * p, 'pam');
+      },
+      stredne() {
+        const p = pick([1000, 10000, 10000, 100000]);
+        const n = rnd(10002, 999999); const k = rnd(1, 9);
+        if (n - k * p < 0 || n % p === 0) return this.stredne();
+        return make('minus', n, k * p, 'rad');
+      },
+      tazke() {
+        for (;;) {
+          const a = rnd(20000, 999999);
+          const b = Math.random() < 0.3 ? rnd(1000, 9999) : rnd(10000, a - 1000);
+          if (b >= a || borrowsSub(a, b) < 2) continue;
+          return make('minus', a, b, 'pis');
+        }
+      },
+    },
+    krat: {
+      lahke() {
+        const x = rnd(2, 9); const y = rnd(2, 9);
+        const i = rnd(0, 3); const j = rnd(i === 0 ? 1 : 0, 3 - i);
+        const a = x * 10 ** i; const b = y * 10 ** j;
+        return make('krat', a, b, 'nul');
+      },
+      stredne() {
+        const a = Math.random() < 0.4 ? rnd(102, 999) : rnd(1002, 9999);
+        const b = rnd(3, 9);
+        if (a % 10 === 0) return this.stredne();
+        return make('krat', a, b, 'pn1');
+      },
+      tazke() {
+        const a = Math.random() < 0.3 ? rnd(23, 99) : rnd(102, 999);
+        const b = rnd(12, 99);
+        if (b % 10 === 0 || a % 10 === 0 || b % 11 === 0) return this.tazke();
+        return Math.random() < 0.85 ? make('krat', a, b, 'pn2') : make('krat', Math.max(a, b), Math.min(a, b), 'pn2');
+      },
+    },
+    deleno: {
+      lahke() {
+        const y = rnd(2, 9); const q = rnd(2, 9);
+        const p = pick([10, 100, 1000, 1000, 10000]);
+        return make('deleno', y * q * p, y, 'dnul');
+      },
+      stredne() {
+        const d = rnd(2, 9);
+        const q = Math.random() < 0.4 ? rnd(101, 999) : rnd(1001, 9999);
+        if (q % 10 === 0) return this.stredne();
+        return make('deleno', q * d, d, 'pd1');
+      },
+      tazke() {
+        const d = rnd(12, 99); const q = Math.random() < 0.5 ? rnd(12, 99) : rnd(101, 999);
+        if (d % 10 === 0 || q % 10 === 0 || d * q > 99999) return this.tazke();
+        return make('deleno', q * d, d, 'pd2');
+      },
+    },
+  };
+
   let GEN_U;
 
   // ---------- jednotky dĺžky (všetko sa počíta v mm, aby nevznikali chyby zaokrúhlenia) ----------
@@ -285,7 +417,7 @@
     while (out.length < n && guard++ < 5000) {
       const o = op === 'mix' ? OP_IDS[out.length % 4] : op;
       if (o !== 'jednotky' && level === 'desatinne') level = 'tazke';
-      const it = o === 'jednotky' ? GEN_U[level]() : GEN[o][level]();
+      const it = o === 'jednotky' ? GEN_U[level]() : (grade === 5 ? GEN5 : GEN)[o][level]();
       if (seen.has(key(it))) continue;
       seen.add(key(it));
       out.push(it);
@@ -429,6 +561,54 @@
     return lines;
   }
 
+  /** Písomné násobenie jednociferným číslom. */
+  function columnMul1(a, b) {
+    const da = digits(a);
+    const lines = [`Napíšeme ${fmt(a)} a pod jednotky napíšeme ${b}. Násobíme sprava, každú číslicu číslom ${b}.`];
+    let c = 0;
+    for (let i = 0; i < da.length; i++) {
+      const m = da[i] * b; const v = m + c;
+      const expr = c ? `${b} · ${da[i]} = ${m}, pridáme zapamätané ${c} → ${v}` : `${b} · ${da[i]} = ${m}`;
+      const nc = Math.floor(v / 10);
+      if (i === da.length - 1) lines.push(`${PLACE[i]}: ${expr} → píšeme ${v} (násobili sme poslednú číslicu, preto píšeme celé číslo).`);
+      else lines.push(`${PLACE[i]}: ${expr} → píšeme ${v % 10}${nc ? `, ${nc} si pamätáme` : ''}.`);
+      c = nc;
+    }
+    lines.push(`Výsledok: ${fmt(a * b)}.`);
+    return lines;
+  }
+  /** Písomné násobenie dvojciferným číslom (dva čiastočné súčiny). */
+  function columnMul2(a, b) {
+    const u = b % 10; const t = Math.floor(b / 10);
+    return [
+      `Napíšeme ${fmt(a)} a pod neho ${b}. Násobíme najprv jednotkami (${u}), potom desiatkami (${t}).`,
+      `1. riadok: ${fmt(a)} · ${u} = ${fmt(a * u)}.`,
+      `2. riadok: ${fmt(a)} · ${t} = ${fmt(a * t)}. Tento riadok píšeme o jedno miesto doľava (začíname pod desiatkami), lebo násobíme desiatkami – v skutočnosti je to ${fmt(a * t * 10)}.`,
+      `Oba riadky sčítame: ${fmt(a * u)} + ${fmt(a * t * 10)} = ${fmt(a * b)}.`,
+      `Výsledok: ${fmt(a * b)}.`,
+    ];
+  }
+  /** Písomné delenie (jednociferným alebo dvojciferným deliteľom, bez zvyšku). */
+  function longDiv(a, d) {
+    const ds = String(a).split('').map(Number);
+    let k = 0; let cur = 0;
+    while (k < ds.length && cur < d) { cur = cur * 10 + ds[k]; k++; }
+    const lines = [];
+    lines.push(k === 1 ? `Delíme zľava. Začneme prvou číslicou ${cur}.` : `Delíme zľava. Do prvej číslice sa ${d} nezmestí, preto zoberieme prvé ${k === 2 ? 'dve' : k === 3 ? 'tri' : k} číslice: ${cur}.`);
+    for (;;) {
+      const q = Math.floor(cur / d); const r = cur - q * d;
+      if (q === 0) lines.push(`${cur} je menej ako ${d}, do výsledku píšeme 0 a zvyšok je ${cur}.`);
+      else if (d < 10) lines.push(`${cur} : ${d} = ${q}, lebo ${q} · ${d} = ${q * d}. Zvyšok: ${cur} − ${q * d} = ${r}.`);
+      else lines.push(`Koľkokrát sa ${d} zmestí do ${cur}? ${q}-krát, lebo ${q} · ${d} = ${q * d}${(q + 1) * d > cur ? ` a ${q + 1} · ${d} = ${(q + 1) * d} by bolo veľa` : ''}. Zvyšok: ${cur} − ${q * d} = ${r}.`);
+      if (k >= ds.length) break;
+      const nx = ds[k]; k++;
+      lines.push(`K zvyšku ${r} pripíšeme ďalšiu číslicu ${nx} → ${r * 10 + nx}.`);
+      cur = r * 10 + nx;
+    }
+    lines.push(`Zvyšok je 0, výsledok: ${fmt(a / d)}. Skúška: ${fmt(a / d)} · ${d} = ${fmt(a)} ✔`);
+    return lines;
+  }
+
   function explain(it) {
     if (it.op === 'jednotky') {
       const lines = explainU(it);
@@ -438,16 +618,16 @@
     const { op, a, b, ans, kind } = it;
     let lines = [];
     if (kind === 'pam') {
-      const p = [1000, 100, 10].find((u) => a % u === 0 && b % u === 0);
+      const p = [100000, 10000, 1000, 100, 10].find((u) => a % u === 0 && b % u === 0);
       const x = a / p; const y = b / p;
       lines = op === 'plus'
-        ? [`Počítame v ${UNIT[p].loc}: ${units(x, p)} + ${units(y, p)} = ${units(x + y, p)}.`, `${units(x + y, p)} je ${fmt(ans)}.`]
-        : [`Počítame v ${UNIT[p].loc}: ${units(x, p)} − ${units(y, p)} = ${units(x - y, p)}.`, `${units(x - y, p)} je ${fmt(ans)}.`];
+        ? [`Počítame v ${UNIT[p].loc}: ${units(x, p)} + ${units(y, p)} = ${units(x + y, p)}.`, `${units(x + y, p)} ${je(x + y)} ${fmt(ans)}.`]
+        : [`Počítame v ${UNIT[p].loc}: ${units(x, p)} − ${units(y, p)} = ${units(x - y, p)}.`, `${units(x - y, p)} ${je(x - y)} ${fmt(ans)}.`];
     } else if (kind === 'rad') {
-      const p = b % 1000 === 0 ? 1000 : b % 100 === 0 ? 100 : 10;
+      const p = [100000, 10000, 1000, 100, 10].find((u) => b % u === 0);
       const k = b / p; const q = Math.floor(a / p); const r = a % p;
       const verb = op === 'plus' ? 'Pridávame' : 'Uberáme';
-      lines = [`${verb} ${units(k, p)}.`];
+      lines = [`${verb} ${unitsAcc(k, p)}.`];
       if (q === 0) lines.push(`${fmt(a)} nemá žiadne ${UNIT[p].few}, tak ich len pridáme dopredu → ${fmt(ans)}.`);
       else {
         lines.push(`${fmt(a)} je ${units(q, p)} a ešte ${fmt(r)}.`);
@@ -472,6 +652,20 @@
         lines = [`${a} · ${b} si rozdelíme: najprv 5 · ${b} = ${5 * b}, potom ešte ${a - 5} · ${b} = ${(a - 5) * b}.`, `Spolu ${5 * b} + ${(a - 5) * b} = ${ans}.`];
       }
       if (a > b && a !== 10 && b !== 10 && a !== 1 && b !== 1 && b !== 0) lines.push(`Pomôcka: ${a} · ${b} je to isté ako ${b} · ${a} – činitele môžeme vymeniť.`);
+    } else if (kind === 'nul') {
+      const za = String(a).match(/0*$/)[0].length; const zb = String(b).match(/0*$/)[0].length;
+      const x = a / 10 ** za; const y = b / 10 ** zb;
+      lines = [`Najprv vynásobíme čísla bez núl na konci: ${x} · ${y} = ${x * y}.`, `Potom za výsledok pripíšeme všetky nuly, spolu ${NULY[za + zb]} → ${fmt(ans)}.`];
+    } else if (kind === 'pn1') {
+      lines = columnMul1(a, b);
+    } else if (kind === 'pn2') {
+      lines = columnMul2(a, b);
+    } else if (kind === 'dnul') {
+      const p = [10000, 1000, 100, 10].find((u) => a % u === 0 && (a / u) % b === 0);
+      const n = a / p;
+      lines = [`${fmt(a)} je ${units(n, p)}.`, `${units(n, p)} : ${b} = ${units(n / b, p)}, lebo ${n / b} · ${b} = ${n}.`, `${units(n / b, p)} ${je(n / b)} ${fmt(ans)}.`];
+    } else if (kind === 'pd1' || kind === 'pd2') {
+      lines = longDiv(a, b);
     } else if (kind === 'n10') {
       lines = [`Pri násobení číslom ${fmt(b)} pripíšeme za číslo ${UNIT[b].nuly}.`, `${fmt(a)} → ${fmt(ans)}.`];
     } else if (kind === 'del') {
@@ -504,5 +698,5 @@
     .replace(/(^|[.:] )([234]) ([a-z]*metre) je /g, '$1$2 $3 sú '); // 2 centimetre sú 20 milimetrov
   function questionSay(it) { return spoken(`${T(it)}`); }
 
-  window.MATIKA_ENGINE = { unitOf, ansText, check, fmtNum, OPS, OP_IDS, LEVELS, LEVEL_INFO, COUNTS, generate, explain, fmt, text: T, questionSay, spoken, digits, hintU, sayU: (t) => spokenU(t) };
+  window.MATIKA_ENGINE = { unitOf, ansText, check, fmtNum, OPS, OP_IDS, LEVELS, LEVEL_INFO, COUNTS, generate, explain, fmt, text: T, questionSay, spoken, digits, hintU, setGrade, grade: () => grade, sayU: (t) => spokenU(t) };
 })();
