@@ -455,3 +455,12 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
   .tasks.units .task .line { min-width: 28px; }
   .hintbtn { width: 30px; height: 30px; font-size: 18px; }
 }
+
+/* ---------- ročník ---------- */
+.grade-panel { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 12px; padding-bottom: 12px; }
+.grade-line { display: flex; align-items: center; gap: 10px; font-size: 20px; min-width: 0; }
+.grade-line b { font-family: var(--head); font-weight: 800; font-size: 24px; }
+.grade-line small { display: block; font-size: 15px; color: var(--muted); font-weight: 700; }
+.grade-ico { font-size: 30px; line-height: 1; }
+.tab span:not(.dot) { text-align: center; line-height: 1.05; }
+@media (max-width: 420px) { .tab { font-size: 13px; letter-spacing: .02em; } .tab svg { width: 24px; height: 24px; } }
