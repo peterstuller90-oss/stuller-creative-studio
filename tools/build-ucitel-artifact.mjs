@@ -16,6 +16,9 @@ ${read('style.css')}
 ${read('lines.js')}
 </script>
 <script>
+${read('ucivo.js')}
+</script>
+<script>
 ${read('bank.js')}
 </script>
 <script>

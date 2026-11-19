@@ -49,6 +49,7 @@
     sayPunct: prefs.sayPunct ?? false,
     voiceURI: prefs.voiceURI || '',
     hard: !!prefs.hard,
+    exc: !!prefs.exc,
     gapTypes: new Set((prefs.gapTypes || E.GAP_TYPES).filter((t) => E.GAP_TYPES.includes(t))),
     dict: null, plan: null, gaps: {}, checked: null, gate: null, rewarded: false, celebrate: false, notice: '',
     marked: new Set(), heard: new Set(), wrongGaps: new Set(), doneSaved: false, openDone: null, focusGap: 0,
@@ -56,7 +57,7 @@
     savedHeard: lsGet('ucitel2-saved-heard', {}),
   };
   if (!S.gapTypes.size) S.gapTypes = new Set(E.GAP_TYPES);
-  const savePrefs = () => lsSet('ucitel2-prefs', { hard: S.hard, length: S.length, letters: [...S.letters], mode: S.mode, speed: S.speed, sayPunct: S.sayPunct, voiceURI: S.voiceURI, gapTypes: [...S.gapTypes] });
+  const savePrefs = () => lsSet('ucitel2-prefs', { exc: S.exc, hard: S.hard, length: S.length, letters: [...S.letters], mode: S.mode, speed: S.speed, sayPunct: S.sayPunct, voiceURI: S.voiceURI, gapTypes: [...S.gapTypes] });
 
   // ---------------- úložisko (Supabase + zariadenie) ----------------
   const Store = {
@@ -353,9 +354,10 @@
   function tabBar() {
     const svg = (d) => `<svg viewBox="0 0 24 24">${d}</svg>`;
     const tabs = [
-      ['setup', 'Hrať', svg('<path d="M7 4.5v15l12.5-7.5z"/>')],
+      ['setup', 'Poď sa učiť', svg('<path d="M7 4.5v15l12.5-7.5z"/>')],
       ['calendar', 'Kalendár', svg('<rect x="3" y="5" width="18" height="16" rx="3"/><rect x="3" y="5" width="18" height="5" rx="2" style="fill:var(--ink);stroke:none;opacity:.35"/><path d="M8 2.5v5M16 2.5v5" style="fill:none;stroke-width:2.4;stroke-linecap:round"/>')],
       ['done', 'Uložené', svg('<path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/>')],
+      ['learn', 'Učivo', svg('<path d="M3 5.5c3-1.5 6-1.5 9 .5 3-2 6-2 9-.5V20c-3-1.5-6-1.5-9 .5-3-2-6-2-9-.5z"/><path d="M12 6v14" style="fill:none"/>')],
       ['level', 'Level', svg('<path d="M12 2.5l9 9.5-9 9.5-9-9.5z"/>')],
     ];
     return `<nav class="tabs" aria-label="Menu">${tabs.map(([v, t, ic]) => `<button data-act="tab" data-v="${v}" aria-current="${S.view === v ? 'page' : 'false'}"><span class="ic" aria-hidden="true">${ic}</span>${t}</button>`).join('')}</nav>`;
@@ -417,7 +419,7 @@
         <button class="choice green" data-act="mode" data-v="doplnanie" aria-pressed="${gap}"><b>Doplňovačka</b><span>Text vidíš na tablete a dopĺňaš chýbajúce písmenká. Bez diktovania.</span></button>
       </div>
     </section>
-    ${gap ? `<section class="card">
+    ${gap && !S.exc ? `<section class="card">
       ${head('Čo budeš dopĺňať?')}
       <div class="letters">${E.GAP_TYPES.map((t) => `<button class="letter wide" data-act="gapType" data-v="${t}" aria-pressed="${S.gapTypes.has(t)}">${GAP_LABEL[t]}</button>`).join('')}</div>
       <p class="hint">Okienka môžu byť pri i a y, pri dĺžňoch (á, é, í, ó, ú), pri mäkčeňoch (ď, ť, ň, ľ, č, š, ž), pri ä, pri ô a pri ie, ia, iu.</p>
@@ -435,12 +437,13 @@
       </div>
     </section>
     <section class="card">
-      ${head('Ktoré vybrané slová?')}
+      ${head('Čo budeš precvičovať?')}
       <div class="letters">
-        ${E.LETTERS.map((l) => `<button class="letter" data-act="letter" data-v="${l}" aria-pressed="${S.letters.has(l)}" aria-label="Vybrané slová po ${l.toUpperCase()}">${l.toUpperCase()}</button>`).join('')}
-        <button class="letter all" data-act="allLetters" aria-pressed="${allOn}">Všetky</button>
+        ${E.LETTERS.map((l) => `<button class="letter" data-act="letter" data-v="${l}" aria-pressed="${!S.exc && S.letters.has(l)}" aria-label="Vybrané slová po ${l.toUpperCase()}">${l.toUpperCase()}</button>`).join('')}
+        <button class="letter all" data-act="allLetters" aria-pressed="${!S.exc && allOn}">Všetky</button>
       </div>
-      <p class="hint">Vždy tam budú aj iné slová s mäkkým i a výnimky, napríklad kino, diktát, bicykel.</p>
+      <div class="letters exc-row"><button class="letter wide" data-act="excMode" aria-pressed="${S.exc}">Cudzie slová a výnimky</button></div>
+      <p class="hint">${S.exc ? 'Iba cudzie slová, v ktorých sa píše inak, ako káže pravidlo: kino, gitara, diktát, technika, bicykel, cyklista, fyzika. Zoznam nájdeš v časti Učivo.' : 'Vždy tam budú aj iné slová s mäkkým i a výnimky, napríklad kino, diktát, bicykel.'}</p>
     </section>
     ${gap ? '' : `<section class="card">
       ${head('Ako rýchlo diktovať?')}
@@ -454,7 +457,7 @@
       </div>
       ${!Voice.clips && Voice.ok && !voices.length ? '<p class="notice">Na tomto zariadení chýba slovenský hlas. Na iPade ho pridáš v Nastaveniach: Prístupnosť → Hovorený obsah → Hlasy → Slovenčina → Laura (Vylepšená).</p>' : ''}
     </section>`}
-    <button class="btn primary big" data-act="generate" ${S.letters.size && (!gap || S.gapTypes.size) ? '' : 'disabled'}>Hrať</button>
+    <button class="btn primary big" data-act="generate" ${(S.exc || S.letters.size) && (!gap || S.exc || S.gapTypes.size) ? '' : 'disabled'}>Poď sa učiť</button>
     ${cloudLine()}
     ${tabBar()}`;
   }
@@ -472,7 +475,7 @@
         <span class="chip ${gap ? 'green' : 'red'}">${gap ? 'Doplňovačka' : 'Na papier'}</span>
         ${d.hard ? '<span class="chip pink">Náročný</span>' : ''}
         <span class="chip">${d.sentences.length} ${d.sentences.length < 5 ? 'vety' : 'viet'} · ${words} slov</span>
-        <span class="chip">Po ${d.letters.map((l) => l.toUpperCase()).join(', ')}</span>
+        <span class="chip">${d.exc ? 'Cudzie slová a výnimky' : `Po ${d.letters.map((l) => l.toUpperCase()).join(', ')}`}</span>
         <span class="chip pink">Výnimky: ${exc}</span>
         ${gap ? `<span class="chip">${[...S.gapTypes].map((t) => GAP_LABEL[t]).join(' · ')}</span>` : ''}
         <span class="chip sun">+${xpBase(d)} XP</span>
@@ -711,6 +714,30 @@
     return `<section class="card day-card"><h2 class="day-title">${esc(title)}</h2>${list}</section>`;
   }
 
+  const U = window.UCITEL_UCIVO;
+  function viewLearn() {
+    const sel = S.learn || 'b';
+    const tabs = [...E.LETTERS.map((l) => [l, l.toUpperCase()]), ['vynimky', 'Výnimky']];
+    let body;
+    if (sel === 'vynimky') {
+      body = U.vynimky.map((g, gi) => `<section class="card learn-card"><h2>${esc(g.head)}</h2><p>${esc(g.rule)}</p>
+        <div class="word-chips">${g.words.map((w) => `<button class="wchip" data-act="sayWord" data-v="${esc(w)}">${esc(w)}</button>`).join('')}</div>
+        <button class="btn small blue" data-act="sayList" data-v="x${gi}">${ICON.speaker} Vypočuť všetky</button></section>`).join('');
+    } else {
+      const words = U.vybrane[sel];
+      body = `<section class="card learn-card"><h2>Vybrané slová po ${sel.toUpperCase()}</h2>
+        <div class="word-chips">${words.map((w) => `<button class="wchip" data-act="sayWord" data-v="${esc(w)}">${esc(w)}</button>`).join('')}</div>
+        ${U.pozn[sel] ? `<p class="hint">${esc(U.pozn[sel])}</p>` : ''}
+        <button class="btn small blue" data-act="sayList" data-v="${sel}">${ICON.speaker} Vypočuť všetky</button></section>`;
+    }
+    return `${topBar()}
+    <h1 class="page-title">Učivo</h1>
+    <div class="letters learn-tabs">${tabs.map(([k, t]) => `<button class="letter ${k === 'vynimky' ? 'wide' : ''}" data-act="learnTab" data-v="${k}" aria-pressed="${sel === k}">${t}</button>`).join('')}</div>
+    ${body}
+    <p class="hint learn-src">Zoznam vybraných slov podľa Metodicko-pedagogického centra (učivo základnej školy). Ťukni na slovo a vypočuješ si ho.</p>
+    ${tabBar()}`;
+  }
+
   function viewLevel() {
     const xp = totalXp(); const lv = levelOf(xp);
     const from = levelStart(lv); const to = levelStart(lv + 1);
@@ -791,9 +818,9 @@
   }
   function closeWhy() { document.querySelector('.sheet-wrap')?.remove(); }
 
-  const TAB_VIEWS = ['setup', 'calendar', 'done', 'level'];
+  const TAB_VIEWS = ['setup', 'calendar', 'done', 'learn', 'level'];
   function render() {
-    const v = { setup: viewSetup, ready: viewReady, paper: viewPaper, review: viewReview, gaps: viewGaps, done: viewDone, calendar: viewCalendar, level: viewLevel }[S.view] || viewSetup;
+    const v = { setup: viewSetup, ready: viewReady, paper: viewPaper, review: viewReview, gaps: viewGaps, done: viewDone, calendar: viewCalendar, learn: viewLearn, level: viewLevel }[S.view] || viewSetup;
     const y = window.scrollY;
     $app.innerHTML = v();
     document.body.classList.toggle('has-tabs', TAB_VIEWS.includes(S.view));
@@ -814,7 +841,7 @@
     const last = S.dict?.ids || [];
     let d = null;
     for (let k = 0; k < 6; k++) { // istota: nové zadanie nesmie byť rovnaké ako to predchádzajúce
-      d = E.generate(S.length, [...S.letters], recent, S.hard);
+      d = E.generate(S.length, [...S.letters], recent, S.hard, S.exc);
       if (!last.length || d.ids.some((id) => !last.includes(id))) break;
     }
     S.dict = { ...d, id: uid() };
@@ -827,7 +854,7 @@
     S.gaps = {}; S.checked = null; S.gate = null; S.notice = '';
     S.marked = new Set(); S.heard = new Set(); S.wrongGaps = new Set(); S.doneSaved = false;
     if (S.mode === 'doplnanie') {
-      S.plan = E.gapPlan(S.dict.text, [...S.gapTypes], S.dict.id);
+      S.plan = E.gapPlan(S.dict.text, S.dict.exc ? ['iy'] : [...S.gapTypes], S.dict.id);
       S.focusGap = 0;
       S.view = 'gaps'; render();
       document.getElementById('g0')?.focus({ preventScroll: true });
@@ -849,7 +876,7 @@
     const d = S.dict; const id = uid();
     const details = { kind: 'done', dict: d.id, hard: !!d.hard, types: S.mode === 'doplnanie' ? [...S.gapTypes] : undefined };
     Store.add('diktat_results', {
-      id, child: CHILD, length: d.length, letters: d.letters.join(''), mode: modeDb(S.mode), speed: S.speed, text: d.text,
+      id, child: CHILD, length: d.length, letters: d.exc ? 'vynimky' : d.letters.join(''), mode: modeDb(S.mode), speed: S.speed, text: d.text,
       answer: (answer || '').slice(0, 6000), words, mistakes, iy_mistakes: iy, stars: 0, reward_cents: 0, details,
     }, { id, created_at: new Date().toISOString(), child: CHILD, length: d.length, mode: modeDb(S.mode), mistakes, reward_cents: 0, text: d.text, details });
   }
@@ -877,7 +904,7 @@
       ? [...S.marked].sort((a, b) => a - b).map((k) => ({ w: d.text.slice(+k).match(E.WORD_RE)[0], i: -1, k }))
       : [...S.wrongGaps].sort((a, b) => a - b).map((g) => { const p = gapAt(g); return { w: p.word, i: p.idx, k: `g${g}` }; });
     return {
-      dictId: d.id, length: d.length, hard: !!d.hard, letters: d.letters.join(''), mode: S.mode, text: d.text,
+      dictId: d.id, length: d.length, hard: !!d.hard, letters: d.exc ? 'vynimky' : d.letters.join(''), mode: S.mode, text: d.text,
       mistakes: wrongItems.length, wrong: wrongItems.map((x) => x.w), wrongItems, heard: wrongItems.filter((x) => S.heard.has(x.k)).map((x) => x.k), doneAt: new Date().toISOString(),
     };
   }
@@ -979,8 +1006,16 @@
         break;
       case 'length': S.length = v; savePrefs(); render(); break;
       case 'hard': S.hard = v === '1'; savePrefs(); render(); break;
-      case 'letter': S.letters.has(v) ? S.letters.delete(v) : S.letters.add(v); savePrefs(); render(); break;
-      case 'allLetters': S.letters = S.letters.size === E.LETTERS.length ? new Set() : new Set(E.LETTERS); savePrefs(); render(); break;
+      case 'letter': if (S.exc) { S.exc = false; if (!S.letters.size) S.letters.add(v); } else if (S.letters.has(v)) S.letters.delete(v); else S.letters.add(v); savePrefs(); render(); break;
+      case 'learnTab': S.learn = v; Voice.stop(); render(); break;
+      case 'sayWord': Voice.stop(); Voice.say(E.speakForm(v), SPEEDS.normal.rate, false); break;
+      case 'sayList': {
+        Voice.stop();
+        if (v[0] === 'x') { const g = U.vynimky[+v.slice(1)]; Voice.seq([g.head + '.', ...g.words.map((w) => E.speakForm(w))]); } else Voice.seq([`Vybrané slová po ${v.toUpperCase()}.`, ...U.vybrane[v].map((w) => E.speakForm(w))]);
+        break;
+      }
+      case 'excMode': S.exc = !S.exc; savePrefs(); render(); break;
+      case 'allLetters': if (S.exc) { S.exc = false; S.letters = new Set(E.LETTERS); savePrefs(); render(); break; } S.letters = S.letters.size === E.LETTERS.length ? new Set() : new Set(E.LETTERS); savePrefs(); render(); break;
       case 'gapType': S.gapTypes.has(v) ? S.gapTypes.delete(v) : S.gapTypes.add(v); savePrefs(); render(); break;
       case 'mode': S.mode = v; savePrefs(); render(); break;
       case 'speed': S.speed = v; savePrefs(); render(); break;
