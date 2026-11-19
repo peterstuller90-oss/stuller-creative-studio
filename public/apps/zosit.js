@@ -9,7 +9,8 @@
        'num' – len číslice a desatinná čiarka, medzery sa ignorujú.
    - ok = null: rukopis sa nepodarilo prečítať (bez internetu, chyba služby). Vtedy rozhodne rodič.
    API:
-     Zosit.open({ title, prompt, expect, lang, lines, onDone(result) })   – okno s plochou a tlačidlami
+     Zosit.open({ title, prompt, expect, lang, lines, onDone(result), repeat?, repeatLabel? }) – okno s plochou a tlačidlami;
+       repeat = funkcia, ktorá znova prehrá zadanie (napr. diktovanú vetu), zobrazí tlačidlo „🔊 Zopakovať vetu“
      Zosit.mount(el, { lang, lines }) -> pad                              – len plocha (vlastné rozloženie)
      Zosit.check(pad, expect) -> Promise<result>
      result = { ok: true|false|null, text, candidates, image }            – image = PNG kresby (dataURL) */
@@ -32,6 +33,7 @@
   .zs-btn{flex:1 1 140px;border:3px solid #0B1033;border-radius:16px;min-height:54px;font:800 20px/1 'Baloo 2',sans-serif;text-transform:uppercase;box-shadow:0 5px 0 #0B1033;background:#fff;color:#0B1033;cursor:pointer}
   .zs-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #0B1033}
   .zs-btn.go{background:linear-gradient(180deg,#7FF0AE 0 45%,#2FCB61 45%)}
+  .zs-btn.say{flex:none;align-self:center;min-height:48px;padding:0 22px;background:linear-gradient(180deg,#7FDBFF,#2F7BF6);color:#fff}
   .zs-btn.dark{background:linear-gradient(180deg,#3A57C9,#22399B);color:#fff}
   .zs-btn[disabled]{filter:grayscale(.8) brightness(.8);pointer-events:none}
   .zs-msg{text-align:center;font-weight:800;min-height:1.3em;margin:0}
@@ -154,6 +156,7 @@
     wrap.innerHTML = `<div class="zs-sheet" role="dialog" aria-modal="true" aria-label="${esc(o.title || 'Píš perom')}">
       <div class="zs-head"><h3>${esc(o.title || 'Píš perom')}</h3><span class="zs-test">TEST</span></div>
       <div class="zs-prompt">${o.prompt || ''}</div>
+      ${o.repeat ? `<button class="zs-btn say" data-z="repeat">🔊 ${esc(o.repeatLabel || 'Zopakovať vetu')}</button>` : ''}
       <div class="zs-area"></div>
       <p class="zs-hint">Píš perom do riadkov ako do zošita. Pokojne, čitateľne.</p>
       <p class="zs-msg" aria-live="polite"></p>
@@ -166,7 +169,8 @@
     wrap.addEventListener('click', async (ev) => {
       const b = ev.target.closest('[data-z]'); if (!b) return;
       const z = b.dataset.z;
-      if (z === 'undo') pad.undo();
+      if (z === 'repeat') o.repeat?.();
+      else if (z === 'undo') pad.undo();
       else if (z === 'clear') pad.clear();
       else if (z === 'close') { close(); o.onCancel?.(); }
       else if (z === 'done') {
