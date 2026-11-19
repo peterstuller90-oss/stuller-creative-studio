@@ -161,6 +161,7 @@
     explained: ['Vysvetlené', 'green'],
     unexplained: ['Nevysvetlené', 'red'],
   };
+  const modeName = (e) => (e.mode === 'papier' ? 'Na papier' : e.pero ? 'Perom (test)' : 'Na tablete');
   const countsForGoal = (e) => e.mode === 'papier' && (e.level === 'tazke' || e.level === 'desatinne') && e.confirmed && e.wrong.length === 0;
   const weekGoal = (M, wk = weekKey(new Date())) => M.list.filter((e) => countsForGoal(e) && weekKey(new Date(e.created_at)) === wk).length;
 
@@ -196,6 +197,7 @@
 
   // ---------------- stav ----------------
   const prefs = lsGet('matika-prefs', {});
+  if (!window.Zosit && (lsGet('matika-prefs', {}).mode === 'pero')) lsSet('matika-prefs', { ...lsGet('matika-prefs', {}), mode: 'tablet' });
   const S = {
     tab: 'play', // play | cal | saved | rewards
     view: 'home', // home | paper | check | tablet | result | detail
@@ -268,9 +270,10 @@
     </section>
     <section class="panel">
       <span class="label">4 · Ako budeš počítať</span>
-      <div class="modes">
+      <div class="modes ${window.Zosit ? 'three' : ''}">
         <button class="mode paper" data-act="mode" data-v="papier" aria-pressed="${S.mode === 'papier'}"><span class="mico">${I.pencil}</span><span><b>Na papier</b><small>Počítaš do zošita, potom porovnáš. Ocko potvrdí kódom.</small></span></button>
         <button class="mode tabl" data-act="mode" data-v="tablet" aria-pressed="${S.mode === 'tablet'}"><span class="mico">${I.tablet}</span><span><b>Na tablete</b><small>Výsledky píšeš sem, appka ich hneď skontroluje.</small></span></button>
+${window.Zosit ? `<button class="mode pen" data-act="mode" data-v="pero" aria-pressed="${S.mode === 'pero'}"><span class="mico">${I.pencil}</span><span><b>Perom <span class="testtag">TEST</span></b><small>Dopisovacie cvičenie: výsledok napíšeš perom ako do zošita.</small></span></button>` : ''}
       </div>
       <div class="goal-note">${I.trophy}<span>Týždenná výzva: <b>${Math.min(wk, WEEK_GOAL)} z ${WEEK_GOAL}</b> bezchybných <b>ťažkých</b> cvičení <b>na papier</b>. Keď ich máš 10, vyberieš si zážitok s ockom alebo s mamou!</span></div>
     </section>
@@ -315,14 +318,15 @@
     return `<div class="bar"><button class="x" data-act="quit" aria-label="Zrušiť">×</button><h2 class="out">${exTitle({ op: S.op, level: S.level })}</h2><span class="tag green">${filled}/${S.items.length}</span></div>
     <div class="progress" aria-hidden="true"><i style="width:${(filled / S.items.length) * 100}%"></i></div>
     ${S.op === 'jednotky' ? '<div class="unitsrow">' + '<button class="btn small cyan unitsbtn" data-act="units">📏 Ako prevádzať jednotky</button>' + '</div>' : ''}
-    <div class="grid">${S.items.map((it, i) => `<button class="card ${S.sel === i ? 'sel' : ''}" data-act="sel" data-i="${i}"><span class="n">${i + 1}</span><span class="q">${E.text(it)} =</span>${slotHtml(i)}${E.unitOf(it) ? `<span class="u">${E.unitOf(it)}</span>` : ''}</button>`).join('')}</div>
+    ${S.mode === 'pero' ? '<p class="pen-note">✍️ Ťukni na príklad a výsledok napíš perom. <span class="testtag">TEST</span></p>' : ''}
+    <div class="grid">${S.items.map((it, i) => `<button class="card ${S.sel === i ? 'sel' : ''}" data-act="${S.mode === 'pero' ? 'pen' : 'sel'}" data-i="${i}"><span class="n">${i + 1}</span><span class="q">${E.text(it)} =</span>${slotHtml(i)}${E.unitOf(it) ? `<span class="u">${E.unitOf(it)}</span>` : ''}</button>`).join('')}</div>
     <button class="btn green big" data-act="tabletCheck" ${all ? '' : 'disabled'}>Skontrolovať${all ? '' : ` (${S.items.length - filled} chýba)`}</button>
-    <div class="keys"><div class="keys-in">
+    ${S.mode === 'pero' ? '' : `<div class="keys"><div class="keys-in">
       ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((d) => `<button class="key" data-act="key" data-k="${d}">${d}</button>`).join('')}
       ${S.level === 'desatinne' ? '<button class="key" data-act="key" data-k="," aria-label="Desatinná čiarka">,</button><button class="key del" data-act="key" data-k="del" aria-label="Zmazať">⌫</button>' : '<button class="key del wide" data-act="key" data-k="del" aria-label="Zmazať">⌫</button>'}
       ${S.op === 'jednotky' ? '<button class="key hint wide" data-act="hint" data-i="' + S.sel + '" aria-label="Pomôcka k vybranému príkladu">💡 Pomoc</button>' : ''}
       ${all ? `<button class="key go wide" data-act="tabletCheck" style="grid-column: span ${S.op === 'jednotky' ? 4 : 6}">Skontrolovať</button>` : `<button class="key next wide" data-act="key" data-k="next" style="grid-column: span ${S.op === 'jednotky' ? 4 : 6}">Ďalší ➜</button>`}
-    </div></div>`;
+    </div></div>`}`;
   }
 
   function wrongList(ex) {
@@ -359,7 +363,7 @@
     const stars = bad === 0 ? 3 : bad <= Math.ceil(total * 0.15) ? 2 : bad <= Math.ceil(total * 0.4) ? 1 : 0;
     const xp = ex.mode === 'tablet' || ex.confirmed ? ex.xp : xpFor(ex);
     const title = bad === 0 ? 'Bez chyby!' : stars >= 2 ? 'Super!' : stars === 1 ? 'Dobre!' : 'Nevzdávaj to!';
-    return `<div class="bar"><button class="x" data-act="home" aria-label="Domov">×</button><h2 class="out">${exTitle(ex)}</h2><span class="tag ${ex.mode === 'papier' ? 'red' : 'green'}">${ex.mode === 'papier' ? 'Na papier' : 'Na tablete'}</span></div>
+    return `<div class="bar"><button class="x" data-act="home" aria-label="Domov">×</button><h2 class="out">${exTitle(ex)}</h2><span class="tag ${ex.mode === 'papier' ? 'red' : 'green'}">${modeName(ex)}</span></div>
     <section class="panel hero">
       <div class="stars">${[1, 2, 3].map((i) => STAR.replace('class="star"', `class="star ${i <= stars ? 'on' : ''}"`)).join('')}</div>
       <h1 class="out">${title}</h1>
@@ -392,7 +396,7 @@
     for (let i = 0; i < 42; i++) {
       const k = dayKey(d); const c = per[k];
       const times = c ? c.list.slice(0, 3).map((e) => `<i class="${e.mode === 'papier' ? 'r' : 'g'}">${fmtTime(e.created_at)}</i>`).join('') + (c.list.length > 3 ? `<i class="more">+${c.list.length - 3}</i>` : '') : '';
-      const label = `${d.getDate()}. ${MONTHS[d.getMonth()]}${c ? `: ${c.list.map((e) => `${fmtTime(e.created_at)} ${e.mode === 'papier' ? 'na papier' : 'na tablete'}`).join(', ')}` : ''}`;
+      const label = `${d.getDate()}. ${MONTHS[d.getMonth()]}${c ? `: ${c.list.map((e) => `${fmtTime(e.created_at)} ${modeName(e).toLowerCase()}`).join(', ')}` : ''}`;
       cells.push(`<button class="day ${d.getMonth() !== m.m ? 'out' : ''} ${k === dayKey(now) ? 'today' : ''} ${k === sel ? 'sel' : ''}" data-act="calDay" data-k="${k}" aria-label="${label}" aria-pressed="${k === sel}"><span class="d">${d.getDate()}</span><span class="times">${times}</span><span class="cnt">${c && c.r ? `<i class="r">${c.r}</i>` : ''}${c && c.g ? `<i class="g">${c.g}</i>` : ''}</span></button>`);
       d.setDate(d.getDate() + 1);
       if (i >= 34 && d.getMonth() !== m.m) break;
@@ -404,7 +408,7 @@
       <h3>${DAYS[sDate.getDay()]} ${fmtShort(sDate)}</h3>
       ${sList.length ? `<div class="list">${sList.map((e) => {
         const [t, c] = STATUS[statusOf(e)];
-        return `<button class="item ${e.mode === 'papier' ? 'paper' : ''}" data-act="detail" data-ex="${e.id}"><span class="stripe"></span><span class="t"><b><span class="time">${fmtTime(e.created_at)}</span> ${exTitle(e)}</b><small>${e.mode === 'papier' ? 'Na papier' : 'Na tablete'} · ${e.items.length - e.wrong.length}/${e.items.length} správne</small></span><span class="st"><span class="tag ${c}">${t}</span></span></button>`;
+        return `<button class="item ${e.mode === 'papier' ? 'paper' : ''}" data-act="detail" data-ex="${e.id}"><span class="stripe"></span><span class="t"><b><span class="time">${fmtTime(e.created_at)}</span> ${exTitle(e)}</b><small>${modeName(e)} · ${e.items.length - e.wrong.length}/${e.items.length} správne</small></span><span class="st"><span class="tag ${c}">${t}</span></span></button>`;
       }).join('')}</div>` : '<p class="hint">V tento deň žiadne cvičenie.</p>'}
     </section>`;
     // posledné 4 týždne – výzva
@@ -443,7 +447,7 @@
     </section>
     <div class="list">${list.length ? list.map((e) => {
       const [t, c] = STATUS[statusOf(e)];
-      return `<button class="item ${e.mode === 'papier' ? 'paper' : ''}" data-act="detail" data-ex="${e.id}"><span class="stripe"></span><span class="t"><b>${exTitle(e)}</b><small>${fmtDate(e.created_at)} · ${e.mode === 'papier' ? 'Na papier' : 'Na tablete'} · ${e.items.length - e.wrong.length}/${e.items.length} správne</small></span><span class="st"><span class="tag ${c}">${t}</span>${e.xp ? `<small>+${e.xp} XP</small>` : ''}</span></button>`;
+      return `<button class="item ${e.mode === 'papier' ? 'paper' : ''}" data-act="detail" data-ex="${e.id}"><span class="stripe"></span><span class="t"><b>${exTitle(e)}</b><small>${fmtDate(e.created_at)} · ${modeName(e)} · ${e.items.length - e.wrong.length}/${e.items.length} správne</small></span><span class="st"><span class="tag ${c}">${t}</span>${e.xp ? `<small>+${e.xp} XP</small>` : ''}</span></button>`;
     }).join('') : '<p class="empty">Zatiaľ tu nič nie je.</p>'}</div>
     ${cloudLine()}`;
   }
@@ -451,7 +455,7 @@
   function viewDetail(M) {
     const ex = M.list.find((e) => e.id === S.detailId);
     if (!ex) { S.view = 'home'; return viewSaved(M); }
-    return `<div class="bar"><button class="x" data-act="back" aria-label="Späť">‹</button><h2 class="out">${exTitle(ex)}</h2><span class="tag ${ex.mode === 'papier' ? 'red' : 'green'}">${ex.mode === 'papier' ? 'Na papier' : 'Na tablete'}</span></div>
+    return `<div class="bar"><button class="x" data-act="back" aria-label="Späť">‹</button><h2 class="out">${exTitle(ex)}</h2><span class="tag ${ex.mode === 'papier' ? 'red' : 'green'}">${modeName(ex)}</span></div>
     <section class="panel">
       <p>${fmtDate(ex.created_at)} · správne ${ex.items.length - ex.wrong.length} z ${ex.items.length}${ex.xp ? ` · +${ex.xp} XP` : ''}</p>
       <div class="status-line" style="justify-content:flex-start">${statusTags(ex)}</div>
@@ -555,6 +559,41 @@
       const ms = Math.min(15000, 2500 + x.say.length * 45);
       setTimeout(() => { const ok = document.getElementById('whyOk'); if (ok) { ok.disabled = false; ok.addEventListener('click', markHeard, { once: true }); } }, ms);
     }
+  }
+  /** Dopisovacie cvičenie (TEST): výsledok napíše perom, rozpozná ho spoločný Zošit (../zosit.js). */
+  function openPen(i) {
+    const it = S.items[i];
+    if (!it || !window.Zosit) return;
+    const right = E.fmtNum(it.ans).replace(/\s|\u202F/g, '');
+    const u = E.unitOf(it);
+    window.Zosit.open({
+      title: `Príklad ${i + 1}`, lang: 'num', lines: 1, expect: [right],
+      prompt: `<div class="pen-q">${E.text(it)} = <span class="qm">?</span>${u ? ` <b>${u}</b>` : ''}</div>`,
+      onDone: async (res) => {
+        if (res.ok === true) S.answers[i] = right;
+        else if (res.ok === false) S.answers[i] = (String(res.text || '').replace(/[^0-9,.]/g, '').replace('.', ',') || '?').slice(0, 9);
+        else S.answers[i] = (await parentRate(res, it)) ? right : '?';
+        render();
+        const n = S.items.length;
+        if (S.answers.some((x) => x === '')) {
+          let j = i; for (let t = 1; t <= n; t++) { if (!S.answers[(i + t) % n]) { j = (i + t) % n; break; } }
+          S.sel = j; render(); scrollSel();
+        }
+      },
+    });
+  }
+  /** Rukopis sa nedal prečítať (bez internetu): rozhodne rodič podľa obrázka. */
+  function parentRate(res, it) {
+    return new Promise((resolve) => {
+      const w = document.createElement('div');
+      w.className = 'sheet-wrap ask';
+      w.innerHTML = `<div class="sheet" role="alertdialog" aria-modal="true"><p class="sheet-q">Písmo sa nepodarilo prečítať. Ocko alebo mama, je to správne?</p>
+        <p class="pen-q small">${E.text(it)} = <b>${E.ansText(it)}</b></p>
+        ${res.image ? `<img class="pen-img" src="${res.image}" alt="Otovo písanie">` : ''}
+        <div class="row"><button class="btn red" data-a="0">✗ Zle</button><button class="btn green" data-a="1">✓ Správne</button></div></div>`;
+      w.addEventListener('click', (ev) => { const b = ev.target.closest('[data-a]'); if (b) { w.remove(); resolve(b.dataset.a === '1'); } });
+      document.body.appendChild(w);
+    });
   }
   function closeWhy() { document.querySelector('.sheet-wrap')?.remove(); }
   /** Jednoduché okno s pomôckou (bez sledovania „vypočuté“). */
@@ -674,7 +713,7 @@
     else if (S.tab === 'saved') html = viewSaved(M);
     else if (S.tab === 'rewards') html = viewRewards(M);
     else html = viewHome(M);
-    $app.className = `wrap${focus ? ' focus' : ''}${S.view === 'tablet' ? ' with-keys' : ''}`;
+    $app.className = `wrap${focus ? ' focus' : ''}${S.view === 'tablet' && S.mode !== 'pero' ? ' with-keys' : ''}`;
     $app.innerHTML = html + (focus ? '' : nav(M));
   }
   function scrollSel() {
@@ -697,6 +736,7 @@
   function saveDone(mode, wrong, given) {
     const ex = { op: S.op, level: S.level, count: S.count, grade: E.grade(), mode, items: S.items.map((it) => (it.op === 'jednotky' ? { op: it.op, parts: it.parts, to: it.to, mm: it.mm, ans: it.ans, kind: it.kind } : { op: it.op, a: it.a, b: it.b, ans: it.ans, kind: it.kind })), wrong, given: given || null, mistakes: wrong.length, started_at: S.startedAt };
     if (mode === 'tablet') ex.xp = xpFor(ex);
+    if (mode === 'tablet' && S.mode === 'pero') ex.pero = true;
     Store.add('done', S.exId, ex);
   }
   function confirmEx(id) {
@@ -763,6 +803,7 @@
       }
       case 'why': openWhy(b.dataset.ex, +b.dataset.i); break;
       case 'units': openUnits(); break;
+      case 'pen': S.sel = +b.dataset.i; render(); openPen(S.sel); break;
       case 'hint': { const it = S.items[+b.dataset.i]; if (it) openHint(it, +b.dataset.i); break; }
       case 'confirm': {
         const v = document.getElementById('code')?.value || '';

@@ -464,3 +464,19 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
 .grade-ico { font-size: 30px; line-height: 1; }
 .tab span:not(.dot) { text-align: center; line-height: 1.05; }
 @media (max-width: 420px) { .tab { font-size: 13px; letter-spacing: .02em; } .tab svg { width: 24px; height: 24px; } }
+
+/* ---------- perom (TEST) ---------- */
+.testtag { display: inline-block; margin-left: 6px; background: var(--orange); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; font-family: var(--head); font-size: 12px; line-height: 1.3; padding: 0 7px; vertical-align: middle; letter-spacing: .05em; text-shadow: none; }
+.modes.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mode.pen .mico { background: var(--orange); }
+.mode[aria-pressed="true"].pen { background: linear-gradient(180deg, #FFC27A, var(--orange)); color: var(--ink); }
+.pen-note { background: #fff; color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; padding: 8px 12px; font-weight: 800; margin: 0 0 10px; }
+.pen-q { font-size: 40px; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+.pen-q .qm { color: var(--cyan-d, #2A6BF2); }
+.pen-q.small { font-size: 26px; }
+.pen-img { display: block; max-width: 100%; border: 3px solid var(--ink); border-radius: 12px; background: #fff; }
+@media (max-width: 700px) {
+  .modes.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .modes.three .mode.pen { grid-column: span 2; }
+  .pen-q { font-size: 32px; }
+}
