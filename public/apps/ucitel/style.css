@@ -81,13 +81,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .lvl-bar em { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-family: var(--head); font-weight: 800; font-size: 16px; color: #fff; text-shadow: 0 2px 0 var(--ink); padding-left: 10px; }
 
 /* ---------- spodné menu ---------- */
-.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
   padding: 10px max(12px, env(safe-area-inset-left, 0px)) max(10px, env(safe-area-inset-bottom, 0px)); background: var(--night); border-top: var(--edge); box-shadow: 0 -4px 0 rgba(0, 0, 0, .25); }
 .tabs button { border: var(--edge); border-radius: 16px; background: linear-gradient(180deg, #3A57C9, #22399B); color: #fff; font-family: var(--head); font-weight: 800; font-size: 17px; text-transform: uppercase; padding: 6px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; box-shadow: 0 4px 0 var(--ink); max-width: 200px; justify-self: stretch;  text-shadow: 0 2px 0 rgba(13,22,64,.55); }
 .tabs .ic { font-size: 22px; line-height: 1; }
 .tabs button[aria-current="page"] { text-shadow: none; background: linear-gradient(180deg, #FFE36B, var(--yellow)); color: var(--ink); }
 .tabs button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-@media (min-width: 700px) { .tabs { grid-template-columns: repeat(4, 180px); justify-content: center; } }
+@media (min-width: 700px) { .tabs { grid-template-columns: repeat(5, 150px); justify-content: center; } }
 
 /* ---------- panely ---------- */
 .card { background: var(--panel); border: var(--edge); border-radius: var(--r); box-shadow: 0 6px 0 var(--ink); padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
@@ -389,3 +389,16 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
 .seg button[aria-pressed="false"] { opacity: .45; }
 .seg button[aria-pressed="true"] { opacity: 1; box-shadow: inset 0 -4px 0 rgba(13, 22, 64, .35); }
 .seg button[aria-pressed="true"]::before { content: '✓ '; }
+
+/* Učivo */
+.learn-tabs { margin: 4px 0 12px; }
+.learn-card { gap: 12px; }
+.word-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.wchip { font: 800 19px/1.2 var(--body, Nunito), sans-serif; padding: 8px 14px; border: 2px solid var(--ink); border-radius: 12px; background: var(--panel-2); color: var(--ink); box-shadow: 0 3px 0 var(--ink); }
+.wchip:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.learn-card .btn { align-self: flex-start; }
+.learn-src { color: #DCE4FF; text-align: center; }
+.exc-row { margin-top: 10px; }
+@media (max-width: 600px) { .tabs button { font-size: 12px; } .wchip { font-size: 17px; padding: 7px 11px; } }
+.tabs button { line-height: 1.05; text-align: center; }
+@media (max-width: 600px) { .tabs { gap: 4px; padding-left: 6px; padding-right: 6px; } .tabs button { font-size: 11px; padding: 6px 2px 7px; } }
