@@ -227,6 +227,17 @@
     wishWho: null, wishWhat: null, wishText: '', wishMsg: '',
     prevLevel: null,
   };
+  // Ročník: spoločný výber pre všetky appky (../rocnik.js). Anglina má zatiaľ učivo 4. ročníka (oba polroky).
+  const READY = [{ grade: 4, half: 1 }, { grade: 4, half: 2 }];
+  if (window.Rocnik) Rocnik.setup({ app: 'Anglina', ready: READY, onChange() { S.tab = 'play'; S.view = 'home'; render(); window.scrollTo(0, 0); } });
+  function gradePanel() {
+    if (!window.Rocnik) return '';
+    const R = Rocnik.get(); const ok = Rocnik.isReady();
+    return `<section class="panel grade-panel">
+      <div class="grade-line"><span class="grade-ico">🎓</span><span><b>${R.grade}. ročník</b> · ${R.half}. polrok<small>${ok ? `Slovíčka a vety podľa učiva ${R.grade}. ročníka` : `Učivo ${R.grade}. ročníka pre Anglinu ešte pripravujeme. Zatiaľ sa učíš učivo 4. ročníka.`}</small></span></div>
+      ${Rocnik.buttonHtml()}
+    </section>`;
+  }
   const savePrefs = () => lsSet('anglina-prefs', { topic: S.topic, level: S.level, count: S.count, mode: S.mode });
   const W = (it) => E.word(it.id) || { en: '?', sk: '?', em: '', topic: 'veci' };
 
@@ -286,6 +297,7 @@
     const howPanel = qa ? `<section class="panel"><span class="label">2 · Ako to funguje</span>
       <p>Appka sa ťa <b>opýta po anglicky</b> (aj nahlas). Ty <b>odpovieš nahlas po anglicky</b>. Potom ťukneš <b>Odpovedal som</b>, appka ti povie správnu odpoveď a ty povieš, či si to mal dobre. Keď nevieš, ťukni <b>Neviem</b> a appka ti odpoveď povie.</p></section>` : '';
     return `${hud(M)}
+    ${gradePanel()}
     <section class="panel">
       <span class="label">1 · Téma</span>
       <div class="ops topics">${topics.map((t) => `<button class="op" data-act="topic" data-v="${t.id}" aria-pressed="${S.topic === t.id}" style="--c:${t.c}">${t.school ? '<span class="badge-school">Zo školy</span>' : t.badge ? `<span class="badge-school extra">${esc(t.badge)}</span>` : ''}<span class="sym">${t.em}</span><span>${esc(t.name)}</span></button>`).join('')}</div>
