@@ -5,7 +5,7 @@ new Function('window', readFileSync(new URL('../public/apps/anglina/engine.js', 
 const E = g.window.ANGLINA_ENGINE;
 let bad = 0;
 const fail = (m) => { bad++; console.error('CHYBA:', m); };
-for (const t of E.TOPICS) {
+for (const t of E.TOPICS.filter((x) => !x.qa)) {
   if (t.words.length < 7) fail(`${t.id}: málo slov`);
   const en = new Set(); const sk = new Set();
   for (const w of t.words) {
@@ -33,13 +33,23 @@ for (const level of ['lahke', 'stredne', 'tazke']) {
   }
 }
 // poskladaj: písmená sú rozhádzané, správne poskladané slovo sa uzná, iné poradie nie
-for (const t of E.TOPICS) for (const w of t.words) {
+for (const t of E.TOPICS.filter((x) => !x.qa)) for (const w of t.words) {
   const [it] = E.generate(t.id, 'poskladaj', 'kratke', 'tablet', []).filter((x) => x.id === w.id).concat([{ id: w.id, tiles: w.en.replace(/[ -]/g, '').split('').reverse() }]);
   const letters = w.en.replace(/[ -]/g, '');
   if (it.tiles.slice().sort().join('') !== letters.split('').sort().join('')) fail(`${w.id}: dlaždice`);
   const used = new Set(); const picks = letters.split('').map((ch) => { const i = it.tiles.findIndex((x, j) => x === ch && !used.has(j)); used.add(i); return i; });
   if (!E.check(it, E.assemble(w.en, it.tiles, picks))) fail(`${w.id}: poskladané správne neuznané`);
   if (new Set(letters).size > 1 && E.check(it, E.assemble(w.en, it.tiles, picks.slice().reverse()))) { if (letters !== letters.split('').reverse().join('')) fail(`${w.id}: zlé poradie uznané`); }
+}
+for (const t of E.TOPICS.filter((x) => x.qa)) {
+  const ids = new Set();
+  for (const w of t.words) {
+    if (ids.has(w.id)) fail(`${w.id}: dvakrát`); ids.add(w.id);
+    if (!w.a || !w.aSk || !w.sk) fail(`${w.id}: chýba odpoveď`);
+    if (E.sayAns(w.a).length !== w.aSk.split(' / ').length) fail(`${w.id}: počet odpovedí sk/en`);
+    const x = E.explain({ id: w.id }); if (x.lines.some((l) => /[{}]/.test(l))) fail(`${w.id}: vysvetlenie`);
+    if (!E.check({ id: w.id }, 'ok') || E.check({ id: w.id }, 'no')) fail(`${w.id}: kontrola`);
+  }
 }
 const mix = E.generate('mix', 'tazke', 'dlhe', 'papier', []);
 if (new Set(mix.map((i) => E.word(i.id).en)).size !== mix.length) fail('mix: rovnaké slovo dvakrát');
