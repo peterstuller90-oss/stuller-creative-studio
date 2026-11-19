@@ -576,3 +576,8 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
 .dopis-done { display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .dopis-done img { width: 100%; max-width: 640px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; }
 .voicebox select { flex: 1 1 220px; min-height: 46px; border: 3px solid var(--ink); border-radius: 12px; font: 700 16px var(--text); padding: 6px 10px; background: #fff; color: var(--ink); }
+.grade-panel { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 12px; padding-bottom: 12px; }
+.grade-line { display: flex; align-items: center; gap: 10px; font-size: 20px; min-width: 0; }
+.grade-line b { font-family: var(--head); font-weight: 800; font-size: 24px; }
+.grade-line small { display: block; font-size: 15px; color: var(--muted); font-weight: 700; }
+.grade-ico { font-size: 30px; line-height: 1; }
