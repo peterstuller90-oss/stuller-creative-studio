@@ -50,6 +50,7 @@
     voiceURI: prefs.voiceURI || '',
     hard: !!prefs.hard,
     exc: !!prefs.exc,
+    pen: !!prefs.pen && prefs.mode !== 'doplnanie', penRes: [], penI: 0,
     gapTypes: new Set((prefs.gapTypes || E.GAP_TYPES).filter((t) => E.GAP_TYPES.includes(t))),
     dict: null, plan: null, gaps: {}, checked: null, gate: null, rewarded: false, celebrate: false, notice: '',
     marked: new Set(), heard: new Set(), wrongGaps: new Set(), doneSaved: false, openDone: null, focusGap: 0,
@@ -57,7 +58,7 @@
     savedHeard: lsGet('ucitel2-saved-heard', {}),
   };
   if (!S.gapTypes.size) S.gapTypes = new Set(E.GAP_TYPES);
-  const savePrefs = () => lsSet('ucitel2-prefs', { exc: S.exc, hard: S.hard, length: S.length, letters: [...S.letters], mode: S.mode, speed: S.speed, sayPunct: S.sayPunct, voiceURI: S.voiceURI, gapTypes: [...S.gapTypes] });
+  const savePrefs = () => lsSet('ucitel2-prefs', { pen: S.pen, exc: S.exc, hard: S.hard, length: S.length, letters: [...S.letters], mode: S.mode, speed: S.speed, sayPunct: S.sayPunct, voiceURI: S.voiceURI, gapTypes: [...S.gapTypes] });
 
   // ---------------- úložisko (Supabase + zariadenie) ----------------
   const Store = {
@@ -415,9 +416,10 @@
     <section class="card">
       ${head('Ako budeš písať?')}
       <div class="choices two">
-        <button class="choice red" data-act="mode" data-v="papier" aria-pressed="${!gap}"><b>Diktát na papier</b><span>Počúvaš a píšeš perom na papier. Potom si pozrieš správny diktát.</span></button>
+        <button class="choice red" data-act="mode" data-v="papier" aria-pressed="${!gap && !S.pen}"><b>Diktát na papier</b><span>Počúvaš a píšeš perom na papier. Potom si pozrieš správny diktát.</span></button>
         <button class="choice green" data-act="mode" data-v="doplnanie" aria-pressed="${gap}"><b>Doplňovačka</b><span>Text vidíš na tablete a dopĺňaš chýbajúce písmenká. Bez diktovania.</span></button>
       </div>
+      <div class="choices one pen-row"><button class="choice pen" data-act="mode" data-v="pero" aria-pressed="${S.pen && !gap}"><b>Dopisovačka perom <i class="test-tag">TEST</i></b><span>Hlas diktuje vetu a ty ju píšeš tabletovým perom do riadkov ako v zošite. Appka tvoj rukopis prečíta a skontroluje.</span></button></div>
     </section>
     ${gap && !S.exc ? `<section class="card">
       ${head('Čo budeš dopĺňať?')}
@@ -457,6 +459,7 @@
       </div>
       ${!Voice.clips && Voice.ok && !voices.length ? '<p class="notice">Na tomto zariadení chýba slovenský hlas. Na iPade ho pridáš v Nastaveniach: Prístupnosť → Hovorený obsah → Hlasy → Slovenčina → Laura (Vylepšená).</p>' : ''}
     </section>`}
+    ${rocnikCard()}
     <button class="btn primary big" data-act="generate" ${(S.exc || S.letters.size) && (!gap || S.exc || S.gapTypes.size) ? '' : 'disabled'}>Poď sa učiť</button>
     ${cloudLine()}
     ${tabBar()}`;
@@ -557,7 +560,7 @@
     return `${topBar()}
     <section class="card">
       <h1>Správny diktát</h1>
-      <p class="hint">Porovnaj ho so svojím papierom. Ťukni na hociktoré slovo a dozvieš sa, prečo sa tak píše. Keď ho máš na papieri zle, v okne ťukni na „Toto mám zle“.</p>
+      <p class="hint">${S.pen ? 'Červené slová appka v tvojom písaní nenašla. Ťukni na slovo a dozvieš sa, prečo sa tak píše. Ak sa appka pomýlila, v okne zruš označenie. Ak tam máš chybu, ktorú appka nenašla, ťukni na „Toto mám zle“.' : 'Porovnaj ho so svojím papierom. Ťukni na hociktoré slovo a dozvieš sa, prečo sa tak píše. Keď ho máš na papieri zle, v okne ťukni na „Toto mám zle“.'}</p>
       ${legend}
       <p class="correct">${clickableText(S.dict.text, !S.rewarded)}</p>
     </section>
@@ -715,6 +718,68 @@
   }
 
   const U = window.UCITEL_UCIVO;
+  // ---------- dopisovačka perom (TEST) ----------
+  function sayPenSentence() {
+    const s = S.dict.sentences[S.penI]; if (!s) return;
+    const sp = SPEEDS[S.speed];
+    Voice.stop();
+    Voice.seq([E.speakForm(s)]).then((ok) => { if (!ok) return; (async () => { for (const c of E.chunks(s)) { if (S.view !== 'pen') return; await Voice.say(E.speakForm(c), sp.rate * 0.95, false); await new Promise((r) => setTimeout(r, 700 + c.length * sp.perChar * 0.6)); } })(); });
+  }
+  function penWrite() {
+    const s = S.dict.sentences[S.penI];
+    const plain = s.replace(/[.,!?]/g, '').replace(/\s+/g, ' ').trim();
+    window.Zosit.open({
+      title: `Veta ${S.penI + 1} z ${S.dict.sentences.length}`, lang: 'sk', lines: 3, expect: [s, plain],
+      prompt: '<p style="margin:0">Napíš vetu, ktorú si počul. Na konci daj bodku.</p>',
+      onDone: (res) => { Voice.stop(); S.penRes[S.penI] = res; render(); },
+    });
+  }
+  /** Slová vety, ktoré rukopis neobsahuje (porovnanie po slovách, LCS). Vráti posuny slov v celom texte. */
+  function penWrongKeys(si, read) {
+    const off = S.dict.sentences.slice(0, si).reduce((a, x) => a + x.length + 1, 0);
+    const exp = [...S.dict.sentences[si].matchAll(E.WORD_RE)].map((m) => ({ w: m[0].toLowerCase(), k: String(off + m.index) }));
+    const got = (read || '').toLowerCase().match(/[\p{L}]+/gu) || [];
+    const n = exp.length, m = got.length;
+    const L = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = exp[i].w === got[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    const keep = new Set(); let i = 0, j = 0;
+    while (i < n && j < m) { if (exp[i].w === got[j]) { keep.add(i); i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) i++; else j++; }
+    return exp.filter((_, x) => !keep.has(x)).map((e) => e.k);
+  }
+  function penFinish() {
+    S.marked = new Set();
+    S.penRes.forEach((r, si) => { if (r && r.ok === false && r.text) penWrongKeys(si, r.text).forEach((k) => S.marked.add(k)); });
+    saveDone(S.marked.size, 0, E.tokenize(S.dict.text).length, S.penRes.map((r) => (r && r.text) || '').join(' | '));
+    S.view = 'review'; render(); window.scrollTo(0, 0);
+  }
+  function viewPen() {
+    const n = S.dict.sentences.length; const r = S.penRes[S.penI];
+    const done = S.penRes.every((x) => x && x.ok !== null);
+    const st = !r ? '' : r.ok === true ? '<p class="pen-ok">✓ Appka to prečítala správne.</p>'
+      : r.ok === false ? `<p class="pen-bad">Appka prečítala: „${esc(r.text || '–')}“. Chyby uvidíš na konci.</p>`
+      : `<div class="pen-parent"><p>Appka rukopis neprečítala. Ocko, pozri sa, či je veta napísaná správne:</p>${r.image ? `<img src="${r.image}" alt="Napísaná veta">` : ''}<div class="row"><button class="btn primary" data-act="penRate" data-v="ok">Správne</button><button class="btn mark" data-act="penRate" data-v="bad">Je tam chyba</button></div></div>`;
+    return `${topBar()}
+    <section class="card pen-card">
+      <div class="step-head"><span class="num">${S.penI + 1}</span><h2>Veta ${S.penI + 1} z ${n} <i class="test-tag">TEST</i></h2></div>
+      <p>Vypočuj si vetu a napíš ju perom. Vetu nevidíš, len ju počuješ.</p>
+      <div class="row"><button class="btn blue" data-act="penSay">${ICON.speaker} Vypočuť vetu</button><button class="btn primary big" data-act="penWrite">${r ? 'Napísať znova' : 'Píšem perom'}</button></div>
+      ${st}
+    </section>
+    <div class="row spread">
+      <button class="btn ghost" data-act="quit">‹ Zrušiť</button>
+      ${S.penI < n - 1 ? `<button class="btn primary" data-act="penNext" ${r && r.ok !== null ? '' : 'disabled'}>Ďalšia veta ›</button>` : `<button class="btn primary" data-act="penFinish" ${done ? '' : 'disabled'}>Pozrieť správny diktát</button>`}
+    </div>`;
+  }
+
+  // ---------- ročník (spoločné okno rocnik.js) ----------
+  const READY = [{ grade: 4, half: 1 }, { grade: 4, half: 2 }];
+  if (window.Rocnik) window.Rocnik.setup({ app: 'Slovina', ready: READY, onChange: () => render() });
+  function rocnikCard() {
+    const R = window.Rocnik; if (!R) return '';
+    const r = R.get();
+    return `<section class="card rocnik-card"><div><b>${esc(R.label(r))}</b>${R.isReady() ? '<span>Učivo: vybrané slová, cudzie slová a výnimky, dĺžne, mäkčene.</span>' : `<span>Pre ${esc(R.label(r))} učivo ešte pripravujeme. Zatiaľ sa učíš podľa 4. ročníka.</span>`}</div>${R.buttonHtml()}</section>`;
+  }
+
   function viewLearn() {
     const sel = S.learn || 'b';
     const tabs = [...E.LETTERS.map((l) => [l, l.toUpperCase()]), ['vynimky', 'Výnimky']];
@@ -820,7 +885,7 @@
 
   const TAB_VIEWS = ['setup', 'calendar', 'done', 'learn', 'level'];
   function render() {
-    const v = { setup: viewSetup, ready: viewReady, paper: viewPaper, review: viewReview, gaps: viewGaps, done: viewDone, calendar: viewCalendar, learn: viewLearn, level: viewLevel }[S.view] || viewSetup;
+    const v = { setup: viewSetup, ready: viewReady, paper: viewPaper, review: viewReview, gaps: viewGaps, done: viewDone, calendar: viewCalendar, learn: viewLearn, pen: viewPen, level: viewLevel }[S.view] || viewSetup;
     const y = window.scrollY;
     $app.innerHTML = v();
     document.body.classList.toggle('has-tabs', TAB_VIEWS.includes(S.view));
@@ -861,6 +926,7 @@
       return;
     }
     S.plan = null;
+    if (S.pen) { S.penRes = S.dict.sentences.map(() => null); S.penI = 0; S.view = 'pen'; render(); sayPenSentence(); return; }
     const sc = buildScript();
     Object.assign(P, { steps: sc.steps, chunks: sc.chunks, i: 0, playing: false, started: false, finished: false });
     S.view = 'paper'; render();
@@ -874,7 +940,7 @@
     if (S.doneSaved) return;
     S.doneSaved = true;
     const d = S.dict; const id = uid();
-    const details = { kind: 'done', dict: d.id, hard: !!d.hard, types: S.mode === 'doplnanie' ? [...S.gapTypes] : undefined };
+    const details = { kind: 'done', dict: d.id, hard: !!d.hard, pero: S.pen && S.mode === 'papier' ? true : undefined, vynimky: d.exc ? true : undefined, types: S.mode === 'doplnanie' ? [...S.gapTypes] : undefined };
     Store.add('diktat_results', {
       id, child: CHILD, length: d.length, letters: d.exc ? 'vynimky' : d.letters.join(''), mode: modeDb(S.mode), speed: S.speed, text: d.text,
       answer: (answer || '').slice(0, 6000), words, mistakes, iy_mistakes: iy, stars: 0, reward_cents: 0, details,
@@ -1007,6 +1073,11 @@
       case 'length': S.length = v; savePrefs(); render(); break;
       case 'hard': S.hard = v === '1'; savePrefs(); render(); break;
       case 'letter': if (S.exc) { S.exc = false; if (!S.letters.size) S.letters.add(v); } else if (S.letters.has(v)) S.letters.delete(v); else S.letters.add(v); savePrefs(); render(); break;
+      case 'penSay': sayPenSentence(); break;
+      case 'penWrite': penWrite(); break;
+      case 'penRate': { const r = S.penRes[S.penI]; if (r) { r.ok = v === 'ok'; r.parent = true; if (!r.ok) r.text = r.text || ''; } render(); break; }
+      case 'penNext': S.penI++; render(); sayPenSentence(); break;
+      case 'penFinish': penFinish(); break;
       case 'learnTab': S.learn = v; Voice.stop(); render(); break;
       case 'sayWord': Voice.stop(); Voice.say(E.speakForm(v), SPEEDS.normal.rate, false); break;
       case 'sayList': {
@@ -1017,7 +1088,7 @@
       case 'excMode': S.exc = !S.exc; savePrefs(); render(); break;
       case 'allLetters': if (S.exc) { S.exc = false; S.letters = new Set(E.LETTERS); savePrefs(); render(); break; } S.letters = S.letters.size === E.LETTERS.length ? new Set() : new Set(E.LETTERS); savePrefs(); render(); break;
       case 'gapType': S.gapTypes.has(v) ? S.gapTypes.delete(v) : S.gapTypes.add(v); savePrefs(); render(); break;
-      case 'mode': S.mode = v; savePrefs(); render(); break;
+      case 'mode': S.pen = v === 'pero'; S.mode = v === 'pero' ? 'papier' : v; savePrefs(); render(); break;
       case 'speed': S.speed = v; savePrefs(); render(); break;
       case 'sample': Voice.stop(); Voice.say(LINES.sample[0], TALK, true).then(() => Voice.say(E.speakForm(LINES.sampleSentence[0]), SPEEDS[S.speed].rate, false)); break;
       case 'generate': case 'regen': generate(); break;

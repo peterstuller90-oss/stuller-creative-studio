@@ -402,3 +402,15 @@ canvas.fx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-even
 @media (max-width: 600px) { .tabs button { font-size: 12px; } .wchip { font-size: 17px; padding: 7px 11px; } }
 .tabs button { line-height: 1.05; text-align: center; }
 @media (max-width: 600px) { .tabs { gap: 4px; padding-left: 6px; padding-right: 6px; } .tabs button { font-size: 11px; padding: 6px 2px 7px; } }
+
+/* Dopisovačka perom (TEST) a ročník */
+.choices.one { grid-template-columns: 1fr; margin-top: 12px; }
+.choice.pen[aria-pressed="true"] { background: linear-gradient(180deg, #FFC58A, #FF9A3C); }
+.test-tag { font-style: normal; font-size: 13px; background: #FF9A3C; color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 1px 8px; vertical-align: middle; margin-left: 6px; letter-spacing: .05em; }
+.pen-card { gap: 12px; }
+.pen-ok { color: #157A3A; font-weight: 900; }
+.pen-bad { color: #B3261E; font-weight: 900; }
+.pen-parent img { max-width: 100%; border: 2px solid var(--line); border-radius: 12px; background: #fff; }
+.rocnik-card { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.rocnik-card div { display: flex; flex-direction: column; gap: 2px; }
+.rocnik-card span { color: var(--ink-soft); font-size: 15px; }
