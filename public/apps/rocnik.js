@@ -2,7 +2,7 @@
    Výber je uložený v zariadení (localStorage 'stullers-rocnik') a platí pre všetky appky naraz.
 
    Použitie v appke:
-     <script src="../rocnik.js"></script>
+     v index.html načítaj súbor ../rocnik.js (pred app.js)
      Rocnik.setup({ app: 'Matika', ready: [{ grade: 4, half: 1 }, { grade: 4, half: 2 }], onChange(r) { ... } })
      Rocnik.get()          -> { grade: 4, half: 1 }
      Rocnik.label(r?)      -> '4. ročník · 1. polrok'

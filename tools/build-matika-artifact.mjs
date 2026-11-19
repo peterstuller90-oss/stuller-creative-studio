@@ -15,7 +15,13 @@ ${read('style.css')}
 </style>
 <main class="wrap" id="app"></main>
 <script>
+${fs.readFileSync(new URL('../rocnik.js', dir), 'utf8')}
+</script>
+<script>
 ${read('engine.js')}
+</script>
+<script>
+${fs.readFileSync(new URL('../panacik.js', dir), 'utf8')}
 </script>
 <script>
 ${app}
