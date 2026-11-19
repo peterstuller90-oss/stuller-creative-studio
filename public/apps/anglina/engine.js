@@ -193,9 +193,47 @@
       ].map((w) => ({ ...w, tip: (w.tip ? w.tip + ' ' : '') + 'Dni v týždni sa po anglicky píšu s veľkým písmenom.' })),
     },
   ];
+
+  // ---------------- Otázky a odpovede (rozhovor) ----------------
+  // Základné otázky a odpovede z 1.–4. ročníka. a = vzorová odpoveď, aSk = jej význam, note = poznámka (napr. povedz svoj vek).
+  // Viac správnych odpovedí je oddelených „ / “.
+  const Q = (key, en, sk, a, aSk, extra = {}) => ({ key, en, sk, a, aSk, qa: true, em: '', ...extra });
+  const QA_TOPIC = {
+    id: 'otazky', name: 'Otázky a odpovede', em: '💬', color: '#3FD4FF', qa: true, badge: 'Rozhovor',
+    words: [
+      Q('name', "What's your name?", 'Ako sa voláš?', 'My name is Oto.', 'Volám sa Oto.', { note: 'Môžeš povedať aj {I am Oto.}' }),
+      Q('age', 'How old are you?', 'Koľko máš rokov?', "I'm ten.", 'Mám desať rokov.', { note: 'Povedz svoj vek, napríklad {I am nine.} alebo {I am ten.}' }),
+      Q('how', 'How are you?', 'Ako sa máš?', "I'm fine, thank you.", 'Mám sa dobre, ďakujem.'),
+      Q('from', 'Where are you from?', 'Odkiaľ si?', "I'm from Slovakia.", 'Som zo Slovenska.'),
+      Q('meet', 'Nice to meet you.', 'Teší ma.', 'Nice to meet you too.', 'Aj mňa teší.'),
+      Q('morning', 'Good morning!', 'Dobré ráno!', 'Good morning!', 'Dobré ráno!'),
+      Q('thanks', 'Thank you!', 'Ďakujem!', "You're welcome.", 'Nemáš za čo.'),
+      Q('bye', 'Goodbye!', 'Dovidenia!', 'Goodbye! / Bye!', 'Dovidenia! / Ahoj!'),
+      Q('colour', "What's your favourite colour?", 'Aká je tvoja obľúbená farba?', 'My favourite colour is blue.', 'Moja obľúbená farba je modrá.', { note: 'Povedz svoju obľúbenú farbu.' }),
+      Q('animal', "What's your favourite animal?", 'Aké je tvoje obľúbené zviera?', 'My favourite animal is a dog.', 'Moje obľúbené zviera je pes.', { note: 'Povedz svoje obľúbené zviera.' }),
+      Q('food', "What's your favourite food?", 'Aké je tvoje obľúbené jedlo?', 'My favourite food is pizza.', 'Moje obľúbené jedlo je pizza.', { note: 'Povedz svoje obľúbené jedlo.' }),
+      Q('sister', 'Have you got a sister?', 'Máš sestru?', "Yes, I have. / No, I haven't.", 'Áno, mám. / Nie, nemám.'),
+      Q('pet', 'Have you got a pet?', 'Máš domáce zvieratko?', "Yes, I have. / No, I haven't.", 'Áno, mám. / Nie, nemám.'),
+      Q('swim', 'Can you swim?', 'Vieš plávať?', "Yes, I can. / No, I can't.", 'Áno, viem. / Nie, neviem.'),
+      Q('bike', 'Can you ride a bike?', 'Vieš jazdiť na bicykli?', "Yes, I can. / No, I can't.", 'Áno, viem. / Nie, neviem.'),
+      Q('apples', 'Do you like apples?', 'Máš rád jablká?', "Yes, I do. / No, I don't.", 'Áno, mám. / Nie, nemám.'),
+      Q('chocolate', 'Do you like chocolate?', 'Máš rád čokoládu?', "Yes, I do. / No, I don't.", 'Áno, mám. / Nie, nemám.'),
+      Q('this-dog', "What's this?", 'Čo je to?', "It's a dog.", 'Je to pes.', { em: '🐶' }),
+      Q('this-apple', "What's this?", 'Čo je to?', "It's an apple.", 'Je to jablko.', { em: '🍎', note: 'Pred slovom, ktoré sa začína samohláskou, je {an}: {an apple}.' }),
+      Q('colour-banana', 'What colour is it?', 'Akú to má farbu?', "It's yellow.", 'Je žltý.', { em: '🍌' }),
+      Q('cats', 'How many cats?', 'Koľko je mačiek?', 'Three cats.', 'Tri mačky.', { em: '🐱🐱🐱' }),
+      Q('is-cat', 'Is it a cat?', 'Je to mačka?', "No, it isn't. It's a dog.", 'Nie, nie je. Je to pes.', { em: '🐶' }),
+      Q('is-dog', 'Is it a dog?', 'Je to pes?', 'Yes, it is.', 'Áno, je.', { em: '🐶' }),
+      Q('who', 'Who is this?', 'Kto je to?', "It's my grandma.", 'To je moja babka.', { em: '👵' }),
+      Q('day', 'What day is it today?', 'Aký je dnes deň?', "It's Monday.", 'Je pondelok.', { note: 'Povedz, aký deň je dnes. Dni sa píšu s veľkým písmenom.' }),
+      Q('time', 'What time is it?', 'Koľko je hodín?', "It's three o'clock.", 'Sú tri hodiny.', { em: '🕒' }),
+      Q('weather', "What's the weather like?", 'Aké je počasie?', "It's sunny.", 'Je slnečno.', { em: '☀️' }),
+    ],
+  };
+  TOPICS.splice(2, 0, QA_TOPIC);
   // Emoji, ktoré by slovo prezradili alebo sú nepresné, nahradíme farebným štítkom témy.
   const NO_PIC = new Set(['rubber', 'living room', 'tablet', 'lamp', 'fridge', 'desk', 'board', 'glue', 'skirt', 'jumper', 'neck', 'bedroom', 'wardrobe', 'table', 'pencil case', 'knee', 'shoulder', 'doll', 'aunt', 'son']);
-  for (const t of TOPICS) for (const w of t.words) { w.topic = t.id; w.id = `${t.id}:${w.en}`; if (NO_PIC.has(w.en)) w.em = ''; }
+  for (const t of TOPICS) for (const w of t.words) { w.topic = t.id; w.id = `${t.id}:${w.key || w.en}`; if (NO_PIC.has(w.en)) w.em = ''; }
   const BY_ID = new Map(TOPICS.flatMap((t) => t.words.map((w) => [w.id, w])));
   const topicOf = (id) => TOPICS.find((t) => t.id === id);
 
@@ -204,6 +242,8 @@
     stredne: { name: 'Stredné', n: 2 },
     tazke: { name: 'Ťažké', n: 3 },
     poskladaj: { name: 'Poskladaj', n: 2, only: 'tablet' },
+    dopis: { name: 'Píšem perom', n: 3, only: 'tablet', test: true },
+    rozhovor: { name: 'Rozhovor', n: 2, only: 'tablet', qa: true },
   };
   const LEVEL_INFO = {
     tablet: {
@@ -211,6 +251,8 @@
       stredne: 'Vidíš slovenské slovo a vyberieš anglické.',
       tazke: 'Vidíš slovenské slovo a napíšeš ho po anglicky.',
       poskladaj: 'Vidíš slovenské slovo a poskladáš ho z rozhádzaných písmen.',
+      dopis: 'Vidíš rozhádzané písmená a slovenské slovo. Slovo napíšeš perom ako do zošita.',
+      rozhovor: 'Appka sa ťa opýta po anglicky, ty odpovieš nahlas.',
     },
     papier: {
       lahke: 'Vidíš obrázok a slovenské slovo, appka ti ho prečíta po anglicky. Píšeš do zošita.',
@@ -225,7 +267,7 @@
   /** Slová na cvičenie. history = [{ids:[...], at}] od najnovšieho. Najprv slová, ktoré ešte neboli, potom tie najdávnejšie.
       Nikdy nie presne rovnaká sada ako minule. */
   function pick(topic, n, history = []) {
-    let pool = topic === 'mix' ? TOPICS.flatMap((t) => t.words) : topicOf(topic).words;
+    let pool = topic === 'mix' ? TOPICS.filter((t) => !t.qa).flatMap((t) => t.words) : topicOf(topic).words;
     // V mixe rovnaké anglické slovo len raz (mouse je v dvoch témach).
     const seen = new Set(); pool = shuffle(pool).filter((w) => (seen.has(w.en) ? false : seen.add(w.en)));
     n = Math.min(n, pool.length);
@@ -268,7 +310,7 @@
       const it = { id: w.id };
       if (mode === 'tablet' && level === 'lahke') it.opts = options(w, 'sk');
       if (mode === 'tablet' && level === 'stredne') it.opts = options(w, 'en');
-      if (mode === 'tablet' && level === 'poskladaj') it.tiles = tiles(w.en);
+      if (mode === 'tablet' && (level === 'poskladaj' || level === 'dopis') && !w.qa) it.tiles = tiles(w.en);
       return it;
     });
   }
@@ -278,6 +320,7 @@
   function check(item, answer) {
     const w = BY_ID.get(item.id);
     if (!w) return false;
+    if (w.qa) return answer === 'ok';
     if (item.opts) return answer === w.id;
     const a = norm(answer);
     return [w.en, ...(w.alt || [])].some((x) => norm(x) === a);
@@ -296,8 +339,21 @@
   /** Hláskovanie po anglicky: anglické názvy písmen, každé zvlášť a pomaly. */
   const spellEn = (en) => en.replace(/[ -]/g, '').toUpperCase().split('').map((c) => ({ lang: 'en', text: `${c}.`, rate: 0.6 }));
   /** Vysvetlenie chyby: riadky na čítanie a postupnosť pre hlas (sk / en). */
+  /** Text odpovede pre hlas: „ / “ prečíta ako „alebo“. */
+  const sayAns = (a) => a.split(' / ');
+  function explainQA(w) {
+    const lines = [`Otázka: ${w.en} = ${w.sk}`, `Odpoveď: ${w.a} = ${w.aSk}`];
+    if (w.note) lines.push(plain(w.note));
+    const seq = [{ lang: 'sk', text: 'Otázka' }, { lang: 'en', text: w.en, rate: 0.75 }, { lang: 'sk', text: `znamená: ${w.sk}` }, { lang: 'sk', text: 'Odpovieš:' }];
+    sayAns(w.a).forEach((x, i) => { if (i) seq.push({ lang: 'sk', text: 'alebo' }); seq.push({ lang: 'en', text: x, rate: 0.75 }); });
+    seq.push({ lang: 'sk', text: `To znamená: ${w.aSk.replace(/ \/ /g, ' alebo ')}` });
+    if (w.note) seq.push(...tipSeq(w.note));
+    seq.push({ lang: 'sk', text: 'Ešte raz:' }, { lang: 'en', text: w.en, rate: 0.75 }, { lang: 'en', text: sayAns(w.a)[0], rate: 0.75 });
+    return { lines, seq };
+  }
   function explain(item) {
     const w = BY_ID.get(item.id);
+    if (w.qa) return explainQA(w);
     const lines = [`Slovo „${w.sk}“ sa po anglicky povie ${w.en}.`];
     if (w.alt && w.alt.length) lines.push(`Uznáva sa aj: ${w.alt.join(', ')}.`);
     if (w.tip) lines.push(plain(w.tip));
@@ -315,5 +371,5 @@
   const tipSeq = (t) => t.split(/(\{[^}]+\})/).filter((x) => x.trim()).map((x) => (x.startsWith('{') ? { lang: 'en', text: x.slice(1, -1) } : { lang: 'sk', text: x.trim() }));
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-  window.ANGLINA_ENGINE = { TOPICS, BY_ID, topicOf, LEVELS, LEVEL_INFO, COUNTS, generate, check, explain, pick, word: (id) => BY_ID.get(id), assemble, plain, skLetter: (c) => SK_LETTER[c.toLowerCase()] || '' };
+  window.ANGLINA_ENGINE = { TOPICS, BY_ID, topicOf, LEVELS, LEVEL_INFO, COUNTS, generate, check, explain, pick, word: (id) => BY_ID.get(id), sayAns, assemble, plain, skLetter: (c) => SK_LETTER[c.toLowerCase()] || '' };
 })();

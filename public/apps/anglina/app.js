@@ -175,8 +175,15 @@
       const q = (v) => (/premium|enhanced|vylepš|neural|natural/i.test(v.name) ? 4 : 0);
       this.sk = all.filter((v) => /^sk/i.test(v.lang)).sort((a, b) => q(b) + (/laura/i.test(b.name) ? 1 : 0) - q(a) - (/laura/i.test(a.name) ? 1 : 0));
       // Britská výslovnosť ako v škole (en-GB), inak akákoľvek anglická.
-      const enScore = (v) => q(v) + (/^en[-_]GB/i.test(v.lang) ? 10 : /^en[-_](IE|AU|US)/i.test(v.lang) ? 3 : 0) + (/daniel|serena|kate|arthur|martha|google uk/i.test(v.name) ? 2 : 0);
-      this.en = all.filter((v) => /^en/i.test(v.lang)).sort((a, b) => enScore(b) - enScore(a));
+      // Anglický hlas: jasný a zrozumiteľný pre deti. Vyradené sú robotické a zábavné hlasy (Eloquence: Eddy, Flo, Reed…,
+      // a efektové hlasy), ktoré prehĺtajú slová. Prednosť majú vylepšené (Enhanced/Premium) a čisté hlasy.
+      const BAD = /eddy|flo\b|grandma|grandpa|reed|rocko|sandy|shelley|albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy|deranged|hysterical|pipe|princess/i;
+      const NICE = /serena|kate|stephanie|martha|daniel|arthur|samantha|ava|allison|susan|karen|moira|google uk english female|google us english|libby|sonia|hazel|aria|jenny/i;
+      const enScore = (v) => q(v) * 3 + (NICE.test(v.name) ? 6 : 0) + (/^en[-_]GB/i.test(v.lang) ? 4 : /^en[-_](US|IE|AU)/i.test(v.lang) ? 2 : 0) + (v.localService === false ? 0 : 1);
+      this.en = all.filter((v) => /^en/i.test(v.lang) && !BAD.test(v.name)).sort((a, b) => enScore(b) - enScore(a));
+      const want = lsGet('anglina-voice', '');
+      const chosen = want && this.en.find((v) => v.name === want);
+      if (chosen) this.en = [chosen, ...this.en.filter((v) => v !== chosen)];
     },
     has(lang) { return (lang === 'en' ? this.en : this.sk).length > 0; },
     token: 0,
@@ -187,7 +194,7 @@
         if (!this.ok || !list.length || tok !== this.token) { resolve(tok === this.token); return; }
         const u = new SpeechSynthesisUtterance(text);
         u.voice = list[0]; u.lang = lang === 'en' ? (list[0].lang || 'en-GB') : 'sk-SK';
-        u.rate = rate || (lang === 'en' ? 0.85 : 0.98); u.pitch = lang === 'en' ? 1 : 1.08;
+        u.rate = rate || (lang === 'en' ? 0.78 : 0.98); u.pitch = lang === 'en' ? 1 : 1.08;
         let done = false;
         const finish = (okEnd) => { if (!done) { done = true; clearTimeout(t); resolve(okEnd && tok === this.token); } };
         const t = setTimeout(() => finish(true), 3000 + text.length * 120);
@@ -252,7 +259,7 @@
 
   function nav(M) {
     const unexp = M.list.filter((e) => ['unexplained', 'wait'].includes(statusOf(e))).length;
-    const tabs = [['play', 'Hrať', I.play], ['cal', 'Kalendár', I.cal], ['saved', 'Uložené', I.saved], ['rewards', 'Odmeny', I.gifttab]];
+    const tabs = [['play', 'Poď sa učiť', I.play], ['cal', 'Kalendár', I.cal], ['saved', 'Uložené', I.saved], ['rewards', 'Odmeny', I.gifttab]];
     return `<nav class="nav"><div class="nav-in">${tabs.map(([id, name, ico]) => `<button class="tab" data-act="tab" data-tab="${id}" ${S.tab === id ? 'aria-current="page"' : ''}>${ico}<span>${name}</span>${id === 'saved' && unexp ? `<span class="dot">${unexp}</span>` : ''}</button>`).join('')}</div></nav>`;
   }
 
@@ -262,22 +269,29 @@
   }
   function voiceNote() {
     if (!Voice.ok) return '<p class="cloud">Toto zariadenie nevie čítať nahlas.</p>';
-    if (!Voice.has('en')) return '<p class="cloud">Na tomto zariadení chýba anglický hlas (Nastavenia → Prístupnosť → Predčítanie → Hlasy → English).</p>';
-    return '';
+    if (!Voice.has('en')) return '<p class="cloud">Na tomto zariadení chýba anglický hlas (Nastavenia → Prístupnosť → Predčítaný obsah → Hlasy → Angličtina).</p>';
+    const cur = Voice.en[0];
+    return `<section class="panel voicebox"><span class="label">Anglický hlas</span>
+      <div class="row"><select id="enVoice" aria-label="Anglický hlas">${Voice.en.slice(0, 12).map((v) => `<option value="${esc(v.name)}" ${v === cur ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</select>
+      <button class="btn small cyan" data-act="tryVoice">${I.speaker.replace('<svg', '<svg class="ico"')} Vyskúšať</button></div>
+      <p class="hint">Najzrozumiteľnejšie sú hlasy s označením Vylepšený. Na iPade: Nastavenia → Prístupnosť → Predčítaný obsah → Hlasy → Angličtina → napríklad Serena alebo Daniel (Vylepšený) → stiahnuť.</p></section>`;
   }
 
-  // ---------------- HRAŤ ----------------
+  // ---------------- POĎ SA UČIŤ ----------------
   function viewHome(M) {
     const topics = [...E.TOPICS.map((t) => ({ id: t.id, em: t.em, name: t.name, c: t.color, school: t.school, badge: t.badge, n: t.words.length })), { id: 'mix', em: '🎲', name: 'Mix všetkého', c: 'var(--orange)' }];
     const info = E.LEVEL_INFO[S.mode];
     const wk = weekGoal(M);
+    const qa = !!E.topicOf(S.topic)?.qa;
+    const howPanel = qa ? `<section class="panel"><span class="label">2 · Ako to funguje</span>
+      <p>Appka sa ťa <b>opýta po anglicky</b> (aj nahlas). Ty <b>odpovieš nahlas po anglicky</b>. Potom ťukneš <b>Odpovedal som</b>, appka ti povie správnu odpoveď a ty povieš, či si to mal dobre. Keď nevieš, ťukni <b>Neviem</b> a appka ti odpoveď povie.</p></section>` : '';
     return `${hud(M)}
     <section class="panel">
       <span class="label">1 · Téma</span>
       <div class="ops topics">${topics.map((t) => `<button class="op" data-act="topic" data-v="${t.id}" aria-pressed="${S.topic === t.id}" style="--c:${t.c}">${t.school ? '<span class="badge-school">Zo školy</span>' : t.badge ? `<span class="badge-school extra">${esc(t.badge)}</span>` : ''}<span class="sym">${t.em}</span><span>${esc(t.name)}</span></button>`).join('')}</div>
       <button class="btn small cyan noprint" data-act="words">📖 Pozrieť slovíčka</button>
     </section>
-    <section class="panel">
+    ${howPanel}${qa ? '' : `<section class="panel">
       <span class="label">2 · Ako sa budeš učiť</span>
       <div class="modes">
         <button class="mode paper" data-act="mode" data-v="papier" aria-pressed="${S.mode === 'papier'}"><span class="mico">${I.pencil}</span><span><b>Na papier</b><small>Píšeš slovíčka do zošita, potom porovnáš. Ocko potvrdí kódom.</small></span></button>
@@ -286,9 +300,10 @@
     </section>
     <section class="panel">
       <span class="label">3 · Úroveň</span>
-      <div class="levels ${S.mode === 'tablet' ? 'four' : ''}">${Object.entries(E.LEVELS).filter(([, l]) => !l.only || l.only === S.mode).map(([id, l]) => `<button class="level" data-act="level" data-v="${id}" aria-pressed="${S.level === id}"><b>${l.name}<span class="pips">${[1, 2, 3].map((i) => `<i class="${i <= l.n ? 'on' : ''}"></i>`).join('')}</span></b><small>${esc(info[id])}</small></button>`).join('')}</div>
-      <span class="label">4 · Koľko slovíčok</span>
-      <div class="seg two">${Object.entries(E.COUNTS).map(([id, c]) => `<button data-act="count" data-v="${id}" aria-pressed="${S.count === id}">${c.name}<small>${slov(c.n)}</small></button>`).join('')}</div>
+      <div class="levels ${S.mode === 'tablet' ? 'four' : ''}">${Object.entries(E.LEVELS).filter(([, l]) => !l.qa && (!l.only || l.only === S.mode)).map(([id, l]) => `<button class="level" data-act="level" data-v="${id}" aria-pressed="${S.level === id}"><b>${l.name}${l.test ? '<span class="testtag">TEST</span>' : ''}<span class="pips">${[1, 2, 3].map((i) => `<i class="${i <= l.n ? 'on' : ''}"></i>`).join('')}</span></b><small>${esc(info[id])}</small></button>`).join('')}</div>
+      `}${qa ? '<section class="panel">' : ''}
+      <span class="label">${qa ? '3 · Koľko otázok' : '4 · Koľko slovíčok'}</span>
+      <div class="seg two">${Object.entries(E.COUNTS).map(([id, c]) => `<button data-act="count" data-v="${id}" aria-pressed="${S.count === id}">${c.name}<small>${qa ? `${c.n} ${plural(c.n, 'otázka', 'otázky', 'otázok')}` : slov(c.n)}</small></button>`).join('')}</div>
       <div class="goal-note">${I.trophy}<span>Týždenná výzva: <b>${Math.min(wk, WEEK_GOAL)} z ${WEEK_GOAL}</b> bezchybných <b>ťažkých</b> cvičení <b>na papier</b>. Keď ich máš 10, vyberieš si zážitok s ockom alebo s mamou!</span></div>
     </section>
     <button class="btn yellow big" data-act="start">${I.play.replace('<svg', '<svg class="ico"')} Štart</button>
@@ -342,7 +357,29 @@
     const it = S.items[S.sel]; const w = W(it);
     const typed = S.level === 'tazke';
     let q; let ans;
-    if (S.level === 'poskladaj') {
+    if (S.level === 'rozhovor') {
+      const rev = S.reveal[S.sel]; const st = S.answers[S.sel];
+      q = `<div class="qcard">${w.em ? pic(w, 'big') : ''}<span class="qlabel">Odpovedz nahlas po anglicky</span><div class="qword en">${esc(w.en)}</div>
+        <div class="row center"><button class="btn cyan small" data-act="sayQ">${I.speaker.replace('<svg', '<svg class="ico"')} Vypočuť</button><button class="btn small" data-act="qaSk">🇸🇰 Čo to znamená?</button></div>
+        ${S.showSk === S.sel ? `<p class="qsk">${esc(w.sk)}</p>` : ''}</div>`;
+      if (!rev) {
+        ans = `<div class="answers"><button class="ans" data-act="qaDunno">🤷 Neviem</button><button class="ans" data-act="qaSaid">🗣️ Odpovedal som</button></div>`;
+      } else {
+        ans = `<div class="qa-answer"><span class="qlabel">Správna odpoveď</span><div class="qword en">${E.sayAns(w.a).map(esc).join('<br><small>alebo</small><br>')}</div><p class="qsk">${esc(w.aSk)}</p>${w.note ? `<p class="hint center">${esc(E.plain(w.note))}</p>` : ''}
+          <button class="btn small cyan" data-act="qaHear">${I.speaker.replace('<svg', '<svg class="ico"')} Vypočuť odpoveď</button></div>
+          ${S.reveal[S.sel] === 'dunno' ? '<p class="hint center">Zapamätaj si to. Táto otázka príde znova.</p>' : `<span class="qlabel center">Mal si to dobre?</span>
+          <div class="answers"><button class="ans" data-act="qaRate" data-v="no" aria-pressed="${st === 'no'}">✗ Nie</button><button class="ans" data-act="qaRate" data-v="ok" aria-pressed="${st === 'ok'}">✓ Áno</button></div>`}`;
+      }
+    } else if (S.level === 'dopis') {
+      const read = S.read[S.sel];
+      q = `<div class="qcard">${pic(w, 'big')}<span class="qlabel">Napíš perom po anglicky <span class="testtag">TEST</span></span><div class="qword">${esc(w.sk)}</div>
+        <div class="scramble">${it.tiles.map((c) => `<span>${esc(c)}</span>`).join('')}</div></div>`;
+      ans = read
+        ? `<div class="dopis-done">${read.image ? `<img src="${read.image}" alt="Tvoje písanie">` : ''}<p class="hint center">${read.ok === null ? 'Nepodarilo sa prečítať, skontroluje ocko alebo mama.' : 'Napísané.'}</p>
+          ${read.ok === null ? `<div class="answers"><button class="ans" data-act="dopisRate" data-v="no" aria-pressed="${S.answers[S.sel] === '?'}">✗ Zle</button><button class="ans" data-act="dopisRate" data-v="ok" aria-pressed="${S.answers[S.sel] === w.en}">✓ Správne (rodič)</button></div>` : ''}
+          <div class="row center"><button class="btn small dark" data-act="dopisOpen">✍️ Napísať znova</button></div></div>`
+        : `<button class="btn yellow big" data-act="dopisOpen">✍️ Napísať perom</button>`;
+    } else if (S.level === 'poskladaj') {
       q = `<div class="qcard">${pic(w, 'big')}<span class="qlabel">Poskladaj po anglicky</span><div class="qword">${esc(w.sk)}</div></div>`;
       const pk = S.picks[S.sel]; let k = 0;
       const slots = w.en.split('').map((c) => {
@@ -388,6 +425,7 @@
     const g = ex.given ? ex.given[i] : null;
     if (g == null || g === '') return '';
     const it = ex.items[i];
+    if (W(it).qa) return '';
     if (it.opts) { const x = E.word(g); return x ? (ex.level === 'lahke' ? x.sk : x.en) : ''; }
     return g;
   }
@@ -397,7 +435,7 @@
       <div class="grid one">${ex.wrong.map((i) => {
         const w = W(ex.items[i]);
         const g = givenText(ex, i);
-        return `<div class="card bad wcard"><span class="n">${i + 1}</span>${pic(w, 'sm')}${ex.level === 'lahke' && ex.items[i].opts ? `<span class="q en-q">${esc(w.en)}</span><span class="slot">${g ? `<s>${esc(g)}</s>` : ''}<span class="right">${esc(w.sk)}</span></span>` : `<span class="q">${esc(w.sk)}</span><span class="slot">${g ? `<s>${esc(g)}</s>` : ''}<span class="right">${esc(w.en)}</span></span>`}<button class="why ${ex.heard.has(i) ? 'heard' : ''}" data-act="why" data-ex="${ex.id}" data-i="${i}">${ex.heard.has(i) ? '✓ Prečo' : 'Prečo?'}</button></div>`;
+        return `<div class="card bad wcard"><span class="n">${i + 1}</span>${pic(w, 'sm')}${w.qa ? `<span class="q en-q">${esc(w.en)}</span><span class="slot"><span class="right">${esc(E.sayAns(w.a)[0])}</span></span>` : ex.level === 'lahke' && ex.items[i].opts ? `<span class="q en-q">${esc(w.en)}</span><span class="slot">${g ? `<s>${esc(g)}</s>` : ''}<span class="right">${esc(w.sk)}</span></span>` : `<span class="q">${esc(w.sk)}</span><span class="slot">${g ? `<s>${esc(g)}</s>` : ''}<span class="right">${esc(w.en)}</span></span>`}<button class="why ${ex.heard.has(i) ? 'heard' : ''}" data-act="why" data-ex="${ex.id}" data-i="${i}">${ex.heard.has(i) ? '✓ Prečo' : 'Prečo?'}</button></div>`;
       }).join('')}</div></section>`;
   }
 
@@ -524,7 +562,7 @@
       ${ex.mode === 'papier' && !ex.confirmed ? gateBox(ex) : ''}
     </section>
     ${wrongList(ex)}
-    <section class="sheet-paper"><h3>Všetky slovíčka</h3><div class="tasks words">${ex.items.map((it, i) => { const w = W(it); return `<div class="task"><span class="n">${i + 1}.</span><span class="q">${pic(w, 'sm')}<span class="sk-small">${esc(w.sk)}</span> <b style="color:${ex.wrong.includes(i) ? 'var(--red-d)' : 'var(--green-d)'}">${esc(w.en)}</b></span></div>`; }).join('')}</div></section>`;
+    <section class="sheet-paper"><h3>Všetky slovíčka</h3><div class="tasks words">${ex.items.map((it, i) => { const w = W(it); return `<div class="task"><span class="n">${i + 1}.</span><span class="q">${pic(w, 'sm')}<span class="sk-small">${esc(w.qa ? w.en : w.sk)}</span> <b style="color:${ex.wrong.includes(i) ? 'var(--red-d)' : 'var(--green-d)'}">${esc(w.qa ? E.sayAns(w.a)[0] : w.en)}</b></span></div>`; }).join('')}</div></section>`;
   }
   // ---------------- ODMENY ----------------
   function viewRewards(M) {
@@ -629,7 +667,7 @@
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap info';
     wrap.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Slovíčka">
-      ${topics.map((t) => `<div class="sheet-kicker">${t.em} ${esc(t.name)}</div><div class="wordlist">${t.words.map((w) => `<button class="wl" data-a="say" data-id="${w.id}">${pic(w, 'sm')}<b>${esc(w.en)}</b><span>${esc(w.sk)}</span><i>🔊</i></button>`).join('')}</div>`).join('')}
+      ${topics.map((t) => `<div class="sheet-kicker">${t.em} ${esc(t.name)}</div><div class="wordlist">${t.words.map((w) => `<button class="wl" data-a="say" data-id="${w.id}">${pic(w, 'sm')}<b>${esc(w.en)}</b><span>${esc(w.qa ? `${w.sk} → ${w.a}` : w.sk)}</span><i>🔊</i></button>`).join('')}</div>`).join('')}
       <div class="row"><button class="btn yellow" data-a="close">Zavrieť</button></div></div>`;
     wrap.addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-a]');
@@ -746,16 +784,18 @@
   /** Predošlé cvičenia (od najnovšieho) – aby sa slová neopakovali. */
   const history = () => model().list.map((e) => ({ ids: (e.items || []).map((it) => it.id) }));
   function sayCurrent() {
-    if (S.view !== 'tablet' || S.level !== 'lahke') return;
+    if (S.view !== 'tablet' || !['lahke', 'rozhovor'].includes(S.level)) return;
     const w = W(S.items[S.sel]);
     Voice.say('en', w.en);
   }
   function start() {
     savePrefs();
+    if (E.topicOf(S.topic)?.qa) { S.level = 'rozhovor'; S.mode = 'tablet'; } else if (E.LEVELS[S.level]?.qa) S.level = 'lahke';
     if (E.LEVELS[S.level]?.only && E.LEVELS[S.level].only !== S.mode) S.level = 'lahke';
     S.items = E.generate(S.topic, S.level, S.count, S.mode, history());
     S.answers = S.items.map(() => '');
     S.picks = S.items.map((it) => (it.tiles ? it.tiles.map(() => null) : null));
+    S.reveal = S.items.map(() => false); S.read = S.items.map(() => null);
     S.sel = 0; S.marks = new Set(); S.exId = uid(); S.startedAt = new Date().toISOString(); S.gateMsg = '';
     S.view = S.mode === 'papier' ? 'paper' : 'tablet';
     render(); window.scrollTo(0, 0);
@@ -800,7 +840,13 @@
     const a = b.dataset.act;
     switch (a) {
       case 'tab': S.tab = b.dataset.tab; S.view = 'home'; S.wishMsg = ''; render(); window.scrollTo(0, 0); if (S.tab !== 'play') Store.sync().then(render); break;
-      case 'topic': S.topic = b.dataset.v; render(); break;
+      case 'topic': {
+        S.topic = b.dataset.v;
+        const isQa = !!E.topicOf(S.topic)?.qa;
+        if (isQa) S.level = 'rozhovor'; else if (E.LEVELS[S.level]?.qa) S.level = 'lahke';
+        render(); break;
+      }
+      case 'tryVoice': { const sel = document.getElementById('enVoice'); if (sel) { lsSet('anglina-voice', sel.value); Voice.load(); } Voice.say('en', 'Hello Oto! How are you? My favourite colour is blue.'); break; }
       case 'level': S.level = b.dataset.v; render(); break;
       case 'count': S.count = b.dataset.v; render(); break;
       case 'mode': S.mode = b.dataset.v; if (E.LEVELS[S.level].only && E.LEVELS[S.level].only !== S.mode) S.level = 'lahke'; render(); break;
@@ -831,7 +877,7 @@
       case 'prev': goTo(S.sel - 1); break;
       case 'next': goTo(nextOpen()); break;
       case 'pick': {
-        S.answers[S.sel] = b.dataset.v; window.Panacik?.jump(b); render();
+        S.answers[S.sel] = b.dataset.v; render();
         // Po výbere krátko ukáž zvýraznenie a prejdi na ďalšiu nezodpovedanú otázku.
         const all = S.answers.every((x) => x);
         const at = S.sel;
@@ -843,8 +889,6 @@
         if (k === 'del') S.answers[S.sel] = cur.slice(0, -1);
         else if (cur.length < 24 && !(k === ' ' && (!cur || cur.endsWith(' ')))) {
           S.answers[S.sel] = cur + k;
-          // panáčik donesie písmenko do políčka s odpoveďou
-          if (k !== ' ') window.Panacik?.carry(k, b, () => (S.view === 'tablet' ? document.querySelector('.typed') : null));
         }
         render();
         break;
@@ -856,13 +900,42 @@
         pk[pos] = ti;
         const w = W(it);
         S.answers[S.sel] = pk.includes(null) ? '' : E.assemble(w.en, it.tiles, pk);
-        window.Panacik?.carry(it.tiles[ti], b, () => (S.view === 'tablet' ? document.querySelector(`.lslot[data-p="${pos}"]`) : null));
         render();
         if (S.answers[S.sel] && !S.answers.every((x) => x)) { const at = S.sel; setTimeout(() => { if (S.view === 'tablet' && S.sel === at) goTo(nextOpen()); }, 700); }
         break;
       }
       case 'unslot': { const pk = S.picks[S.sel]; pk[+b.dataset.p] = null; S.answers[S.sel] = ''; render(); break; }
       case 'clearWord': S.picks[S.sel] = S.picks[S.sel].map(() => null); S.answers[S.sel] = ''; render(); break;
+      case 'qaSk': S.showSk = S.showSk === S.sel ? -1 : S.sel; render(); break;
+      case 'qaDunno': {
+        const w = W(S.items[S.sel]); S.reveal[S.sel] = 'dunno'; S.answers[S.sel] = 'no'; render();
+        Voice.seq([...E.sayAns(w.a).flatMap((x, i) => (i ? [{ lang: 'sk', text: 'alebo' }, { lang: 'en', text: x, rate: 0.72 }] : [{ lang: 'en', text: x, rate: 0.72 }])), { lang: 'sk', text: w.aSk.replace(/ \/ /g, ' alebo ') }]);
+        break;
+      }
+      case 'qaSaid': { const w = W(S.items[S.sel]); S.reveal[S.sel] = 'said'; render(); Voice.seq(E.sayAns(w.a).flatMap((x, i) => (i ? [{ lang: 'sk', text: 'alebo' }, { lang: 'en', text: x, rate: 0.72 }] : [{ lang: 'en', text: x, rate: 0.72 }]))); break; }
+      case 'qaHear': { const w = W(S.items[S.sel]); Voice.seq(E.sayAns(w.a).flatMap((x, i) => (i ? [{ lang: 'sk', text: 'alebo' }, { lang: 'en', text: x, rate: 0.72 }] : [{ lang: 'en', text: x, rate: 0.72 }]))); break; }
+      case 'qaRate': {
+        S.answers[S.sel] = b.dataset.v; render();
+        if (!S.answers.every((x) => x)) { const at = S.sel; setTimeout(() => { if (S.view === 'tablet' && S.sel === at) goTo(nextOpen()); }, 500); }
+        break;
+      }
+      case 'dopisOpen': {
+        const i = S.sel; const it = S.items[i]; const w = W(it);
+        if (!window.Zosit) break;
+        Voice.stop();
+        window.Zosit.open({
+          title: `Napíš: ${w.sk}`, lang: 'en', lines: 2, expect: [w.en, ...(w.alt || [])],
+          prompt: `<div class="scramble">${it.tiles.map((c) => `<span>${esc(c)}</span>`).join('')}</div>`,
+          onDone: (res) => {
+            S.read[i] = res;
+            S.answers[i] = res.ok === true ? w.en : res.ok === false ? (res.text || '?') : '';
+            render();
+            if (S.answers[i] && !S.answers.every((x) => x)) { setTimeout(() => { if (S.view === 'tablet' && S.sel === i) goTo(nextOpen()); }, 700); }
+          },
+        });
+        break;
+      }
+      case 'dopisRate': { const w = W(S.items[S.sel]); S.answers[S.sel] = b.dataset.v === 'ok' ? w.en : '?'; render(); break; }
       case 'tabletCheck': tabletCheck(); break;
       case 'why': openWhy(b.dataset.ex, +b.dataset.i); break;
       case 'confirm': {
@@ -900,6 +973,7 @@
       default: break;
     }
   });
+  $app.addEventListener('change', (ev) => { if (ev.target.id === 'enVoice') { lsSet('anglina-voice', ev.target.value); Voice.load(); Voice.say('en', 'Hello Oto!'); } });
   $app.addEventListener('input', (ev) => { if (ev.target.id === 'wishText') S.wishText = ev.target.value; });
   $app.addEventListener('keydown', (ev) => {
     if (ev.key === 'Enter' && ev.target.id === 'code') ev.target.closest('.gate')?.querySelector('.btn.yellow')?.click();
