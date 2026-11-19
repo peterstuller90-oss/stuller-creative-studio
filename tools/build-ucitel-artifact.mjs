@@ -22,6 +22,12 @@ ${read('ucivo.js')}
 ${read('bank.js')}
 </script>
 <script>
+${read('../rocnik.js')}
+</script>
+<script>
+${read('../zosit.js')}
+</script>
+<script>
 ${read('engine.js')}
 </script>
 <script>
