@@ -66,7 +66,7 @@
     return { lv, into: xp - base, need, base };
   };
   const levelStart = (lv) => { let b = 0; let need = 40; for (let i = 1; i < lv; i++) { b += need; need += 20; } return b; };
-  const MULT = { lahke: 1, stredne: 2, tazke: 3, poskladaj: 2 };
+  const MULT = { lahke: 1, stredne: 2, tazke: 3, poskladaj: 2, veta: 2 };
   /** XP za cvičenie: každé správne slovo 1/2/3 podľa úrovne, bez chyby bonus, na papier dvojnásobok. */
   const xpFor = (ex) => {
     const m = MULT[ex.level] || 1;
@@ -288,13 +288,17 @@
       <p class="hint">Najzrozumiteľnejšie sú hlasy s označením Vylepšený. Na iPade: Nastavenia → Prístupnosť → Predčítaný obsah → Hlasy → Angličtina → napríklad Serena alebo Daniel (Vylepšený) → stiahnuť.</p></section>`;
   }
 
+  /** Témy s pevným cvičením: rozhovor (otázky) alebo doplň vetu (vety z učebnice). */
+  const fixedLevel = (tid) => { const t = E.topicOf(tid); return t?.qa ? 'rozhovor' : t?.sent ? 'veta' : null; };
+  const posterHtml = () => `<table class="poster"><thead><tr><th></th><th>3:00</th><th>4:00</th></tr></thead><tbody>${E.POSTER.map(([d, a, b]) => `<tr><th>${d}</th><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join('')}</tbody></table>`;
   // ---------------- POĎ SA UČIŤ ----------------
   function viewHome(M) {
     const topics = [...E.TOPICS.map((t) => ({ id: t.id, em: t.em, name: t.name, c: t.color, school: t.school, badge: t.badge, n: t.words.length })), { id: 'mix', em: '🎲', name: 'Mix všetkého', c: 'var(--orange)' }];
     const info = E.LEVEL_INFO[S.mode];
     const wk = weekGoal(M);
-    const qa = !!E.topicOf(S.topic)?.qa;
-    const howPanel = qa ? `<section class="panel"><span class="label">2 · Ako to funguje</span>
+    const fix = fixedLevel(S.topic); const qa = !!fix;
+    const howPanel = fix === 'veta' ? `<section class="panel"><span class="label">2 · Ako to funguje</span>
+      <p>Vety z <b>učebnice (strany 42 a 43)</b>: príbeh o opici a plagát krúžkov. Prečítaš si vetu, môžeš si ju aj <b>vypočuť</b>, a vyberieš <b>správne slovo</b>, ktoré do nej patrí. Pri vetách o krúžkoch ti pomôže plagát.</p></section>` : qa ? `<section class="panel"><span class="label">2 · Ako to funguje</span>
       <p>Appka sa ťa <b>opýta po anglicky</b> (aj nahlas). Ty <b>odpovieš nahlas po anglicky</b>. Potom ťukneš <b>Odpovedal som</b>, appka ti povie správnu odpoveď a ty povieš, či si to mal dobre. Keď nevieš, ťukni <b>Neviem</b> a appka ti odpoveď povie.</p></section>` : '';
     return `${hud(M)}
     ${gradePanel()}
@@ -312,10 +316,10 @@
     </section>
     <section class="panel">
       <span class="label">3 · Úroveň</span>
-      <div class="levels ${S.mode === 'tablet' ? 'four' : ''}">${Object.entries(E.LEVELS).filter(([, l]) => !l.qa && (!l.only || l.only === S.mode)).map(([id, l]) => `<button class="level" data-act="level" data-v="${id}" aria-pressed="${S.level === id}"><b>${l.name}${l.test ? '<span class="testtag">TEST</span>' : ''}<span class="pips">${[1, 2, 3].map((i) => `<i class="${i <= l.n ? 'on' : ''}"></i>`).join('')}</span></b><small>${esc(info[id])}</small></button>`).join('')}</div>
+      <div class="levels ${S.mode === 'tablet' ? 'four' : ''}">${Object.entries(E.LEVELS).filter(([, l]) => !l.qa && !l.sent && (!l.only || l.only === S.mode)).map(([id, l]) => `<button class="level" data-act="level" data-v="${id}" aria-pressed="${S.level === id}"><b>${l.name}${l.test ? '<span class="testtag">TEST</span>' : ''}<span class="pips">${[1, 2, 3].map((i) => `<i class="${i <= l.n ? 'on' : ''}"></i>`).join('')}</span></b><small>${esc(info[id])}</small></button>`).join('')}</div>
       `}${qa ? '<section class="panel">' : ''}
-      <span class="label">${qa ? '3 · Koľko otázok' : '4 · Koľko slovíčok'}</span>
-      <div class="seg two">${Object.entries(E.COUNTS).map(([id, c]) => `<button data-act="count" data-v="${id}" aria-pressed="${S.count === id}">${c.name}<small>${qa ? `${c.n} ${plural(c.n, 'otázka', 'otázky', 'otázok')}` : slov(c.n)}</small></button>`).join('')}</div>
+      <span class="label">${fix === 'veta' ? '3 · Koľko viet' : qa ? '3 · Koľko otázok' : '4 · Koľko slovíčok'}</span>
+      <div class="seg two">${Object.entries(E.COUNTS).map(([id, c]) => `<button data-act="count" data-v="${id}" aria-pressed="${S.count === id}">${c.name}<small>${fix === 'veta' ? `${c.n} ${plural(c.n, 'veta', 'vety', 'viet')}` : qa ? `${c.n} ${plural(c.n, 'otázka', 'otázky', 'otázok')}` : slov(c.n)}</small></button>`).join('')}</div>
       <div class="goal-note">${I.trophy}<span>Týždenná výzva: <b>${Math.min(wk, WEEK_GOAL)} z ${WEEK_GOAL}</b> bezchybných <b>ťažkých</b> cvičení <b>na papier</b>. Keď ich máš 10, vyberieš si zážitok s ockom alebo s mamou!</span></div>
     </section>
     <button class="btn yellow big" data-act="start">${I.play.replace('<svg', '<svg class="ico"')} Štart</button>
@@ -382,6 +386,12 @@
           ${S.reveal[S.sel] === 'dunno' ? '<p class="hint center">Zapamätaj si to. Táto otázka príde znova.</p>' : `<span class="qlabel center">Mal si to dobre?</span>
           <div class="answers"><button class="ans" data-act="qaRate" data-v="no" aria-pressed="${st === 'no'}">✗ Nie</button><button class="ans" data-act="qaRate" data-v="ok" aria-pressed="${st === 'ok'}">✓ Áno</button></div>`}`;
       }
+    } else if (S.level === 'veta') {
+      const cur = S.answers[S.sel]; const hasBlank = w.text.includes('___');
+      const shown = hasBlank ? w.text.split('___').map(esc).join(`<span class="blank ${cur ? 'full' : ''}">${cur ? esc(cur) : '&nbsp;'}</span>`) : esc(w.text);
+      q = `${w.poster ? posterHtml() : ''}<div class="qcard"><span class="qlabel">${hasBlank ? 'Doplň vetu' : 'Vyber odpoveď'}</span><div class="qsent">${shown}</div>
+        <button class="btn cyan small" data-act="sayQ">${I.speaker.replace('<svg', '<svg class="ico"')} Vypočuť</button></div>`;
+      ans = `<div class="answers en">${it.opts.map((o) => `<button class="ans" data-act="pick" data-v="${esc(o)}" aria-pressed="${cur === o}">${esc(o)}</button>`).join('')}</div>`;
     } else if (S.level === 'dopis') {
       const read = S.read[S.sel];
       q = `<div class="qcard">${pic(w, 'big')}<span class="qlabel">Napíš perom po anglicky <span class="testtag">TEST</span></span><div class="qword">${esc(w.sk)}</div>
@@ -438,6 +448,7 @@
     if (g == null || g === '') return '';
     const it = ex.items[i];
     if (W(it).qa) return '';
+    if (W(it).sent) return g;
     if (it.opts) { const x = E.word(g); return x ? (ex.level === 'lahke' ? x.sk : x.en) : ''; }
     return g;
   }
@@ -447,7 +458,7 @@
       <div class="grid one">${ex.wrong.map((i) => {
         const w = W(ex.items[i]);
         const g = givenText(ex, i);
-        return `<div class="card bad wcard"><span class="n">${i + 1}</span>${pic(w, 'sm')}${w.qa ? `<span class="q en-q">${esc(w.en)}</span><span class="slot"><span class="right">${esc(E.sayAns(w.a)[0])}</span></span>` : ex.level === 'lahke' && ex.items[i].opts ? `<span class="q en-q">${esc(w.en)}</span><span class="slot">${g ? `<s>${esc(g)}</s>` : ''}<span class="right">${esc(w.sk)}</span></span>` : `<span class="q">${esc(w.sk)}</span><span class="slot">${g ? `<s>${esc(g)}</s>` : ''}<span class="right">${esc(w.en)}</span></span>`}<button class="why ${ex.heard.has(i) ? 'heard' : ''}" data-act="why" data-ex="${ex.id}" data-i="${i}">${ex.heard.has(i) ? '✓ Prečo' : 'Prečo?'}</button></div>`;
+        return `<div class="card bad wcard"><span class="n">${i + 1}</span>${pic(w, 'sm')}${w.qa ? `<span class="q en-q">${esc(w.en)}</span><span class="slot"><span class="right">${esc(E.sayAns(w.a)[0])}</span></span>` : w.sent ? `<span class="q en-q sent">${esc(w.text)}</span><span class="slot">${g ? `<s>${esc(g)}</s>` : ''}<span class="right">${esc(w.a)}</span></span>` : ex.level === 'lahke' && ex.items[i].opts ? `<span class="q en-q">${esc(w.en)}</span><span class="slot">${g ? `<s>${esc(g)}</s>` : ''}<span class="right">${esc(w.sk)}</span></span>` : `<span class="q">${esc(w.sk)}</span><span class="slot">${g ? `<s>${esc(g)}</s>` : ''}<span class="right">${esc(w.en)}</span></span>`}<button class="why ${ex.heard.has(i) ? 'heard' : ''}" data-act="why" data-ex="${ex.id}" data-i="${i}">${ex.heard.has(i) ? '✓ Prečo' : 'Prečo?'}</button></div>`;
       }).join('')}</div></section>`;
   }
 
@@ -574,7 +585,7 @@
       ${ex.mode === 'papier' && !ex.confirmed ? gateBox(ex) : ''}
     </section>
     ${wrongList(ex)}
-    <section class="sheet-paper"><h3>Všetky slovíčka</h3><div class="tasks words">${ex.items.map((it, i) => { const w = W(it); return `<div class="task"><span class="n">${i + 1}.</span><span class="q">${pic(w, 'sm')}<span class="sk-small">${esc(w.qa ? w.en : w.sk)}</span> <b style="color:${ex.wrong.includes(i) ? 'var(--red-d)' : 'var(--green-d)'}">${esc(w.qa ? E.sayAns(w.a)[0] : w.en)}</b></span></div>`; }).join('')}</div></section>`;
+    <section class="sheet-paper"><h3>Všetky slovíčka</h3><div class="tasks words">${ex.items.map((it, i) => { const w = W(it); return `<div class="task"><span class="n">${i + 1}.</span><span class="q">${pic(w, 'sm')}<span class="sk-small">${esc(w.qa ? w.en : w.sent ? w.text : w.sk)}</span> <b style="color:${ex.wrong.includes(i) ? 'var(--red-d)' : 'var(--green-d)'}">${esc(w.qa ? E.sayAns(w.a)[0] : w.sent ? w.a : w.en)}</b></span></div>`; }).join('')}</div></section>`;
   }
   // ---------------- ODMENY ----------------
   function viewRewards(M) {
@@ -634,8 +645,8 @@
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap';
     wrap.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Vysvetlenie">
-      <div class="sheet-head wordhead">${pic(w)}<span>${esc(w.sk)} = <b>${esc(w.en)}</b></span></div>
-      <div class="spell" aria-hidden="true">${w.en.split('').map((c) => (c === ' ' ? '<i class="gap"></i>' : c === '-' ? '<span class="lt"><b>-</b><small>pomlčka</small></span>' : `<span class="lt ${/w/i.test(c) ? 'wl-hi' : ''}"><b>${esc(c)}</b><small>${esc((c !== c.toLowerCase() ? 'veľké ' : '') + E.skLetter(c))}</small></span>`)).join('')}</div>
+      ${w.sent ? `${w.poster ? posterHtml() : ''}<div class="sheet-head wordhead sent"><span>${w.text.includes('___') ? w.text.split('___').map(esc).join(`<b>${esc(w.a)}</b>`) : `${esc(w.text)} <b>${esc(w.a)}</b>`}</span></div>` : `<div class="sheet-head wordhead">${pic(w)}<span>${esc(w.sk)} = <b>${esc(w.en)}</b></span></div>
+      <div class="spell" aria-hidden="true">${w.en.split('').map((c) => (c === ' ' ? '<i class="gap"></i>' : c === '-' ? '<span class="lt"><b>-</b><small>pomlčka</small></span>' : `<span class="lt ${/w/i.test(c) ? 'wl-hi' : ''}"><b>${esc(c)}</b><small>${esc((c !== c.toLowerCase() ? 'veľké ' : '') + E.skLetter(c))}</small></span>`)).join('')}</div>`}
       <ol class="steps">${x.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ol>
       <p class="sheet-status ${wasHeard ? '' : 'wait'}" id="whyStatus">${wasHeard ? '✓ Toto si si už vypočul' : canSay ? '🔊 Počúvaj…' : 'Prečítaj si to pozorne.'}</p>
       <div class="row"><button class="btn dark" data-act="replay">${I.speaker.replace('<svg', '<svg class="ico"')} Znova</button><button class="btn yellow" data-act="closeWhy" id="whyOk" ${wasHeard || canSay ? '' : 'disabled'}>Rozumiem</button></div>
@@ -679,7 +690,7 @@
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap info';
     wrap.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Slovíčka">
-      ${topics.map((t) => `<div class="sheet-kicker">${t.em} ${esc(t.name)}</div><div class="wordlist">${t.words.map((w) => `<button class="wl" data-a="say" data-id="${w.id}">${pic(w, 'sm')}<b>${esc(w.en)}</b><span>${esc(w.qa ? `${w.sk} → ${w.a}` : w.sk)}</span><i>🔊</i></button>`).join('')}</div>`).join('')}
+      ${topics.map((t) => `<div class="sheet-kicker">${t.em} ${esc(t.name)}</div>${t.sent ? posterHtml() : ''}<div class="wordlist">${t.words.map((w) => `<button class="wl" data-a="say" data-id="${w.id}">${pic(w, 'sm')}<b>${esc(w.en)}</b><span>${esc(w.qa ? `${w.sk} → ${w.a}` : w.sk)}</span><i>🔊</i></button>`).join('')}</div>`).join('')}
       <div class="row"><button class="btn yellow" data-a="close">Zavrieť</button></div></div>`;
     wrap.addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-a]');
@@ -796,13 +807,14 @@
   /** Predošlé cvičenia (od najnovšieho) – aby sa slová neopakovali. */
   const history = () => model().list.map((e) => ({ ids: (e.items || []).map((it) => it.id) }));
   function sayCurrent() {
-    if (S.view !== 'tablet' || !['lahke', 'rozhovor'].includes(S.level)) return;
+    if (S.view !== 'tablet' || !['lahke', 'rozhovor', 'veta'].includes(S.level)) return;
     const w = W(S.items[S.sel]);
-    Voice.say('en', w.en);
+    Voice.say('en', w.sent ? w.text.replace('___', '…') : w.en);
   }
   function start() {
     savePrefs();
-    if (E.topicOf(S.topic)?.qa) { S.level = 'rozhovor'; S.mode = 'tablet'; } else if (E.LEVELS[S.level]?.qa) S.level = 'lahke';
+    const fix = fixedLevel(S.topic);
+    if (fix) { S.level = fix; S.mode = 'tablet'; } else if (E.LEVELS[S.level]?.qa || E.LEVELS[S.level]?.sent) S.level = 'lahke';
     if (E.LEVELS[S.level]?.only && E.LEVELS[S.level].only !== S.mode) S.level = 'lahke';
     S.items = E.generate(S.topic, S.level, S.count, S.mode, history());
     S.answers = S.items.map(() => '');
@@ -854,8 +866,8 @@
       case 'tab': S.tab = b.dataset.tab; S.view = 'home'; S.wishMsg = ''; render(); window.scrollTo(0, 0); if (S.tab !== 'play') Store.sync().then(render); break;
       case 'topic': {
         S.topic = b.dataset.v;
-        const isQa = !!E.topicOf(S.topic)?.qa;
-        if (isQa) S.level = 'rozhovor'; else if (E.LEVELS[S.level]?.qa) S.level = 'lahke';
+        const fix = fixedLevel(S.topic);
+        if (fix) S.level = fix; else if (E.LEVELS[S.level]?.qa || E.LEVELS[S.level]?.sent) S.level = 'lahke';
         render(); break;
       }
       case 'tryVoice': { const sel = document.getElementById('enVoice'); if (sel) { lsSet('anglina-voice', sel.value); Voice.load(); } Voice.say('en', 'Hello Oto! How are you? My favourite colour is blue.'); break; }
