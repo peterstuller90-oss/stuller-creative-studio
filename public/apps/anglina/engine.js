@@ -194,6 +194,83 @@
     },
   ];
 
+  // ---------------- Učebnica, strany 42 – 43 (Reading time 1, Think about it!) ----------------
+  // Slová a vety presne podľa učebnice. Krúžky podľa plagátu na s. 43 (pondelok – piatok, o 3 a o 4 hodine).
+  const BOOK = [
+    {
+      id: 'opica', name: 'Príbeh o opici', em: '🐒', color: '#F5B041', badge: 'Učebnica',
+      words: [
+        W('monkey', 'opica', '🐒'),
+        W('elephant', 'slon', '🐘', { tip: 'Jeden slon je {elephant}, viac slonov je {elephants}.' }),
+        W('wolf', 'vlk', '🐺'),
+        W('crocodile', 'krokodíl', '🐊'),
+        W('camel', 'ťava', '🐫'),
+        W('mango', 'mango', '🥭', { tip: 'Jedno mango je {mango}, viac mang je {mangoes}, s písmenom e.' }),
+        W('river', 'rieka', '🏞️'),
+        W('tree', 'strom', '🌳'),
+        W('mango tree', 'mangovník', '🥭🌳', { tip: '{Mango tree} sa píše ako dve slová, medzi nimi je medzera.' }),
+        W('bag', 'taška', '👜'),
+        W('ground', 'zem', ''),
+        W('happy', 'šťastný', '😊'),
+        W('sad', 'smutný', '😢'),
+        W('angry', 'nahnevaný', '😠', { tip: 'Nahnevaný na niekoho sa povie {angry with}.' }),
+        W('scared', 'vystrašený', '😨'),
+      ],
+    },
+    {
+      id: 'kruzky', name: 'Krúžky a aktivity', em: '🎨', color: '#58D68D', badge: 'Učebnica',
+      words: [
+        W('singing', 'spievanie', '🎤'),
+        W('tennis', 'tenis', '🎾', { tip: 'Pri hrách s loptou hovoríme {play}: {play tennis}.' }),
+        W('basketball', 'basketbal', '🏀', { tip: 'Pri hrách s loptou hovoríme {play}: {play basketball}.' }),
+        W('take photos', 'fotiť', '🤳', { alt: ['take pictures'], tip: 'Fotiť sa povie {take photos}. Nehovorí sa make photos.' }),
+        W('cooking', 'varenie', '🍳'),
+        W('watch cartoons', 'pozerať rozprávky', '📺', { tip: 'Pozerať televíziu alebo rozprávky sa povie {watch}: {watch cartoons}.' }),
+        W('drama', 'dramatický krúžok', '🎭', { tip: 'Hovoríme {do drama}.' }),
+        W('guitar lesson', 'hodina gitary', '🎸', { tip: 'Mať hodinu gitary sa povie {have a guitar lesson}.' }),
+        W('karate', 'karate', '🥋', { tip: 'Hovoríme {do karate}.' }),
+        W('painting', 'maľovanie', '🎨'),
+        W('paintbrush', 'štetec', '🖌️', { tip: '{Paintbrush} sa píše ako jedno slovo.' }),
+        W('music', 'hudba', '🎵'),
+        W('ball', 'lopta', '⚽'),
+        W('camera', 'fotoaparát', '📷'),
+      ],
+    },
+  ];
+  // Vety z učebnice: text s ___ (doplň), alebo otázka; a = správna odpoveď; opts = presne 4 možnosti.
+  // poster = pri vete sa ukáže plagát krúžkov (s. 43). en = celá správna veta, sk = jej preklad.
+  const ST = (key, text, sk, a, opts, extra = {}) => ({ key, text, sk, a, opts, sent: true, em: '', en: text.includes('___') ? text.replace('___', a) : `${text} ${a.charAt(0).toUpperCase()}${a.slice(1)}.`, ...extra });
+  const FEEL = ['happy', 'sad', 'angry', 'scared'];
+  const T_TIME = ' Pred dňom v týždni je {on}: {on Friday}. Pred časom je {at}: {at 3 o\'clock}.';
+  const POSTER = [
+    ['Monday', 'singing', 'watch cartoons'], ['Tuesday', 'tennis', 'drama'], ['Wednesday', 'take photos', 'guitar lesson'],
+    ['Thursday', 'cooking', 'karate'], ['Friday', 'basketball', 'painting'],
+  ];
+  const VETY = {
+    id: 'vety', name: 'Vety z učebnice', em: '✏️', color: '#F1948A', sent: true, badge: 'Učebnica',
+    words: [
+      ST('f-bag', 'There are lots of mangoes in the bag. Monkey is ___.', 'V taške je veľa mang. Opica je šťastná.', 'happy', FEEL),
+      ST('f-nobag', "There aren't any mangoes in the bag. Big Elephant is ___.", 'V taške nie sú žiadne mangá. Veľký slon je nahnevaný.', 'angry', FEEL),
+      ST('f-angry', 'Big Elephant is angry with Monkey. Monkey is ___.', 'Veľký slon sa hnevá na opicu. Opica je vystrašená.', 'scared', FEEL),
+      ST('f-run', 'The elephants run after the animals. The animals are ___.', 'Slony bežia za zvieratami. Zvieratá sú vystrašené.', 'scared', FEEL),
+      ST('f-ground', 'There are lots of mangoes on the ground. The elephants are ___.', 'Na zemi je veľa mang. Slony sú šťastné.', 'happy', FEEL),
+      ST('n-ball1', 'Which activity needs a ball?', 'Na ktorú aktivitu treba loptu? Na tenis.', 'tennis', ['tennis', 'singing', 'painting', 'take photos']),
+      ST('n-ball2', 'Which activity needs a ball?', 'Na ktorú aktivitu treba loptu? Na basketbal.', 'basketball', ['basketball', 'cooking', 'drama', 'guitar lesson']),
+      ST('n-camera', 'Which activity needs a camera?', 'Na ktorú aktivitu treba fotoaparát? Na fotenie.', 'take photos', ['take photos', 'tennis', 'karate', 'singing']),
+      ST('n-brush', 'Which activity needs a paintbrush?', 'Na ktorú aktivitu treba štetec? Na maľovanie.', 'painting', ['painting', 'basketball', 'watch cartoons', 'cooking']),
+      ST('n-music1', 'Which activity needs music?', 'Na ktorú aktivitu treba hudbu? Na hodinu gitary.', 'guitar lesson', ['guitar lesson', 'take photos', 'tennis', 'cooking']),
+      ST('n-music2', 'Which activity needs music?', 'Na ktorú aktivitu treba hudbu? Na spievanie.', 'singing', ['singing', 'basketball', 'painting', 'karate']),
+      ST('p-fri3', "We ___ on Friday at 3 o'clock.", 'V piatok o tretej hodine hráme basketbal.', 'play basketball', ['play basketball', 'do basketball', 'do karate', 'take photos'], { poster: true, tip: 'Pri hrách s loptou hovoríme {play}.' + T_TIME }),
+      ST('p-wed3', "We ___ on Wednesday at 3 o'clock.", 'V stredu o tretej hodine fotíme.', 'take photos', ['take photos', 'make photos', 'play tennis', 'do drama'], { poster: true, tip: 'Fotiť sa povie {take photos}. Nehovorí sa make photos.' + T_TIME }),
+      ST('p-tue4', "We ___ on Tuesday at 4 o'clock.", 'V utorok o štvrtej hodine máme dramatický krúžok.', 'do drama', ['do drama', 'play drama', 'play tennis', 'watch cartoons'], { poster: true, tip: 'Hovoríme {do drama}.' + T_TIME }),
+      ST('p-thu4', "We ___ on Thursday at 4 o'clock.", 'Vo štvrtok o štvrtej hodine cvičíme karate.', 'do karate', ['do karate', 'play karate', 'play basketball', 'have a guitar lesson'], { poster: true, tip: 'Hovoríme {do karate}.' + T_TIME }),
+      ST('p-tue3', "We ___ on Tuesday at 3 o'clock.", 'V utorok o tretej hodine hráme tenis.', 'play tennis', ['play tennis', 'do tennis', 'do drama', 'take photos'], { poster: true, tip: 'Pri hrách s loptou hovoríme {play}.' + T_TIME }),
+      ST('p-mon4', "We ___ on Monday at 4 o'clock.", 'V pondelok o štvrtej hodine pozeráme rozprávky.', 'watch cartoons', ['watch cartoons', 'look cartoons', 'play tennis', 'do karate'], { poster: true, tip: 'Pozerať rozprávky sa povie {watch cartoons}.' + T_TIME }),
+      ST('p-wed4', "We ___ on Wednesday at 4 o'clock.", 'V stredu o štvrtej hodine máme hodinu gitary.', 'have a guitar lesson', ['have a guitar lesson', 'play a guitar lesson', 'take photos', 'do drama'], { poster: true, tip: 'Mať hodinu gitary sa povie {have a guitar lesson}.' + T_TIME }),
+    ],
+  };
+  TOPICS.splice(1, 0, ...BOOK, VETY);
+
   // ---------------- Otázky a odpovede (rozhovor) ----------------
   // Základné otázky a odpovede z 1.–4. ročníka. a = vzorová odpoveď, aSk = jej význam, note = poznámka (napr. povedz svoj vek).
   // Viac správnych odpovedí je oddelených „ / “.
@@ -230,7 +307,7 @@
       Q('weather', "What's the weather like?", 'Aké je počasie?', "It's sunny.", 'Je slnečno.', { em: '☀️' }),
     ],
   };
-  TOPICS.splice(2, 0, QA_TOPIC);
+  TOPICS.splice(TOPICS.findIndex((t) => t.id === 'w') + 1, 0, QA_TOPIC);
   // Emoji, ktoré by slovo prezradili alebo sú nepresné, nahradíme farebným štítkom témy.
   const NO_PIC = new Set(['rubber', 'living room', 'tablet', 'lamp', 'fridge', 'desk', 'board', 'glue', 'skirt', 'jumper', 'neck', 'bedroom', 'wardrobe', 'table', 'pencil case', 'knee', 'shoulder', 'doll', 'aunt', 'son']);
   for (const t of TOPICS) for (const w of t.words) { w.topic = t.id; w.id = `${t.id}:${w.key || w.en}`; if (NO_PIC.has(w.en)) w.em = ''; }
@@ -244,6 +321,7 @@
     poskladaj: { name: 'Poskladaj', n: 2, only: 'tablet' },
     dopis: { name: 'Píšem perom', n: 3, only: 'tablet', test: true },
     rozhovor: { name: 'Rozhovor', n: 2, only: 'tablet', qa: true },
+    veta: { name: 'Doplň vetu', n: 2, only: 'tablet', sent: true },
   };
   const LEVEL_INFO = {
     tablet: {
@@ -253,6 +331,7 @@
       poskladaj: 'Vidíš slovenské slovo a poskladáš ho z rozhádzaných písmen.',
       dopis: 'Vidíš rozhádzané písmená a slovenské slovo. Slovo napíšeš perom ako do zošita.',
       rozhovor: 'Appka sa ťa opýta po anglicky, ty odpovieš nahlas.',
+      veta: 'Prečítaš vetu z učebnice a vyberieš správne slovo.',
     },
     papier: {
       lahke: 'Vidíš obrázok a slovenské slovo, appka ti ho prečíta po anglicky. Píšeš do zošita.',
@@ -267,7 +346,7 @@
   /** Slová na cvičenie. history = [{ids:[...], at}] od najnovšieho. Najprv slová, ktoré ešte neboli, potom tie najdávnejšie.
       Nikdy nie presne rovnaká sada ako minule. */
   function pick(topic, n, history = []) {
-    let pool = topic === 'mix' ? TOPICS.filter((t) => !t.qa).flatMap((t) => t.words) : topicOf(topic).words;
+    let pool = topic === 'mix' ? TOPICS.filter((t) => !t.qa && !t.sent).flatMap((t) => t.words) : topicOf(topic).words;
     // V mixe rovnaké anglické slovo len raz (mouse je v dvoch témach).
     const seen = new Set(); pool = shuffle(pool).filter((w) => (seen.has(w.en) ? false : seen.add(w.en)));
     n = Math.min(n, pool.length);
@@ -308,6 +387,7 @@
     const words = pick(topic, COUNTS[count].n, history);
     return words.map((w) => {
       const it = { id: w.id };
+      if (w.sent) { it.opts = shuffle(w.opts); return it; }
       if (mode === 'tablet' && level === 'lahke') it.opts = options(w, 'sk');
       if (mode === 'tablet' && level === 'stredne') it.opts = options(w, 'en');
       if (mode === 'tablet' && (level === 'poskladaj' || level === 'dopis') && !w.qa) it.tiles = tiles(w.en);
@@ -321,6 +401,7 @@
     const w = BY_ID.get(item.id);
     if (!w) return false;
     if (w.qa) return answer === 'ok';
+    if (w.sent) return answer === w.a;
     if (item.opts) return answer === w.id;
     const a = norm(answer);
     return [w.en, ...(w.alt || [])].some((x) => norm(x) === a);
@@ -351,9 +432,23 @@
     seq.push({ lang: 'sk', text: 'Ešte raz:' }, { lang: 'en', text: w.en, rate: 0.75 }, { lang: 'en', text: sayAns(w.a)[0], rate: 0.75 });
     return { lines, seq };
   }
+  function explainSent(w) {
+    const q = !w.text.includes('___');
+    const lines = q ? [`Otázka: ${w.text}`, `Odpoveď: ${w.a}`] : [`Správne je: ${w.en}`];
+    lines.push(`Po slovensky: ${w.sk}`);
+    if (w.tip) lines.push(plain(w.tip));
+    const seq = q
+      ? [{ lang: 'sk', text: 'Otázka' }, { lang: 'en', text: w.text, rate: 0.75 }, { lang: 'sk', text: 'Odpoveď:' }, { lang: 'en', text: w.a, rate: 0.7 }]
+      : [{ lang: 'sk', text: 'Správne je:' }, { lang: 'en', text: w.en, rate: 0.72 }];
+    seq.push({ lang: 'sk', text: `Po slovensky: ${w.sk}` });
+    if (w.tip) seq.push(...tipSeq(w.tip));
+    seq.push({ lang: 'sk', text: 'Ešte raz:' }, { lang: 'en', text: w.en, rate: 0.72 });
+    return { lines, seq };
+  }
   function explain(item) {
     const w = BY_ID.get(item.id);
     if (w.qa) return explainQA(w);
+    if (w.sent) return explainSent(w);
     const lines = [`Slovo „${w.sk}“ sa po anglicky povie ${w.en}.`];
     if (w.alt && w.alt.length) lines.push(`Uznáva sa aj: ${w.alt.join(', ')}.`);
     if (w.tip) lines.push(plain(w.tip));
@@ -371,5 +466,5 @@
   const tipSeq = (t) => t.split(/(\{[^}]+\})/).filter((x) => x.trim()).map((x) => (x.startsWith('{') ? { lang: 'en', text: x.slice(1, -1) } : { lang: 'sk', text: x.trim() }));
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-  window.ANGLINA_ENGINE = { TOPICS, BY_ID, topicOf, LEVELS, LEVEL_INFO, COUNTS, generate, check, explain, pick, word: (id) => BY_ID.get(id), sayAns, assemble, plain, skLetter: (c) => SK_LETTER[c.toLowerCase()] || '' };
+  window.ANGLINA_ENGINE = { TOPICS, BY_ID, topicOf, LEVELS, LEVEL_INFO, COUNTS, generate, check, explain, pick, word: (id) => BY_ID.get(id), sayAns, assemble, plain, POSTER, skLetter: (c) => SK_LETTER[c.toLowerCase()] || '' };
 })();

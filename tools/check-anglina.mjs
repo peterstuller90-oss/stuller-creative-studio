@@ -5,7 +5,7 @@ new Function('window', readFileSync(new URL('../public/apps/anglina/engine.js', 
 const E = g.window.ANGLINA_ENGINE;
 let bad = 0;
 const fail = (m) => { bad++; console.error('CHYBA:', m); };
-for (const t of E.TOPICS.filter((x) => !x.qa)) {
+for (const t of E.TOPICS.filter((x) => !x.qa && !x.sent)) {
   if (t.words.length < 7) fail(`${t.id}: málo slov`);
   const en = new Set(); const sk = new Set();
   for (const w of t.words) {
@@ -33,7 +33,7 @@ for (const level of ['lahke', 'stredne', 'tazke']) {
   }
 }
 // poskladaj: písmená sú rozhádzané, správne poskladané slovo sa uzná, iné poradie nie
-for (const t of E.TOPICS.filter((x) => !x.qa)) for (const w of t.words) {
+for (const t of E.TOPICS.filter((x) => !x.qa && !x.sent)) for (const w of t.words) {
   const [it] = E.generate(t.id, 'poskladaj', 'kratke', 'tablet', []).filter((x) => x.id === w.id).concat([{ id: w.id, tiles: w.en.replace(/[ -]/g, '').split('').reverse() }]);
   const letters = w.en.replace(/[ -]/g, '');
   if (it.tiles.slice().sort().join('') !== letters.split('').sort().join('')) fail(`${w.id}: dlaždice`);
@@ -51,6 +51,23 @@ for (const t of E.TOPICS.filter((x) => x.qa)) {
     if (!E.check({ id: w.id }, 'ok') || E.check({ id: w.id }, 'no')) fail(`${w.id}: kontrola`);
   }
 }
+// vety z učebnice: presne 4 rôzne možnosti, správna medzi nimi, jedno ___ alebo otázka, vysvetlenie bez zátvoriek
+for (const t of E.TOPICS.filter((x) => x.sent)) {
+  const keys = new Set();
+  for (const w of t.words) {
+    if (keys.has(w.text + w.a)) fail(`${w.id}: dvakrát`); keys.add(w.text + w.a);
+    if (w.opts.length !== 4 || new Set(w.opts).size !== 4 || !w.opts.includes(w.a)) fail(`${w.id}: možnosti`);
+    const blanks = (w.text.match(/___/g) || []).length;
+    if (!(blanks === 1 || (blanks === 0 && w.text.endsWith('?')))) fail(`${w.id}: medzera ___`);
+    if (!w.sk || !E.check({ id: w.id }, w.a) || w.opts.some((o) => o !== w.a && E.check({ id: w.id }, o))) fail(`${w.id}: kontrola`);
+    if (w.tip && (w.tip.match(/\{/g) || []).length !== (w.tip.match(/\}/g) || []).length) fail(`${w.id}: zátvorky v tipe`);
+    const x = E.explain({ id: w.id }); if (!x.seq.length || x.lines.some((l) => /[{}]/.test(l))) fail(`${w.id}: vysvetlenie`);
+    if (w.poster) { const row = E.POSTER.find((r) => w.text.includes(r[0])); const col = w.text.includes('3 o') ? 1 : 2; if (!row || !w.a.endsWith(row[col])) fail(`${w.id}: nesedí s plagátom`); }
+  }
+  const items = E.generate(t.id, 'veta', 'dlhe', 'tablet', []);
+  if (new Set(items.map((i) => i.id)).size !== items.length || items.some((i) => i.opts.length !== 4)) fail('vety: generovanie');
+}
+if (E.pick('mix', 300).some((w) => w.sent || w.qa)) fail('mix obsahuje vety alebo otázky');
 const mix = E.generate('mix', 'tazke', 'dlhe', 'papier', []);
 if (new Set(mix.map((i) => E.word(i.id).en)).size !== mix.length) fail('mix: rovnaké slovo dvakrát');
 console.log(bad ? `${bad} chýb` : `OK – ${E.TOPICS.reduce((a, t) => a + t.words.length, 0)} slov v ${E.TOPICS.length} témach`);
