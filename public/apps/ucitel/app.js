@@ -603,7 +603,7 @@
       const wide = p.options.some((o) => o.length > 1) ? ' wide' : '';
       if (!ck) {
         const val = S.gaps[p.gap] || '';
-        return `<input class="gap${wide}" id="g${p.gap}" data-gap="${p.gap}" value="${esc(val)}" maxlength="2" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Doplň písmeno v slove ${esc(p.word.slice(0, p.idx))}_${esc(p.word.slice(p.idx + p.len))}">`;
+        return `<input class="gap${wide}" id="g${p.gap}" data-gap="${p.gap}" value="${esc(val)}" maxlength="2" inputmode="none" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Doplň písmeno v slove ${esc(p.word.slice(0, p.idx))}_${esc(p.word.slice(p.idx + p.len))}">`;
       }
       if (ck[p.gap]) return `<span class="gap ok${wide}">${esc(p.answer)}</span>`;
       const heard = S.heard.has(`g${p.gap}`);
