@@ -7,7 +7,7 @@ eval(fs.readFileSync(new URL('engine.js', dir), 'utf8'))
 const B = window.UCITEL_BANK, E = window.UCITEL_ENGINE
 const missing = new Map(), dtnl = new Set(), hardI = new Set()
 let bad = 0
-for (const s of [...B.SENTENCES, ...B.HARD]) for (const m of s.matchAll(E.WORD_RE)) {
+for (const s of [...B.SENTENCES, ...B.HARD, ...(B.ZIV || [])]) for (const m of s.matchAll(E.WORD_RE)) {
   const w = m[0].toLowerCase(), pos = E.positions(w)
   const obo = pos.filter(p => p.cat === 'obo')
   const code = B.LEX[w]

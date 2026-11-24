@@ -49,7 +49,7 @@
     sayPunct: prefs.sayPunct ?? false,
     voiceURI: prefs.voiceURI || '',
     hard: !!prefs.hard,
-    exc: !!prefs.exc,
+    exc: prefs.exc === 'ziv' ? 'ziv' : prefs.exc ? 'exc' : false,
     pen: !!prefs.pen && prefs.mode !== 'doplnanie', penRes: [], penI: 0,
     gapTypes: new Set((prefs.gapTypes || E.GAP_TYPES).filter((t) => E.GAP_TYPES.includes(t))),
     dict: null, plan: null, gaps: {}, checked: null, gate: null, rewarded: false, celebrate: false, notice: '',
@@ -444,8 +444,8 @@
         ${E.LETTERS.map((l) => `<button class="letter" data-act="letter" data-v="${l}" aria-pressed="${!S.exc && S.letters.has(l)}" aria-label="Vybrané slová po ${l.toUpperCase()}">${l.toUpperCase()}</button>`).join('')}
         <button class="letter all" data-act="allLetters" aria-pressed="${!S.exc && allOn}">Všetky</button>
       </div>
-      <div class="letters exc-row"><button class="letter wide" data-act="excMode" aria-pressed="${S.exc}">Cudzie slová a výnimky</button></div>
-      <p class="hint">${S.exc ? 'Iba cudzie slová, v ktorých sa píše inak, ako káže pravidlo: kino, gitara, diktát, technika, bicykel, cyklista, fyzika. Zoznam nájdeš v časti Učivo.' : 'Vždy tam budú aj iné slová s mäkkým i a výnimky, napríklad kino, diktát, bicykel.'}</p>
+      <div class="letters exc-row"><button class="letter wide" data-act="excMode" data-v="exc" aria-pressed="${S.exc === 'exc'}">Cudzie slová a výnimky</button><button class="letter wide" data-act="excMode" data-v="ziv" aria-pressed="${S.exc === 'ziv'}">Zívať × ozývať sa</button></div>
+      <p class="hint">${S.exc === 'exc' ? 'Iba cudzie slová, v ktorých sa píše inak, ako káže pravidlo: kino, gitara, diktát, technika, bicykel, cyklista, fyzika. Zoznam nájdeš v časti Učivo.' : S.exc === 'ziv' ? 'Chyták: zívať (od únavy otvárať ústa) sa píše s mäkkým í. Ozývať sa, nazývať, pozývať, vyzývať a prezývať sú z rodiny vybraných slov po Z, píšu sa s tvrdým ý. Vo vetách budú všetky ich podoby.' : 'Vždy tam budú aj iné slová s mäkkým i a výnimky, napríklad kino, diktát, bicykel.'}</p>
     </section>
     ${gap ? '' : `<section class="card">
       ${head('Ako rýchlo diktovať?')}
@@ -478,7 +478,7 @@
         <span class="chip ${gap ? 'green' : 'red'}">${gap ? 'Doplňovačka' : 'Na papier'}</span>
         ${d.hard ? '<span class="chip pink">Náročný</span>' : ''}
         <span class="chip">${d.sentences.length} ${d.sentences.length < 5 ? 'vety' : 'viet'} · ${words} slov</span>
-        <span class="chip">${d.exc ? 'Cudzie slová a výnimky' : `Po ${d.letters.map((l) => l.toUpperCase()).join(', ')}`}</span>
+        <span class="chip">${d.exc === 'ziv' ? 'Zívať × ozývať sa' : d.exc ? 'Cudzie slová a výnimky' : `Po ${d.letters.map((l) => l.toUpperCase()).join(', ')}`}</span>
         <span class="chip pink">Výnimky: ${exc}</span>
         ${gap ? `<span class="chip">${[...S.gapTypes].map((t) => GAP_LABEL[t]).join(' · ')}</span>` : ''}
         <span class="chip sun">+${xpBase(d)} XP</span>
@@ -941,9 +941,9 @@
     if (S.doneSaved) return;
     S.doneSaved = true;
     const d = S.dict; const id = uid();
-    const details = { kind: 'done', dict: d.id, hard: !!d.hard, pero: S.pen && S.mode === 'papier' ? true : undefined, vynimky: d.exc ? true : undefined, types: S.mode === 'doplnanie' ? [...S.gapTypes] : undefined };
+    const details = { kind: 'done', dict: d.id, hard: !!d.hard, pero: S.pen && S.mode === 'papier' ? true : undefined, vynimky: d.exc || undefined, types: S.mode === 'doplnanie' ? [...S.gapTypes] : undefined };
     Store.add('diktat_results', {
-      id, child: CHILD, length: d.length, letters: d.exc ? 'vynimky' : d.letters.join(''), mode: modeDb(S.mode), speed: S.speed, text: d.text,
+      id, child: CHILD, length: d.length, letters: d.exc === 'ziv' ? 'zivat' : d.exc ? 'vynimky' : d.letters.join(''), mode: modeDb(S.mode), speed: S.speed, text: d.text,
       answer: (answer || '').slice(0, 6000), words, mistakes, iy_mistakes: iy, stars: 0, reward_cents: 0, details,
     }, { id, created_at: new Date().toISOString(), child: CHILD, length: d.length, mode: modeDb(S.mode), mistakes, reward_cents: 0, text: d.text, details });
   }
@@ -971,7 +971,7 @@
       ? [...S.marked].sort((a, b) => a - b).map((k) => ({ w: d.text.slice(+k).match(E.WORD_RE)[0], i: -1, k }))
       : [...S.wrongGaps].sort((a, b) => a - b).map((g) => { const p = gapAt(g); return { w: p.word, i: p.idx, k: `g${g}` }; });
     return {
-      dictId: d.id, length: d.length, hard: !!d.hard, letters: d.exc ? 'vynimky' : d.letters.join(''), mode: S.mode, text: d.text,
+      dictId: d.id, length: d.length, hard: !!d.hard, letters: d.exc === 'ziv' ? 'zivat' : d.exc ? 'vynimky' : d.letters.join(''), mode: S.mode, text: d.text,
       mistakes: wrongItems.length, wrong: wrongItems.map((x) => x.w), wrongItems, heard: wrongItems.filter((x) => S.heard.has(x.k)).map((x) => x.k), doneAt: new Date().toISOString(),
     };
   }
@@ -1086,7 +1086,7 @@
         if (v[0] === 'x') { const g = U.vynimky[+v.slice(1)]; Voice.seq([g.head + '.', ...g.words.map((w) => E.speakForm(w))]); } else Voice.seq([`Vybrané slová po ${v.toUpperCase()}.`, ...U.vybrane[v].map((w) => E.speakForm(w))]);
         break;
       }
-      case 'excMode': S.exc = !S.exc; savePrefs(); render(); break;
+      case 'excMode': S.exc = S.exc === v ? false : v; savePrefs(); render(); break;
       case 'allLetters': if (S.exc) { S.exc = false; S.letters = new Set(E.LETTERS); savePrefs(); render(); break; } S.letters = S.letters.size === E.LETTERS.length ? new Set() : new Set(E.LETTERS); savePrefs(); render(); break;
       case 'gapType': S.gapTypes.has(v) ? S.gapTypes.delete(v) : S.gapTypes.add(v); savePrefs(); render(); break;
       case 'mode': S.pen = v === 'pero'; S.mode = v === 'pero' ? 'papier' : v; savePrefs(); render(); break;
