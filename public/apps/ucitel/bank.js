@@ -297,6 +297,40 @@ window.UCITEL_BANK = (() => {
     'Hrad sa nedal dobyť, lebo stál vysoko.',
   ];
 
+  // ---------- chyták: zívať × ozývať sa (a nazývať, pozývať, vyzývať, prezývať) ----------
+  const ZIV = [
+    'Brat celé ráno zíval.',
+    'Mačka sa natiahla a zívla.',
+    'Nezívaj, keď sa s tebou rozprávam.',
+    'Deti zívali, lebo bolo neskoro.',
+    'Lev zíval na teplom slnku.',
+    'Pes zívne a ľahne si.',
+    'Prečo stále zívaš?',
+    'Babka zívla a zaspala.',
+    'Zívanie je nákazlivé.',
+    'Zíval som tak, že ma rozboleli ústa.',
+    'Keď niekto zíva, často zívneme aj my.',
+    'Mama ma vyzvala, aby som nezíval pri stole.',
+    'Z diaľky sa ozývali zvony.',
+    'Na lúke sa ozývajú cvrčky.',
+    'Ozývam sa ti z tábora.',
+    'Z kopca sa ozýval hlas.',
+    'Ako sa nazýva táto rieka?',
+    'Ako sa nazývajú obyvatelia Bratislavy?',
+    'Sestra nás pozýva na oslavu.',
+    'Pozývame vás na besiedku.',
+    'Učiteľka nás vyzýva, aby sme boli ticho.',
+    'Hasiči vyzývajú ľudí na opatrnosť.',
+    'Kamaráti ma prezývajú Rýchlik.',
+    'Prezývka môjho brata je Ťuťo.',
+    'Kocúr zíval a z maštale sa ozývali kravy.',
+    'Z triedy sa ozývalo zívanie.',
+    'Nezívaj, pani učiteľka ťa vyzýva k tabuli.',
+    'Lev zívol a z lesa sa ozýval vlk.',
+    'Zívajúci chlapec nás pozýva na hru.',
+    'Pozývam ťa k nám, ale nezívaj pri rozprávke.',
+  ];
+
   const LEX = {
     // B
     'býva': 'vs:b:bývať', 'byte': 'vs:b:byt', 'sídlisku': 'not', 'obyvatelia': 'vs:b:obyvateľ (bývať)',
@@ -347,7 +381,7 @@ window.UCITEL_BANK = (() => {
     'bydlisku': 'vs:b:bydlisko (bývať)', 'rytieri': ['vs:r:rytier', 'end:chlap'], 'dobyť': 'vs:b:dobyť (zmocniť sa, dobyť hrad)',
     'dobiť': 'not:dobiť batériu je od slova biť (nabiť). Dobyť hrad je vybrané slovo', 'rým': 'vs:r:rým', 'ríma': 'not:Rím je mesto. Rým v básni je vybrané slovo',
     'sipí': ['not:sipieť robí hus, syčať robí had', 'not'], 'obyčajný': 'vs:b:obyčajný', 'mys': 'vs:m:mys (výbežok pevniny do mora)', 'výbežok': 'vy',
-    'fyziky': ['exc', 'not'], 'robili': 'not', 'pokusy': 'end:dub', 'nevyspatý': 'vy', 'zíval': 'not:zívať nie je príbuzné so slovom nazývať',
+    'fyziky': ['exc', 'not'], 'robili': 'not', 'pokusy': 'end:dub', 'nevyspatý': 'vy', 'zíval': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa',
     'sito': 'not:sito nie je príbuzné so slovom syr ani sypať', 'vysypali': ['vy', 'vs:s:sypať'], 'výhry': ['vy', 'end:zena'],
     'mandarínka': 'not', 'musí': 'not', 'mobile': 'not', 'šmýka': 'vs:m:šmýkať sa', 'synovec': 'vs:s:syn (synovec)', 'kúpil': 'not', 'pyšný': 'vs:p:pýcha (pyšný)',
     'kobylka': 'vs:b:kobyla (kobylka)', 'pomýlil': 'vs:m:mýliť sa', 'výťahom': 'vy', 'vyviezli': 'vy',
@@ -373,6 +407,11 @@ window.UCITEL_BANK = (() => {
     'ozývajú': 'vs:z:ozývať sa', 'ozýval': 'vs:z:ozývať sa', 'hlasy': 'end:dub', 'psík': 'not', 'jazýček': 'vs:z:jazyk (jazýček)',
     'pozývame': 'vs:z:pozývať', 'prezývka': 'vs:z:prezývka', 'jazykolam': 'vs:z:jazykolam', 'nazývajú': 'vs:z:nazývať',
     'varila': 'not', 'pila': 'not',
+    // zívať × ozývať sa
+    'zívla': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa', 'nezívaj': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa', 'zívali': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa', 'zívne': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa', 'zívaš': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa', 'zívanie': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa', 'zíva': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa', 'zívneme': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa', 'nezíval': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa', 'zívol': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa', 'zívajúci': 'not:zívať znamená od únavy otvárať ústa. Nie je príbuzné so slovom nazývať ani ozývať sa', 
+    'natiahla': 'auto', 'nákazlivé': 'auto', 'rozboleli': 'auto', 'teplom': 'auto', 'ozývam': 'vs:z:ozývať sa',
+    'bratislavy': 'end:zena', 'pozýva': 'vs:z:pozývať', 'pozývam': 'vs:z:pozývať', 'vyzývajú': ['vy', 'vs:z:vyzývať (nazývať)'], 'prezývajú': 'vs:z:prezývať',
+    'rýchlik': 'vs:r:rýchly (rýchlik)', 'hasiči': 'not', 'ľudí': 'auto', 'ozývalo': 'vs:z:ozývať sa', 'kravy': 'end:zena', 'vyzvala': 'vy', 'boli': 'auto', 'besiedku': 'auto',
     'prišli': 'pri', 'tisíc': 'not', 'mačkovitá': 'not', 'pili': 'not', 'kilogramy': 'end:dub', 'nosil': 'not', 'nadiktoval': 'not',
   };
 
@@ -423,5 +462,5 @@ window.UCITEL_BANK = (() => {
     mi: 'Lebo je to koncovka -mi (s kým? s čím?): s deťmi, so svojimi, s fialkami. Tá je vždy s mäkkým i.',
   };
 
-  return { SENTENCES: S, HARD, LEX, EXC, ENDINGS };
+  return { SENTENCES: S, HARD, ZIV, LEX, EXC, ENDINGS };
 })();

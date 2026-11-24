@@ -121,6 +121,7 @@ window.UCITEL_ENGINE = (() => {
   const TAGGED = [
     ...B.SENTENCES.map((text) => ({ id: text, text, hard: false, ...tagSentence(text) })),
     ...B.HARD.map((text) => ({ id: text, text, hard: true, ...tagSentence(text) })),
+    ...B.ZIV.map((text) => ({ id: text, text, hard: false, set: 'ziv', kindZ: /zív/i.test(text) && /[zr]ýv|ozý/i.test(text) ? 'both' : /zív/i.test(text) ? 'i' : 'y', ...tagSentence(text) })),
   ];
 
   function shuffle(a) {
@@ -132,8 +133,9 @@ window.UCITEL_ENGINE = (() => {
   /** Vygeneruje diktát. recent = id viet, ktoré boli nedávno (dajú sa až nakoniec). */
   function generate(lengthKey, letters, recent = [], hardMode = false, excOnly = false) {
     const cfg = LENGTHS[lengthKey];
+    if (excOnly === 'ziv') return generateExc(lengthKey, recent, hardMode, (t) => t.set === 'ziv', 'ziv');
     if (excOnly) return generateExc(lengthKey, recent, hardMode);
-    const POOL = TAGGED.filter((t) => !t.hard);
+    const POOL = TAGGED.filter((t) => !t.hard && !t.set);
     const sel = new Set(letters.length ? letters : LETTERS);
     // recent = id viet od najnovšej po najstaršiu. Nepoužité vety idú prvé (náhodne),
     // potom tie, čo boli dávno, a úplne nakoniec tie z posledných cvičení.
@@ -195,15 +197,15 @@ window.UCITEL_ENGINE = (() => {
   }
 
   // Cvičenie „Cudzie slová a výnimky“: len vety s výnimkou, každý typ výnimky sa strieda.
-  function generateExc(lengthKey, recent = [], hardMode = false) {
+  function generateExc(lengthKey, recent = [], hardMode = false, only = null, tag = true) {
     const cfg = LENGTHS[lengthKey];
     const age = new Map(); recent.forEach((id, i) => { if (!age.has(id)) age.set(id, i); });
-    const pool = shuffle(TAGGED.filter((t) => t.exc && (hardMode || !t.hard)));
+    const pool = shuffle(TAGGED.filter(only || ((t) => t.exc && !t.set && (hardMode || !t.hard))));
     const fresh = pool.filter((x) => !age.has(x.id));
     const used = pool.filter((x) => age.has(x.id)).sort((a, b) => age.get(b.id) - age.get(a.id));
     const ordered = [...fresh, ...used];
     const out = []; const types = new Map();
-    for (const t of ordered) { const k = t.excType || 'x'; if (!types.has(k)) types.set(k, []); types.get(k).push(t); }
+    for (const t of ordered) { const k = only ? t.kindZ : (t.excType || 'x'); if (!types.has(k)) types.set(k, []); types.get(k).push(t); }
     const keys = shuffle([...types.keys()]);
     let i = 0;
     while (out.length < cfg.sentences && keys.some((k) => types.get(k).length)) {
@@ -212,7 +214,7 @@ window.UCITEL_ENGINE = (() => {
       if (t) out.push(t);
     }
     const res = shuffle(out);
-    return { length: lengthKey, hard: hardMode, exc: true, letters: [], sentences: res.map((t) => t.text), ids: res.map((t) => t.id), text: res.map((t) => t.text).join(' ') };
+    return { length: lengthKey, hard: hardMode, exc: tag === true ? 'exc' : tag, letters: [], sentences: res.map((t) => t.text), ids: res.map((t) => t.id), text: res.map((t) => t.text).join(' ') };
   }
 
   /** Rozdelí vetu na úseky na diktovanie (po čiarkach, max ~3 slová). */

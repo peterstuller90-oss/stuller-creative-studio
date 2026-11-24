@@ -16,7 +16,7 @@ window.UCITEL_UCIVO = {
     b: 'Tvrdé y píšeme aj v slovách príbuzných: bydlisko, obyvateľ, príbytok, bylinka, kobylka, obyčajný.',
     m: 'Pozor na rozdiel: my (zámeno, my dvaja) a mi (komu? mne, daj mi).',
     v: 'Tvrdé y je aj v predpone vy- a vý-: vyskočiť, vyhrať, výlet, výhra.',
-    z: 'Tvrdé y píšeme aj v slovách príbuzných: jazýček, jazykový, prezývka.',
+    z: 'Tvrdé y píšeme aj v slovách príbuzných: jazýček, jazykový, ozýva sa, nazýva, pozývame, vyzývajú, prezývka. Pozor: zívať (od únavy otvárať ústa) nie je vybrané slovo, píše sa s mäkkým í: zíva, zívol, zívnutie.',
   },
   vynimky: [
     {
